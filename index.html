@@ -19,6 +19,9 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="stylesheet" href="style.css">
+  
+  <!-- Picker.js CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pickerjs@1.4.14/dist/picker.min.css">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -48,6 +51,29 @@
       -webkit-appearance: none; /* Safari/Chrome */
       -moz-appearance: none;    /* Firefox */
       appearance: none;         /* 標準 */
+    }
+
+    /* Picker.jsカスタムスタイル */
+    .picker-container {
+      margin-top: 8px;
+    }
+
+    .picker {
+      background-color: var(--bg-dark) !important;
+      border: 1px solid var(--accent) !important;
+    }
+
+    .picker-col {
+      color: var(--text-main) !important;
+    }
+
+    .picker-item {
+      color: var(--text-main) !important;
+    }
+
+    .picker-selected {
+      color: var(--accent) !important;
+      font-weight: bold !important;
     }
   </style>
 </head>
@@ -104,10 +130,8 @@
 
       <div id="errorModeDisplayInputGroup" class="input-group">
         <label>表示時刻：</label><br>
-        <input type="datetime-local" id="displayTime">
-        <select id="displaySeconds" class="seconds-select">
-          <option value="">秒</option>
-        </select>
+        <input type="date" id="displayDate">
+        <div id="displayTimePickerContainer" class="picker-container"></div>
       </div>
 
       <div id="swap-button-wrapper" style="text-align: center; margin: 10px 0; position: relative;">
@@ -117,10 +141,8 @@
       <div id="errorModeStandardInputGroup" class="input-group">
         <label>標準時刻：</label>
         <button class="action-btn" id="standardNowButton" onclick="setNowToStandard()" style="margin-left: 8px;">NOW🔄</button><br>
-        <input type="datetime-local" id="standardTime">
-        <select id="standardSeconds" class="seconds-select">
-          <option value="">秒</option>
-        </select>
+        <input type="date" id="standardDate">
+        <div id="standardTimePickerContainer" class="picker-container"></div>
       </div>
 
       <div class="result-box" id="result"></div>
@@ -177,11 +199,9 @@
     </div>
 
     <div id="reverseTimeBlock" class="input-group">
-      <label id="reverseTimeLabel" for="reverseDisplayTime">表示時刻:</label><br>
-      <input type="datetime-local" id="reverseDisplayTime" step="60" tabindex="19">
-      <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
-        <option value="">--</option>
-      </select>
+      <label id="reverseTimeLabel" for="reverseDisplayDate">表示時刻:</label><br>
+      <input type="date" id="reverseDisplayDate" tabindex="19">
+      <div id="reverseDisplayTimePickerContainer" class="picker-container" tabindex="20"></div>
     </div>
 
     <div id="reverseResult" class="result-box"></div>
@@ -236,6 +256,8 @@
     <button class="action-btn" onclick="closeQRCodePage()" style="margin-top: 40px; background-color: #ff4d4d;">☒ 閉じる</button>
   </div>
 
+  <!-- Picker.js -->
+  <script src="https://cdn.jsdelivr.net/npm/pickerjs@1.4.14/dist/picker.min.js"></script>
   <script src="script.js" defer></script>
   <script>
     if ("serviceWorker" in navigator) {
