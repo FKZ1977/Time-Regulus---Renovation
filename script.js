@@ -1,4 +1,4 @@
-const currentVersion = "2.1.3";
+const currentVersion = "2.1.4";
 let lastError = null;
 let hasCalculated = false;
 let reverseMode = "toStandard";
@@ -322,12 +322,12 @@ function resetApp(onlyInputs = false) {
   // ポップアップ処理を削除し、処理をシンプル化
   // 【重要】resultHistoryの消去処理は、onlyInputsがtrueのときのみ行うようにする
   //          また、画面遷移とアラートは resetAppAndReturnToLock() で制御する。
-  if (onlyInputs) { 
+  if (onlyInputs) { 
     // 結果一覧も消去
-    resultHistory = [];
-    localStorage.removeItem('resultHistory');
-    document.getElementById("showListLink").style.display = "none";
-  } else {
+    resultHistory = [];
+    localStorage.removeItem('resultHistory');
+    document.getElementById("showListLink").style.display = "none";
+  } else {
     // onlyInputsがfalse（リセットリンク初回クリック時）の場合は、
     // ここで何もしない (showResetConfirmation()が呼ばれるため)
     return;
@@ -757,25 +757,25 @@ function addResultToList() {
   );
 
 if (isDuplicate) {
-    // ★改修: 「追加しました」と同じアニメーション時間に変更
-    const msg = document.getElementById("recordSuccessMessage");
-    const originalText = msg.innerText;
-    msg.innerText = "既に記録されています";
-    msg.style.display = 'inline-block';
-    msg.classList.remove('fade-out');
-    msg.classList.add('fade-in-out');
-    // 外側のsetTimeoutを1000ms (1.0秒) に維持
-    setTimeout(() => {
-        msg.classList.remove('fade-in-out');
-        msg.classList.add('fade-out');
-        setTimeout(() => {
-            msg.style.display = 'none';
-            msg.classList.remove('fade-out');
-            msg.innerText = originalText; // テキストを元に戻す
-        }, 500); // 0.5秒のフェードアウト時間
-    }, 1000); // 1.0秒後にフェードアウト開始
-    return;
-  }
+    // ★改修: 「追加しました」と同じアニメーション時間に変更
+    const msg = document.getElementById("recordSuccessMessage");
+    const originalText = msg.innerText;
+    msg.innerText = "既に記録されています";
+    msg.style.display = 'inline-block';
+    msg.classList.remove('fade-out');
+    msg.classList.add('fade-in-out');
+    // 外側のsetTimeoutを1000ms (1.0秒) に維持
+    setTimeout(() => {
+        msg.classList.remove('fade-in-out');
+        msg.classList.add('fade-out');
+        setTimeout(() => {
+            msg.style.display = 'none';
+            msg.classList.remove('fade-out');
+            msg.innerText = originalText; // テキストを元に戻す
+        }, 500); // 0.5秒のフェードアウト時間
+    }, 1000); // 1.0秒後にフェードアウト開始
+    return;
+  }
   
   // 常に新しいIDを割り当ててユニークにする
   const newEntry = {

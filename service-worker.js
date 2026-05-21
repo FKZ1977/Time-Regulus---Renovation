@@ -1,4 +1,4 @@
-const CACHE_NAME = "time-regulus-v2.1.4"; // バージョンアップ時にはここを必ず変更してください
+const CACHE_NAME = "time-regulus-v2.1.5"; // バージョンアップ時にはここを必ず変更してください
 const urlsToCache = [
   "./",
   "./index.html",
