@@ -546,3 +546,17 @@ input, select {
 #resetLink:hover {
     text-decoration: underline; /* ホバー時に下線を表示 */
 }
+
+/* Picker.js の iOS Safari での表示崩れ・秒カラム非表示対策 */
+.picker-grid {
+  display: flex !important;
+  width: 100% !important;
+}
+.picker-cell {
+  flex: 1 1 0% !important;
+  display: block !important;
+  min-width: 0 !important;
+}
+.picker-cell__header, .picker-item {
+  font-size: 16px !important;
+}
