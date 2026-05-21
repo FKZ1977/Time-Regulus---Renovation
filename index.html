@@ -17,6 +17,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="lib/picker.min.css">
   <link rel="stylesheet" href="style.css">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -105,7 +106,7 @@
         <label>表示時刻：</label><br>
         <div class="datetime-block-group">
           <input type="date" id="displayDate" class="date-input">
-          <input type="time" id="displayTime" step="1" class="time-input">
+          <input type="text" id="displayTime" class="time-input" readonly placeholder="時:分:秒">
         </div>
       </div>
 
@@ -118,7 +119,7 @@
         <button class="action-btn" id="standardNowButton" onclick="setNowToStandard()" style="margin-left: 8px;">NOW🔄</button><br>
         <div class="datetime-block-group">
           <input type="date" id="standardDate" class="date-input">
-          <input type="time" id="standardTime" step="1" class="time-input">
+          <input type="text" id="standardTime" class="time-input" readonly placeholder="時:分:秒">
         </div>
       </div>
 
@@ -179,7 +180,7 @@
       <label id="reverseTimeLabel" for="reverseDisplayTime">表示時刻:</label><br>
       <div class="datetime-block-group">
         <input type="date" id="reverseDisplayDate" class="date-input" tabindex="19">
-        <input type="time" id="reverseDisplayTime" step="1" class="time-input" tabindex="20">
+        <input type="text" id="reverseDisplayTime" class="time-input" readonly tabindex="20" placeholder="時:分:秒">
       </div>
     </div>
 
@@ -235,6 +236,7 @@
     <button class="action-btn" onclick="closeQRCodePage()" style="margin-top: 40px; background-color: #ff4d4d;">☒ 閉じる</button>
   </div>
 
+  <script src="lib/picker.min.js" defer></script>
   <script src="script.js" defer></script>
   <script>
     if ("serviceWorker" in navigator) {

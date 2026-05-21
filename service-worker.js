@@ -1,9 +1,11 @@
-const CACHE_NAME = "time-regulus-v2.1.2"; // バージョンアップ時にはここを必ず変更してください
+const CACHE_NAME = "time-regulus-v2.1.3"; // バージョンアップ時にはここを必ず変更してください
 const urlsToCache = [
   "./",
   "./index.html",
   "./style.css",
   "./script.js",
+  "./lib/picker.min.css",
+  "./lib/picker.min.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
