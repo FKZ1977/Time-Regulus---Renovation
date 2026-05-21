@@ -103,10 +103,10 @@
 
       <div id="errorModeDisplayInputGroup" class="input-group">
         <label>表示時刻：</label><br>
-        <input type="datetime-local" id="displayTime">
-        <select id="displaySeconds" class="seconds-select">
-          <option value="">秒</option>
-        </select>
+        <div class="datetime-block-group">
+          <input type="date" id="displayDate" class="date-input">
+          <input type="time" id="displayTime" step="1" class="time-input">
+        </div>
       </div>
 
       <div id="swap-button-wrapper" style="text-align: center; margin: 10px 0; position: relative;">
@@ -116,10 +116,10 @@
       <div id="errorModeStandardInputGroup" class="input-group">
         <label>標準時刻：</label>
         <button class="action-btn" id="standardNowButton" onclick="setNowToStandard()" style="margin-left: 8px;">NOW🔄</button><br>
-        <input type="datetime-local" id="standardTime">
-        <select id="standardSeconds" class="seconds-select">
-          <option value="">秒</option>
-        </select>
+        <div class="datetime-block-group">
+          <input type="date" id="standardDate" class="date-input">
+          <input type="time" id="standardTime" step="1" class="time-input">
+        </div>
       </div>
 
       <div class="result-box" id="result"></div>
@@ -177,10 +177,10 @@
 
     <div id="reverseTimeBlock" class="input-group">
       <label id="reverseTimeLabel" for="reverseDisplayTime">表示時刻:</label><br>
-      <input type="datetime-local" id="reverseDisplayTime" step="60" tabindex="19">
-      <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
-        <option value="">--</option>
-      </select>
+      <div class="datetime-block-group">
+        <input type="date" id="reverseDisplayDate" class="date-input" tabindex="19">
+        <input type="time" id="reverseDisplayTime" step="1" class="time-input" tabindex="20">
+      </div>
     </div>
 
     <div id="reverseResult" class="result-box"></div>

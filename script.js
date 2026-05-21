@@ -65,14 +65,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   generateKeypad();
 
-  populateSeconds("standardSeconds");
-  populateSeconds("displaySeconds");
-  populateSeconds("reverseDisplaySeconds");
   populateErrorDropdowns();
 
   // 誤差計算の自動化のためのリスナー設定
   const errorInputs = [
-    "standardTime", "displayTime", "standardSeconds", "displaySeconds"
+    "standardDate", "standardTime", "displayDate", "displayTime"
   ];
   errorInputs.forEach(id => {
     const el = document.getElementById(id);
@@ -103,7 +100,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const reverseInputs = [
     "errorDays", "errorHours", "errorMinutes", "errorSeconds",
-    "errorDirection", "reverseDisplayTime", "reverseDisplaySeconds"
+    "errorDirection", "reverseDisplayDate", "reverseDisplayTime"
   ];
   reverseInputs.forEach(id => {
     const el = document.getElementById(id);
@@ -188,12 +185,13 @@ function setNowToStandard() {
   const dd = String(now.getDate()).padStart(2, '0');
   const hh = String(now.getHours()).padStart(2, '0');
   const min = String(now.getMinutes()).padStart(2, '0');
-  const sec = now.getSeconds();
+  const sec = isStandardOnTop ? "00" : String(now.getSeconds()).padStart(2, '0');
 
-  const datetimeLocal = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  const dateStr = `${yyyy}-${mm}-${dd}`;
+  const timeStr = `${hh}:${min}:${sec}`;
 
-  document.getElementById("standardTime").value = datetimeLocal;
-  document.getElementById("standardSeconds").value = sec;
+  document.getElementById("standardDate").value = dateStr;
+  document.getElementById("standardTime").value = timeStr;
 
   calculateError();
 }
@@ -232,10 +230,10 @@ function backToCorrectionMode() {
 function resetApp(onlyInputs = false) {
   
   // 入力内容のリセット処理
+  document.getElementById("displayDate").value = "";
   document.getElementById("displayTime").value = "";
+  document.getElementById("standardDate").value = "";
   document.getElementById("standardTime").value = "";
-  document.getElementById("displaySeconds").value = "";
-  document.getElementById("standardSeconds").value = "";
   document.getElementById("result").innerHTML = "";
   document.getElementById("toReverseButton").style.display = "none";
   
@@ -244,8 +242,8 @@ function resetApp(onlyInputs = false) {
   document.getElementById("errorMinutes").value = "";
   document.getElementById("errorSeconds").value = "";
   document.getElementById("errorDirection").value = "late";
+  document.getElementById("reverseDisplayDate").value = "";
   document.getElementById("reverseDisplayTime").value = "";
-  document.getElementById("reverseDisplaySeconds").value = "";
   document.getElementById("reverseResult").innerHTML = "";
 
   lastError = null;
@@ -257,12 +255,12 @@ function resetApp(onlyInputs = false) {
     swapErrorModeInputs(); // isStandardOnTopをfalseに戻すために実行
   } else {
      const nowButton = document.getElementById("standardNowButton");
-     const standardSeconds = document.getElementById("standardSeconds");
+     const standardTime = document.getElementById("standardTime");
      nowButton.style.display = "inline-block";
-     standardSeconds.disabled = false;
-     standardSeconds.style.pointerEvents = 'auto';
-     standardSeconds.classList.remove('seconds-fixed-00'); // スタイルを戻す
-     standardSeconds.value = "";
+     standardTime.disabled = false;
+     standardTime.style.pointerEvents = 'auto';
+     standardTime.classList.remove('seconds-fixed-00'); // スタイルを戻す
+     standardTime.value = "";
   }
   
   toggleReverseMode(false);
@@ -331,7 +329,7 @@ function swapErrorModeInputs() {
   const standardGroup = document.getElementById("errorModeStandardInputGroup");
   const modeCard = displayGroup.parentElement;
   const nowButton = document.getElementById("standardNowButton");
-  const standardSeconds = document.getElementById("standardSeconds");
+  const standardTime = document.getElementById("standardTime");
   const swapButtonWrapper = document.querySelector('.swap-btn').parentElement; // ⇅ボタンの親div
 
   // 既存のアニメーションクラスをクリア
@@ -346,7 +344,7 @@ function swapErrorModeInputs() {
     standardGroup.classList.add("animate-up-out");
   } else {
     displayGroup.classList.add("animate-up-out");
-    standardGroup.classList.add("animate-down-out");
+    standardGroup.className = "input-group animate-down-out";
   }
 
   // 2. DOM操作と機能変更をsetTimeout内で実行
@@ -359,10 +357,16 @@ function swapErrorModeInputs() {
       
       // 機能の変更 (標準時刻が上)
       nowButton.style.display = "none";
-      standardSeconds.value = "0"; // 00秒に固定
-      standardSeconds.disabled = true; // 無効化
-      standardSeconds.style.pointerEvents = 'none'; // 無効化の視覚的強調
-      standardSeconds.classList.add('seconds-fixed-00'); // 新しいスタイル適用
+      
+      // 値が入っていれば秒数を00秒に固定する
+      let val = standardTime.value;
+      if (val) {
+        let parts = val.split(':');
+        if (parts.length >= 2) {
+          standardTime.value = `${parts[0]}:${parts[1]}:00`;
+        }
+      }
+      standardTime.classList.add('seconds-fixed-00'); // 新しいスタイル適用
       
     } else {
       // 標準時刻を下 (isStandardOnTop = false) に戻す
@@ -371,10 +375,7 @@ function swapErrorModeInputs() {
       
       // 機能の復元 (標準時刻が下)
       nowButton.style.display = "inline-block"; // NOWボタン表示
-      standardSeconds.disabled = false; // 有効化
-      standardSeconds.style.pointerEvents = 'auto'; // 有効化
-      standardSeconds.classList.remove('seconds-fixed-00'); // スタイルを削除
-      standardSeconds.value = ""; // 「秒」に戻す (初期値)
+      standardTime.classList.remove('seconds-fixed-00'); // スタイルを削除
     }
     
     // 状態更新
@@ -405,75 +406,60 @@ function swapErrorModeInputs() {
 
 
 function calculateError() {
-  const standardInput = document.getElementById("standardTime").value;
-  const displayInput = document.getElementById("displayTime").value;
-  
-  const standardSecValue = document.getElementById("standardSeconds").value; 
-  const displaySecValue = document.getElementById("displaySeconds").value;
+  const standardDateVal = document.getElementById("standardDate").value;
+  let standardTimeVal = document.getElementById("standardTime").value;
+  const displayDateVal = document.getElementById("displayDate").value;
+  const displayTimeVal = document.getElementById("displayTime").value;
   
   const resultElement = document.getElementById("result");
   const toReverseButton = document.getElementById("toReverseButton");
   
+  // 標準時刻が上の時、秒数を00秒に強制固定
+  if (isStandardOnTop && standardTimeVal) {
+    let parts = standardTimeVal.split(':');
+    if (parts.length >= 2 && parts[2] !== '00') {
+      standardTimeVal = `${parts[0]}:${parts[1]}:00`;
+      document.getElementById("standardTime").value = standardTimeVal;
+    }
+  }
+
   // --- 入力チェック ---
-  
   const missingStandardInputs = [];
   const missingDisplayInputs = [];
   
-  // 1. 標準時刻の日付時刻入力欄のチェック
-  if (!standardInput) {
-    missingStandardInputs.push("日時");
+  if (!standardDateVal) {
+    missingStandardInputs.push("日付");
+  }
+  if (!standardTimeVal) {
+    missingStandardInputs.push("時刻");
   }
   
-  // 2. 表示時刻の日付時刻入力欄のチェック
-  if (!displayInput) {
-    missingDisplayInputs.push("日時");
+  if (!displayDateVal) {
+    missingDisplayInputs.push("日付");
   }
-  
-  // 秒の入力チェックに必要な変数の定義
-  // isStandardOnTop が true の場合、standardSecValue は "0" に固定されている
-  const isStandardSecValid = isStandardOnTop ? (standardSecValue === "0") : (standardSecValue !== "" && standardSecValue !== "秒");
-  const isDisplaySecValid = (displaySecValue !== "" && displaySecValue !== "秒");
-
-  // 3. 標準時刻の秒入力チェック
-  if (!isStandardSecValid) {
-    missingStandardInputs.push("秒");
-  }
-  
-  // 4. 表示時刻の秒入力チェック
-  if (!isDisplaySecValid) {
-    missingDisplayInputs.push("秒");
+  if (!displayTimeVal) {
+    missingDisplayInputs.push("時刻");
   }
   
   // すべての入力が揃っていない場合
   if (missingStandardInputs.length > 0 || missingDisplayInputs.length > 0) {
     
-// --- 【変更点 START】 ---
-    
-    // 標準時刻と表示時刻の両方で「日時」と「秒」が不足しているかチェック
-    // isStandardOnTop == true の場合は標準時刻の秒は固定(00)なので、displayInput + displaySecValue の不足のみをチェック
-    const isTotallyEmpty = (isStandardOnTop ?
-        (!standardInput && !displayInput && !isDisplaySecValid) :
-        (!standardInput && !displayInput && !isStandardSecValid && !isDisplaySecValid)
-    );
+    const isTotallyEmpty = !standardDateVal && !standardTimeVal && !displayDateVal && !displayTimeVal;
     
     let messageContent;
     let messageStyle = `font-size: 14px; color: #FFFF00; text-decoration: font-weight: bold; line-height: 1.5;`;
 
     if (isTotallyEmpty) {
-        // 全く入力がない場合: 画像のメッセージに変更
-        // 標準時刻と表示時刻が入れ替わっている状態（isStandardOnTop=true）にも対応
         const firstLine = isStandardOnTop ? "標準時刻から誤差を算出" : "表示時刻から誤差を算出";
         messageContent = `
             ${firstLine}<br>
             <span style="font-size: 14px; color: var(--text-sub); text-decoration: none; font-weight: normal; line-height: 1.5;">
-                日時と秒の両方を入力してください
+                日付と時刻の両方を入力してください
             </span>
         `;
-        // スタイルを上書きしないようにする (外側のspanで制御)
         messageStyle = `font-size: 16px; color: var(--accent); font-weight: bold; line-height: 1.5; text-decoration: none;`; 
 
     } else {
-        // 一部入力が不足している場合: 既存の不足項目メッセージを使用
         const standardMessage = missingStandardInputs.length > 0
           ? `標準時刻: ${missingStandardInputs.join(", ")}が不足`
           : "";
@@ -484,7 +470,6 @@ function calculateError() {
 
         let finalMessageLines = [];
         
-        // 表示順序を isStandardOnTop に連動させる
         if (isStandardOnTop) {
             if (standardMessage) finalMessageLines.push(standardMessage);
             if (displayMessage) finalMessageLines.push(displayMessage);
@@ -493,20 +478,15 @@ function calculateError() {
             if (standardMessage) finalMessageLines.push(standardMessage);
         }
         
-        // メッセージ全体を構築（行区切りとスタイル適用）
         messageContent = finalMessageLines.join("<br>");
-        // 元のスタイル
         messageStyle = `font-size: 14px; color: #FFFF00; text-decoration: font-weight: bold; line-height: 1.5;`; 
     }
     
-    // 結果表示エリアの更新
     resultElement.innerHTML = `
         <span style="${messageStyle}">
             ${messageContent}
         </span>
     `;
-    
-    // --- 【変更点 END】 ---
     
     toReverseButton.style.display = "none";
     hasCalculatedError = false;
@@ -516,14 +496,18 @@ function calculateError() {
   // すべての入力が揃っている
   hasCalculatedError = true;
 
+  // iOS Safari等でのDateパース時のバグを防ぐため、常に "YYYY-MM-DDTHH:mm:ss" 形式でパースする
+  let stdTimeFormatted = standardTimeVal;
+  if (stdTimeFormatted.split(':').length === 2) {
+    stdTimeFormatted += ':00';
+  }
+  let dispTimeFormatted = displayTimeVal;
+  if (dispTimeFormatted.split(':').length === 2) {
+    dispTimeFormatted += ':00';
+  }
 
-  const standardSec = Number(standardSecValue);
-  const displaySec = Number(displaySecValue);
-
-  const standard = new Date(standardInput);
-  const display = new Date(displayInput);
-  standard.setSeconds(standardSec);
-  display.setSeconds(displaySec);
+  const standard = new Date(`${standardDateVal}T${stdTimeFormatted}`);
+  const display = new Date(`${displayDateVal}T${dispTimeFormatted}`);
 
   const diffMs = standard.getTime() - display.getTime(); // 標準 - 表示
   const diffAbsMs = Math.abs(diffMs);
@@ -542,7 +526,7 @@ function calculateError() {
       <span style="color: var(--accent); font-weight: bold;">Precision Sync!</span><br>
       <span style="color: var(--text-sub); font-size: 15px;">表示時刻は標準時刻と完全に一致しています。</span>
     `;
-    document.getElementById("toReverseButton").style.display = "none";
+    toReverseButton.style.display = "none";
     lastError = null;
     return;
   }
@@ -557,11 +541,9 @@ function calculateError() {
   let directionColor;
 
   if (isFast) {
-    // 表示時刻が進んでいる
     directionText = "進んでいます。";
     directionColor = "var(--error-late-color)"; // 太文字の赤
   } else {
-    // 表示時刻が遅れている
     directionText = "遅れています。";
     directionColor = "var(--error-early-color)"; // 太文字の黄緑
   }
@@ -574,7 +556,7 @@ function calculateError() {
   gtag('event', 'calculate_error'); // Google Analyticsイベント
 
   lastError = { days, hours, minutes, seconds, isFast };
-  document.getElementById("toReverseButton").style.display = "block";
+  toReverseButton.style.display = "block";
 }
 
 function applyLastErrorToReverseInputs() {
@@ -591,14 +573,6 @@ function applyLastErrorToReverseInputs() {
 function switchToCorrectionMode() {
   document.getElementById("errorMode").style.display = "none";
   document.getElementById("correctionMode").style.display = "block";
-
-  const prevSeconds = document.getElementById("reverseDisplaySeconds").value;
-  // 秒のオプションを再設定
-  populateSeconds("reverseDisplaySeconds");
-  // 以前の値があれば復元（なければ「秒」のまま）
-  if (prevSeconds !== "" && prevSeconds !== "秒" && prevSeconds !== "--") {
-    document.getElementById("reverseDisplaySeconds").value = prevSeconds;
-  }
 
   // 誤差計算の結果を反映
   applyLastErrorToReverseInputs();
@@ -645,11 +619,11 @@ function handleReverseCalculation() {
   const seconds = Number(document.getElementById("errorSeconds").value || 0);
   const direction = document.getElementById("errorDirection").value;
 
+  const dateInput = document.getElementById("reverseDisplayDate").value;
   const timeInput = document.getElementById("reverseDisplayTime").value;
-  const timeSec   = document.getElementById("reverseDisplaySeconds").value;
 
   const hasError = (days + hours + minutes + seconds) > 0;
-  const hasTime = timeInput && timeSec !== "" && timeSec !== "秒" && timeSec !== "--";
+  const hasTime = dateInput && timeInput;
 
   document.getElementById("addToListButton").style.display = hasTime && hasError ? "inline-block" : "none";
 
@@ -670,8 +644,13 @@ function handleReverseCalculation() {
     return;
   }
 
-  const baseTime = new Date(timeInput);
-  baseTime.setSeconds(Number(timeSec));
+  // 秒を含んだISO形式に組み立てる
+  let formattedTime = timeInput;
+  if (formattedTime.split(':').length === 2) {
+    formattedTime += ':00';
+  }
+
+  const baseTime = new Date(`${dateInput}T${formattedTime}`);
 
   const totalMs = ((days * 86400) + (hours * 3600) + (minutes * 60) + seconds) * 1000;
   
@@ -693,7 +672,7 @@ function handleReverseCalculation() {
 
   const resultTime = new Date(resultTimeMs);
 
-gtag('event', 'calculate_correction'); // Google Analyticsイベント
+  gtag('event', 'calculate_correction'); // Google Analyticsイベント
 
   const baseStr = formatDate(baseTime, true);
   const resultStr = formatDate(resultTime, true);

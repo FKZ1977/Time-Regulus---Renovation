@@ -143,13 +143,23 @@ h1.fkz {
   margin-bottom: 20px;
 }
 
-input[type="datetime-local"] {
-  width: 220px;
+.datetime-block-group {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
 }
 
-.seconds-select {
-  width: 80px;
-  margin-top: 8px;
+.date-input {
+  width: 170px;
+  text-align: center;
+}
+
+.time-input {
+  width: 140px;
+  text-align: center;
 }
 
 /* 誤差計算モードで標準時刻が上の時の「00秒」のスタイル */
