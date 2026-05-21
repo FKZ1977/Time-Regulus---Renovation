@@ -84,18 +84,37 @@ document.addEventListener("DOMContentLoaded", function () {
   // 結果一覧の復元
   const savedHistory = localStorage.getItem('resultHistory');
   if (savedHistory) {
-    const parsedHistory = JSON.parse(savedHistory);
-    resultHistory = parsedHistory.map(group => ({
-      ...group,
-      entries: group.entries.map(entry => ({
-        ...entry,
-        base: new Date(entry.base),
-        result: new Date(entry.result)
-      }))
-    }));
+    try {
+      const parsedHistory = JSON.parse(savedHistory);
+      if (Array.isArray(parsedHistory)) {
+        resultHistory = parsedHistory.map(group => {
+          if (group && group.error && Array.isArray(group.entries)) {
+            return {
+              ...group,
+              entries: group.entries.map(entry => {
+                if (entry && entry.base && entry.result) {
+                  return {
+                    ...entry,
+                    base: new Date(entry.base),
+                    result: new Date(entry.result)
+                  };
+                }
+                return null;
+              }).filter(Boolean)
+            };
+          }
+          return null;
+        }).filter(Boolean);
+      }
+    } catch (e) {
+      console.error("Failed to restore result history:", e);
+      resultHistory = [];
+      localStorage.removeItem('resultHistory');
+    }
   }
-  if (resultHistory.length > 0) {
-    document.getElementById("showListLink").style.display = "block";
+  if (resultHistory && resultHistory.length > 0) {
+    const listLink = document.getElementById("showListLink");
+    if (listLink) listLink.style.display = "block";
   }
 
   const reverseInputs = [
@@ -172,6 +191,17 @@ document.addEventListener("DOMContentLoaded", function () {
       standardTime: standardPicker,
       reverseDisplayTime: reversePicker
     };
+  } else {
+    console.error("Picker library is not loaded. Falling back to manual input.");
+    // Pickerが読み込めない場合は、入力欄をreadonly解除して手動入力を可能にするフォールバック
+    const fallbackInputs = ['displayTime', 'standardTime', 'reverseDisplayTime'];
+    fallbackInputs.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.removeAttribute('readonly');
+        el.placeholder = "時:分:秒 (手入力)";
+      }
+    });
   }
 });
 
