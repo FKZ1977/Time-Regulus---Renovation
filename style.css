@@ -94,6 +94,7 @@ body {
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
+  touch-action: manipulation; /* ダブルタップによる画面ズームを禁止 */
 }
 
 input:focus, select:focus, button:focus {
@@ -220,6 +221,7 @@ input, select {
   border: none;
   background-color: #1f1f2f;
   color: var(--text-main);
+  touch-action: manipulation; /* 入力・選択項目のダブルタップズームを禁止 */
 }
 
 .action-btn {
@@ -233,6 +235,7 @@ input, select {
   margin-top: 20px;
   box-shadow: 0 4px 12px rgba(0,255,224,0.3);
   transition: transform 0.2s ease, background-color 0.3s ease;
+  touch-action: manipulation; /* ボタンのダブルタップズームを禁止 */
 }
 .action-btn:hover {
   transform: scale(1.05);
@@ -390,6 +393,7 @@ input, select {
   cursor: pointer;
   box-shadow: 0 0 6px rgba(0,255,224,0.2);
   transition: background-color 0.2s ease;
+  touch-action: manipulation; /* キーパッドボタンのダブルタップズームを禁止 */
 }
 .keypad-grid button:hover {
   background-color: rgba(0,255,224,0.2);
