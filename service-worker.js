@@ -1,33 +1,60 @@
-// Emergency Service Worker - v2.1.7
-// 古い壊れたキャッシュを完全にクリアし、自身を強制解除（アンレジスター）してアプリをクリーンな状態に復旧します。
+const CACHE_NAME = "time-regulus-v2.1.2"; // バージョンアップ時にはここを必ず変更してください
+const urlsToCache = [
+  "./",
+  "./index.html",
+  "./style.css",
+  "./script.js",
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./QRCorde.PNG"
+];
 
+// インストール時に必要なアセットをキャッシュ
 self.addEventListener("install", event => {
-  console.log("Emergency Service Worker: Installing...");
-  self.skipWaiting(); // 待機せずに即座にアクティブ化させる
-});
-
-self.addEventListener("activate", event => {
-  console.log("Emergency Service Worker: Activating and purging all caches...");
+  
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(name => {
-          console.log("Purging cache:", name);
-          return caches.delete(name); // キャッシュをすべて強制消去！
-        })
-      );
-    }).then(() => {
-      console.log("Emergency Service Worker: Unregistering self...");
-      return self.registration.unregister(); // サービスワーカー自身の登録を完全に解除！
-    }).then(() => {
-      return self.clients.claim(); // クライアントの制御を即座に引き継ぐ
-    }).then(() => {
-      console.log("Emergency Service Worker: Purge and unregister completed successfully.");
+    caches.open(CACHE_NAME).then(cache => {
+      // 指定されたすべてのファイルをキャッシュに追加
+      return cache.addAll(urlsToCache);
     })
   );
 });
 
-// キャッシュを完全にスルーして、常に最新のネットワークリソースを取得させる
+// 起動時に古いキャッシュを削除し、すぐに制御を奪取
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(name => {
+          if (name !== CACHE_NAME) {
+            // 現在のキャッシュ名と異なる古いキャッシュを削除（キャッシュバスティング）
+            return caches.delete(name);
+          }
+        })
+      );
+    }).then(() => {
+      // ★修正箇所: 新しいService Workerが即座にクライアントを制御できるようにする
+      return self.clients.claim();      
+    })
+  );
+});
+
+// リクエスト時にキャッシュ優先で応答する（Cache First戦略）
 self.addEventListener("fetch", event => {
-  event.respondWith(fetch(event.request));
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      // キャッシュが存在すれば、それを返す。なければネットワークから取得
+      return response || fetch(event.request);
+    })
+  );
+});
+
+// ★修正箇所: postMessageを受け取り、skipWaitingを実行するリスナー
+// script.jsからの「更新ボタンがクリックされた」メッセージを受け取る
+self.addEventListener('message', event => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    // 待機中のService Workerを強制的にアクティブ化
+    self.skipWaiting();
+  }
 });

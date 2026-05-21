@@ -17,7 +17,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="lib/picker.min.css">
   <link rel="stylesheet" href="style.css">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -54,7 +53,7 @@
 <body class="fade-in">
   <div id="lockScreen">
     <h1 class="fkz rise-in-long">Time Regulus</h1>
-    <p class="subtitle">タイム　レグルス　v2.1.7</p>
+    <p class="subtitle">タイム　レグルス　v2.1.2</p>
     <label for="passcode">暗証番号を入力：</label><br>
     <input type="password" id="passcode" placeholder="例：12345" tabindex="1">
     <button class="action-btn" onclick="checkPass()" tabindex="2">開く</button>
@@ -104,10 +103,10 @@
 
       <div id="errorModeDisplayInputGroup" class="input-group">
         <label>表示時刻：</label><br>
-        <div class="datetime-block-group">
-          <input type="date" id="displayDate" class="date-input">
-          <input type="text" id="displayTime" class="time-input" readonly placeholder="時:分:秒">
-        </div>
+        <input type="datetime-local" id="displayTime">
+        <select id="displaySeconds" class="seconds-select">
+          <option value="">秒</option>
+        </select>
       </div>
 
       <div id="swap-button-wrapper" style="text-align: center; margin: 10px 0; position: relative;">
@@ -117,10 +116,10 @@
       <div id="errorModeStandardInputGroup" class="input-group">
         <label>標準時刻：</label>
         <button class="action-btn" id="standardNowButton" onclick="setNowToStandard()" style="margin-left: 8px;">NOW🔄</button><br>
-        <div class="datetime-block-group">
-          <input type="date" id="standardDate" class="date-input">
-          <input type="text" id="standardTime" class="time-input" readonly placeholder="時:分:秒">
-        </div>
+        <input type="datetime-local" id="standardTime">
+        <select id="standardSeconds" class="seconds-select">
+          <option value="">秒</option>
+        </select>
       </div>
 
       <div class="result-box" id="result"></div>
@@ -178,10 +177,10 @@
 
     <div id="reverseTimeBlock" class="input-group">
       <label id="reverseTimeLabel" for="reverseDisplayTime">表示時刻:</label><br>
-      <div class="datetime-block-group">
-        <input type="date" id="reverseDisplayDate" class="date-input" tabindex="19">
-        <input type="text" id="reverseDisplayTime" class="time-input" readonly tabindex="20" placeholder="時:分:秒">
-      </div>
+      <input type="datetime-local" id="reverseDisplayTime" step="60" tabindex="19">
+      <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
+        <option value="">--</option>
+      </select>
     </div>
 
     <div id="reverseResult" class="result-box"></div>
@@ -205,7 +204,7 @@
     <h1 class="fkz" style="margin-top: 40px;">Information</h1>
     <div id="informationContent" style="margin-top: 30px; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;">
       <p style="margin-bottom: 8px;">このアプリは <strong>H.Fukazu</strong> によって制作されました。</p>
-      <p style="margin-bottom: 24px;">バージョン: <strong>v2.1.7</strong></p>
+      <p style="margin-bottom: 24px;">バージョン: <strong>v2.1.2</strong></p>
 
       <h3 style="margin-top:24px;">## 著作権および利用規約 (Copyright and Usage Policy)</h3>
       <p>本作品（ソフトウェア、コード、ドキュメント、および関連する全ての内容を含む）の著作権は、© 2025 H.Fukazu に帰属します。<br>**© 2025 H.Fukazu. All Rights Reserved.**</p><br>
@@ -236,7 +235,6 @@
     <button class="action-btn" onclick="closeQRCodePage()" style="margin-top: 40px; background-color: #ff4d4d;">☒ 閉じる</button>
   </div>
 
-  <script src="lib/picker.min.js" defer></script>
   <script src="script.js" defer></script>
   <script>
     if ("serviceWorker" in navigator) {

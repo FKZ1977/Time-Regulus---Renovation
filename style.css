@@ -1,3 +1,7 @@
+* {
+  touch-action: manipulation;
+}
+
 :root {
   --bg-dark: #0e0f11;
   --bg-dark-navy: #151c27; /* 標準時刻が上の時の新しい背景色 */
@@ -94,7 +98,6 @@ body {
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  touch-action: manipulation; /* ダブルタップによる画面ズームを禁止 */
 }
 
 input:focus, select:focus, button:focus {
@@ -143,23 +146,13 @@ h1.fkz {
   margin-bottom: 20px;
 }
 
-.datetime-block-group {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  justify-content: center;
-  align-items: center;
+input[type="datetime-local"] {
+  width: 220px;
+}
+
+.seconds-select {
+  width: 80px;
   margin-top: 8px;
-}
-
-.date-input {
-  width: 170px;
-  text-align: center;
-}
-
-.time-input {
-  width: 140px;
-  text-align: center;
 }
 
 /* 誤差計算モードで標準時刻が上の時の「00秒」のスタイル */
@@ -231,7 +224,6 @@ input, select {
   border: none;
   background-color: #1f1f2f;
   color: var(--text-main);
-  touch-action: manipulation; /* 入力・選択項目のダブルタップズームを禁止 */
 }
 
 .action-btn {
@@ -245,7 +237,6 @@ input, select {
   margin-top: 20px;
   box-shadow: 0 4px 12px rgba(0,255,224,0.3);
   transition: transform 0.2s ease, background-color 0.3s ease;
-  touch-action: manipulation; /* ボタンのダブルタップズームを禁止 */
 }
 .action-btn:hover {
   transform: scale(1.05);
@@ -403,7 +394,6 @@ input, select {
   cursor: pointer;
   box-shadow: 0 0 6px rgba(0,255,224,0.2);
   transition: background-color 0.2s ease;
-  touch-action: manipulation; /* キーパッドボタンのダブルタップズームを禁止 */
 }
 .keypad-grid button:hover {
   background-color: rgba(0,255,224,0.2);
@@ -546,17 +536,3 @@ input, select {
 #resetLink:hover {
     text-decoration: underline; /* ホバー時に下線を表示 */
 }
-
-/* Picker.js の iOS Safari での表示崩れ・秒カラム非表示対策 */
-.picker-grid {
-  display: flex !important;
-  width: 100% !important;
-}
-.picker-cell {
-  flex: 1 1 0% !important;
-  display: block !important;
-  min-width: 0 !important;
-}
-.picker-cell__header, .picker-item {
-  font-size: 16px !important;
-}
