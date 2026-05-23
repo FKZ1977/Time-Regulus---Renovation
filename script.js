@@ -722,6 +722,31 @@ function handleReverseCalculation() {
     result: resultTime
   };
   window.latestResult = result;
+
+  // 計算結果出力時および数値変更時の画面自動押し上げ（iOS対応ハイブリッドスクロール）
+  setTimeout(() => {
+    const listLink = document.getElementById("showListLink");
+    const addBtn = document.getElementById("addToListButton");
+
+    // 対象となる要素を選択（「結果一覧を表示」リンクがあればそこまで、無ければ「記録する」ボタン）
+    const targetEl = (listLink && listLink.style.display !== "none") ? listLink : addBtn;
+
+    if (targetEl && targetEl.style.display !== "none") {
+      // 1. 標準スクロール（PC・Android用）
+      targetEl.scrollIntoView({ behavior: "smooth", block: "end" });
+
+      // 2. 【ヒロさんの名案！】フォーカスを強制的に当てて、iOS Safariの画面押し上げを強制発動
+      targetEl.focus();
+
+      // 3. 物理スクロールの強制実行（iOS Safari用の強力なフォールバック）
+      const rect = targetEl.getBoundingClientRect();
+      const targetY = rect.top + window.pageYOffset - window.innerHeight + targetEl.clientHeight + 20;
+      window.scrollTo({
+        top: Math.max(0, targetY),
+        behavior: "smooth"
+      });
+    }
+  }, 120);
 }
 
 function addResultToList() {

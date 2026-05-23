@@ -668,3 +668,9 @@ select:has(option[value=""]:checked) {
 .segment-btn:focus-visible {
   outline: 2px solid var(--accent);
 }
+
+/* JSからの強制フォーカス時に不要な青枠線（アウトライン）を出さないようにする */
+.show-list-link:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
