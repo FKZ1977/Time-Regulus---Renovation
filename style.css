@@ -979,22 +979,40 @@ input:checked + .switch-slider:before {
 #correctionMode .flex-wrap {
   margin-bottom: 6px !important;
   gap: 4px !important;
-}
-#correctionMode .flex-wrap {
-  margin-bottom: 6px !important;
-  gap: 4px !important;
+  height: 32px !important; /* 誤差行コンテナの高さを32pxに完全強制固定 */
+  overflow: hidden !important; /* iOSでのインプット膨らみによる縦伸びを強制遮断 */
+  align-items: center !important;
+  box-sizing: border-box !important;
 }
 #correctionMode .unit-input {
   gap: 1px !important;
+  height: 32px !important;
+  align-items: center !important;
 }
 #correctionMode .unit-input input,
 #correctionMode .unit-input select {
   box-sizing: border-box !important;
-  height: 32px !important; /* 誤差入力枠の高さを32pxに完全固定！ */
-  padding: 2px 2px !important;
+  height: 32px !important; /* 誤差入力枠の高さを32pxに完全固定 */
+  padding: 0 4px !important; /* 縦パディングを0にしてiOSでの膨らみを防止 */
   font-size: 14px !important;
   border-radius: 6px !important;
-  line-height: 1 !important;
+  line-height: 30px !important; /* 行の高さを揃えて中央に */
+}
+
+/* iOS Safari 固有の誤差時間入力インナー要素リセット */
+#errorTime {
+  padding: 0 4px !important;
+  line-height: 30px !important;
+}
+#errorTime::-webkit-date-and-time-value {
+  height: 30px !important;
+  line-height: 30px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 #correctionMode .unit-input input.direct-error-val {
   text-align: center;
@@ -1061,10 +1079,29 @@ input:checked + .switch-slider:before {
   margin-left: auto !important;
   margin-right: auto !important;
   padding: 0 !important;
-  height: 38px !important; /* コンテナの高さを38pxに完全固定 */
+  height: 38px !important; /* コンテナの高さを38pxに完全強制固定 */
+  overflow: hidden !important; /* iOSインプット膨らみによる縦伸びを強制遮断 */
   max-width: 290px !important; /* 横幅を手入力側と完全同期！ */
   align-items: center !important; /* 子要素を縦中央に揃える */
   box-sizing: border-box !important;
+}
+
+/* iOS Safari 固有の補正日時入力インナー要素リセット */
+#reverseDisplayDate,
+#reverseDisplayTime {
+  padding: 0 6px !important;
+  line-height: 36px !important;
+}
+#reverseDisplayDate::-webkit-date-and-time-value,
+#reverseDisplayTime::-webkit-date-and-time-value {
+  height: 36px !important;
+  line-height: 36px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 #correctionMode .datetime-row input[type="date"],
 #correctionMode .datetime-row input[type="time"],
