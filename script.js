@@ -331,6 +331,26 @@ function checkPass() {
   }
 }
 
+// ロック画面のアニメーション再始動用ヘルパー
+function restartLockScreenAnimation() {
+  const title = document.querySelector("#lockScreen h1.fkz");
+  const subtitle = document.querySelector("#lockScreen .subtitle");
+  const labels = document.querySelectorAll("#lockScreen label, #lockScreen input, #lockScreen button.action-btn, #lockScreen p:not(.fkz)");
+  
+  if (title) title.classList.remove("anim-title-rise");
+  if (subtitle) subtitle.classList.remove("anim-slow-fade");
+  labels.forEach(el => el.classList.remove("anim-slow-fade"));
+  
+  generateKeypad(); // 瞬きアニメーションをトリガー
+  
+  // DOMリフロー後にアニメーションを最初から実行
+  setTimeout(() => {
+    if (title) title.classList.add("anim-title-rise");
+    if (subtitle) subtitle.classList.add("anim-slow-fade");
+    labels.forEach(el => el.classList.add("anim-slow-fade"));
+  }, 10);
+}
+
 function generateKeypad() {
   const keypad = document.getElementById("keypad");
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -345,6 +365,24 @@ function generateKeypad() {
       input.value += num;
     };
     keypad.appendChild(btn);
+
+    // 星の瞬き（チカチカ明滅）アニメーションをランダムディレイ（0〜250ms）で付与
+    const randomDelay = Math.random() * 250;
+    setTimeout(() => {
+      btn.classList.add("sparkle-btn-anim");
+      
+      // 明滅している間、表示する数字を高速ランダム変化させる（60msごとに1〜9のランダム数値）
+      const changeInterval = setInterval(() => {
+        btn.innerText = Math.floor(Math.random() * 9) + 1;
+      }, 60);
+
+      // 瞬き（0.25s * 2回 = 500ms）完了後に自動的にクラスを剥がし、本来の確定数字を再セット
+      setTimeout(() => {
+        clearInterval(changeInterval);
+        btn.innerText = num;
+        btn.classList.remove("sparkle-btn-anim");
+      }, 500);
+    }, randomDelay);
   });
 }
 
@@ -365,7 +403,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  generateKeypad();
+  restartLockScreenAnimation();
 
   populateSeconds("standardSeconds");
   populateSeconds("displaySeconds");
@@ -924,6 +962,7 @@ function resetAppAndReturnToLock() {
   document.getElementById("resetConfirmContainer").style.display = "none"; 
 
   alert("全てのリセットが完了しました。初期画面に戻ります。");
+  restartLockScreenAnimation();
 }
 
 /**

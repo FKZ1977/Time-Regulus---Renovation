@@ -1310,3 +1310,57 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   right: 6px !important;
   margin: 0 !important;
 }
+
+/* ==========================================
+   プレミアム起動演出：星の瞬き ＆ 遅延タイトル浮上アニメーション
+   ========================================== */
+
+/* 1. 星のように瞬くプレミアムキーパッドアニメーション */
+@keyframes starSparkle {
+  0%, 100% {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--accent);
+    box-shadow: 0 0 6px rgba(0, 255, 224, 0.2);
+    transform: scale(1);
+  }
+  25%, 75% {
+    background-color: rgba(0, 255, 224, 0.4);
+    color: #ffffff;
+    box-shadow: 0 0 15px var(--accent);
+    transform: scale(1.08);
+  }
+  50% {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--accent);
+    box-shadow: 0 0 6px rgba(0, 255, 224, 0.2);
+    transform: scale(1);
+  }
+}
+
+.sparkle-btn-anim {
+  animation: starSparkle 0.25s ease-in-out;
+  animation-iteration-count: 2; /* 2回素早く瞬く */
+}
+
+/* 2. サブタイトルやボタンなどをゆっくり浮かび上がらせる（0.8秒かけてふわっと表示） */
+@keyframes slowFadeIn {
+  0% { opacity: 0; transform: translateY(15px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.anim-slow-fade {
+  animation: slowFadeIn 0.8s ease-out forwards;
+  opacity: 0; /* 初期状態は非表示 */
+}
+
+/* 3. メインタイトル Time Regulus を「最後に」浮上させる（0.5秒遅延して1.0秒で力強く浮上） */
+@keyframes titleRiseUp {
+  0% { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(4px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+.anim-title-rise {
+  animation: titleRiseUp 1.0s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 0.5s !important; /* テンキーの瞬きが終わる0.5秒後に浮上開始 */
+  opacity: 0; /* 初期状態は非表示 */
+}

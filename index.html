@@ -52,18 +52,18 @@
 </head>
 <body class="fade-in">
   <div id="lockScreen">
-    <h1 class="fkz rise-in-long">Time Regulus</h1>
-    <p class="subtitle">タイム　レグルス　v2.1.3</p>
-    <label for="passcode">暗証番号を入力：</label><br>
-    <input type="password" id="passcode" placeholder="例：12345" tabindex="1" readonly>
-    <button class="action-btn" onclick="checkPass()" tabindex="2">開く</button>
+    <h1 class="fkz anim-title-rise">Time Regulus</h1>
+    <p class="subtitle anim-slow-fade">タイム　レグルス　v2.1.3</p>
+    <label for="passcode" class="anim-slow-fade">暗証番号を入力：</label><br>
+    <input type="password" id="passcode" placeholder="例：12345" tabindex="1" readonly class="anim-slow-fade">
+    <button class="action-btn anim-slow-fade" onclick="checkPass()" tabindex="2">開く</button>
 
     <div id="keypad" class="keypad-grid"></div>
 
-    <p id="error"></p>
-    <p class="subtitle">- produced by H.Fukazu -</p>
+    <p id="error" class="anim-slow-fade"></p>
+    <p class="subtitle anim-slow-fade">- produced by H.Fukazu -</p>
 
-    <p class="info-link" onclick="showInformationPage()"> - Information - </p>
+    <p class="info-link anim-slow-fade" onclick="showInformationPage()"> - Information - </p>
 
   </div>
 
