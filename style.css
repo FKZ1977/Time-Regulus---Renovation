@@ -406,7 +406,7 @@ input, select {
   font-size: 14px;
   border-radius: 6px;
   border: none;
-  background-color: #1f1f2f;
+  background-color: #1f1f2f !important;
   color: var(--text-main);
   text-align: right;
 }
@@ -867,7 +867,7 @@ input:checked + .switch-slider:before {
   display: flex;
   align-items: center;
   gap: 0; /* グループ内は隙間ゼロで一体化 */
-  background-color: #1f1f2f; /* インプットと同じ背景色 */
+  background-color: #1f1f2f !important;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0 4px;
@@ -1009,7 +1009,7 @@ input:checked + .switch-slider:before {
   align-items: center;
   width: 100%;
   height: 32px !important; /* 32pxに完全固定 */
-  background-color: #1f1f2f;
+  background-color: #1f1f2f !important;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0 4px;

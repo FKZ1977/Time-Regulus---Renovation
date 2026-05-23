@@ -1680,10 +1680,22 @@ function renderResultList() {
 
         const textSpan = document.createElement("span");
         textSpan.style.display = "block";
-        textSpan.innerHTML = `
-          <span style="font-size: 13px; color: var(--text-sub); display: block;">${baseStr} →</span>
-          <span style="font-size: 14px; font-weight: bold; color: ${resultColor}; display: block; margin-top: 1px; padding-left: 8px;">${resultStr}</span>
-        `;
+        textSpan.style.flex = "1";
+        textSpan.style.marginRight = "8px";
+
+        if (entry.includeDateCorrection === undefined || entry.includeDateCorrection) {
+          textSpan.innerHTML = `
+            <span style="font-size: 13px; color: var(--text-sub); display: block;">${baseStr} →</span>
+            <span style="font-size: 14px; font-weight: bold; color: ${resultColor}; display: block; margin-top: 1px; padding-left: 8px;">${resultStr}</span>
+          `;
+        } else {
+          textSpan.innerHTML = `
+            <span style="font-size: 13px; color: var(--text-main); line-height: 1.45; display: block;">
+              ${baseLabel}が <strong style="color: ${resultColor};">${baseStr}</strong> のとき<br>
+              ${resultLabel}は <strong style="color: ${resultColor};">${resultStr}</strong> である
+            </span>
+          `;
+        }
         line.appendChild(textSpan);
         
         const deleteBtn = document.createElement("button");
