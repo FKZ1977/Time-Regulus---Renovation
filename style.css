@@ -754,19 +754,27 @@ input:checked + .switch-slider:before {
 .datetime-row .seconds-select {
   box-sizing: border-box !important;
   height: 41px !important;
-  padding: 10px 6px !important;
+  padding: 8px 6px !important; /* iOSで文字が潰れず41pxに完璧に収まるパディング */
   font-size: 16px !important;
 }
 
-/* 直接入力フレックスレイアウト（繋がりカードデザインへ一体化 ＆ スリム化） */
+/* 直接入力コンテナ（グループ間に切れ目 gap: 6px を空ける） */
 .datetime-direct-row {
   display: flex;
   align-items: center;
-  gap: 0; /* 各スロット間の隙間をゼロにして一体化 */
+  gap: 6px; /* 各スロットグループ間の切れ目（隙間） */
   width: 100%;
-  max-width: 280px; /* 入力補助ONの年月日に合わせて幅をコンパクト化 */
+  max-width: 290px; /* 入力補助ONの年月日に合わせてコンパクト化 */
   margin: 6px auto 0 auto; /* 画面中央に配置 */
-  background-color: #1f1f2f; /* 繋がり背景色 */
+  box-sizing: border-box;
+}
+
+/* 各スロットグループ（繋がりカードデザイン） */
+.direct-group {
+  display: flex;
+  align-items: center;
+  gap: 0; /* グループ内は隙間ゼロで一体化 */
+  background-color: #1f1f2f; /* インプットと同じ背景色 */
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0 4px;
@@ -775,8 +783,24 @@ input:checked + .switch-slider:before {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* 年月日グループ */
+.direct-group-date {
+  flex: 1.4;
+}
+
+/* 時分グループ */
+.direct-group-time {
+  flex: 1.1;
+}
+
+/* 秒グループ */
+.direct-group-sec {
+  flex: 0.7;
+  justify-content: center;
+}
+
 /* いずれかの入力枠がフォーカスされた際、カード全体が水色に美しく発光 */
-.datetime-direct-row:focus-within {
+.direct-group:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 6px var(--accent);
 }
@@ -785,13 +809,14 @@ input:checked + .switch-slider:before {
   text-align: center;
   padding: 10px 0; /* 繋がり感を出すため横パディングを0にする */
   font-size: 16px;
-  background-color: transparent !important; /* 背景を透明にしてコンテナと一体化 */
+  background-color: transparent !important; /* 背景を透明にして一体化 */
   color: var(--text-main);
   border: none !important;
   box-shadow: none !important;
   border-radius: 0;
   outline: none !important;
   box-sizing: border-box;
+  width: 100%;
 }
 
 .datetime-direct-row .direct-year {
@@ -806,9 +831,10 @@ input:checked + .switch-slider:before {
   color: var(--text-sub);
   font-size: 15px;
   font-weight: bold;
+  padding: 0 1px;
 }
 .datetime-direct-row .direct-space {
-  width: 8px;
+  display: none; /* グループ化に伴い不要になったスペース要素は非表示 */
 }
 .flex-wrap.input-helper-off input {
   text-align: center;

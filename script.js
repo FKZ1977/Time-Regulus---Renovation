@@ -35,11 +35,10 @@ function toggleIncludeDate(enabled) {
     if (rowStandardOn) rowStandardOn.classList.remove("omit-date-active");
   }
 
-  // 年月日要素（カレンダー等および手入力用）の個別の非表示化
+  // 年月日要素（カレンダー等および手入力用のグループ）の個別の非表示化
   const dateIds = [
     "displayDate", "standardDate",
-    "displayYear_direct", "displayMonth_direct", "displayDay_direct",
-    "standardYear_direct", "standardMonth_direct", "standardDay_direct"
+    "displayDateGroup_direct", "standardDateGroup_direct"
   ];
   
   dateIds.forEach(id => {

@@ -126,17 +126,21 @@
 
       <!-- 入力補助 OFF 時の直接入力欄 -->
       <div class="datetime-direct-row input-helper-off">
-        <input type="tel" id="displayYear_direct" placeholder="yyyy" maxlength="4" class="direct-year">
-        <span class="delimiter">/</span>
-        <input type="tel" id="displayMonth_direct" placeholder="mm" maxlength="2" class="direct-two">
-        <span class="delimiter">/</span>
-        <input type="tel" id="displayDay_direct" placeholder="dd" maxlength="2" class="direct-two">
-        <span class="direct-space"></span>
-        <input type="tel" id="displayHour_direct" placeholder="hh" maxlength="2" class="direct-two">
-        <span class="delimiter">:</span>
-        <input type="tel" id="displayMin_direct" placeholder="mm" maxlength="2" class="direct-two">
-        <span class="delimiter">:</span>
-        <input type="tel" id="displaySec_direct" placeholder="ss" maxlength="2" class="direct-two">
+        <div class="direct-group direct-group-date" id="displayDateGroup_direct">
+          <input type="tel" id="displayYear_direct" placeholder="yyyy" maxlength="4" class="direct-year">
+          <span class="delimiter">/</span>
+          <input type="tel" id="displayMonth_direct" placeholder="mm" maxlength="2" class="direct-two">
+          <span class="delimiter">/</span>
+          <input type="tel" id="displayDay_direct" placeholder="dd" maxlength="2" class="direct-two">
+        </div>
+        <div class="direct-group direct-group-time">
+          <input type="tel" id="displayHour_direct" placeholder="hh" maxlength="2" class="direct-two">
+          <span class="delimiter">:</span>
+          <input type="tel" id="displayMin_direct" placeholder="mm" maxlength="2" class="direct-two">
+        </div>
+        <div class="direct-group direct-group-sec">
+          <input type="tel" id="displaySec_direct" placeholder="ss" maxlength="2" class="direct-two">
+        </div>
       </div>
     </div>
 
@@ -159,17 +163,21 @@
 
       <!-- 入力補助 OFF 時の直接入力欄 -->
       <div class="datetime-direct-row input-helper-off">
-        <input type="tel" id="standardYear_direct" placeholder="yyyy" maxlength="4" class="direct-year">
-        <span class="delimiter">/</span>
-        <input type="tel" id="standardMonth_direct" placeholder="mm" maxlength="2" class="direct-two">
-        <span class="delimiter">/</span>
-        <input type="tel" id="standardDay_direct" placeholder="dd" maxlength="2" class="direct-two">
-        <span class="direct-space"></span>
-        <input type="tel" id="standardHour_direct" placeholder="hh" maxlength="2" class="direct-two">
-        <span class="delimiter">:</span>
-        <input type="tel" id="standardMin_direct" placeholder="mm" maxlength="2" class="direct-two">
-        <span class="delimiter">:</span>
-        <input type="tel" id="standardSec_direct" placeholder="ss" maxlength="2" class="direct-two">
+        <div class="direct-group direct-group-date" id="standardDateGroup_direct">
+          <input type="tel" id="standardYear_direct" placeholder="yyyy" maxlength="4" class="direct-year">
+          <span class="delimiter">/</span>
+          <input type="tel" id="standardMonth_direct" placeholder="mm" maxlength="2" class="direct-two">
+          <span class="delimiter">/</span>
+          <input type="tel" id="standardDay_direct" placeholder="dd" maxlength="2" class="direct-two">
+        </div>
+        <div class="direct-group direct-group-time">
+          <input type="tel" id="standardHour_direct" placeholder="hh" maxlength="2" class="direct-two">
+          <span class="delimiter">:</span>
+          <input type="tel" id="standardMin_direct" placeholder="mm" maxlength="2" class="direct-two">
+        </div>
+        <div class="direct-group direct-group-sec">
+          <input type="tel" id="standardSec_direct" placeholder="ss" maxlength="2" class="direct-two">
+        </div>
       </div>
     </div>
 
@@ -264,17 +272,21 @@
 
       <!-- 入力補助 OFF 時の直接入力欄 -->
       <div class="datetime-direct-row input-helper-off">
-        <input type="tel" id="reverseDisplayYear_direct" placeholder="yyyy" maxlength="4" class="direct-year" tabindex="18">
-        <span class="delimiter">/</span>
-        <input type="tel" id="reverseDisplayMonth_direct" placeholder="mm" maxlength="2" class="direct-two" tabindex="19">
-        <span class="delimiter">/</span>
-        <input type="tel" id="reverseDisplayDay_direct" placeholder="dd" maxlength="2" class="direct-two" tabindex="20">
-        <span class="direct-space"></span>
-        <input type="tel" id="reverseDisplayHour_direct" placeholder="hh" maxlength="2" class="direct-two" tabindex="21">
-        <span class="delimiter">:</span>
-        <input type="tel" id="reverseDisplayMin_direct" placeholder="mm" maxlength="2" class="direct-two" tabindex="22">
-        <span class="delimiter">:</span>
-        <input type="tel" id="reverseDisplaySec_direct" placeholder="ss" maxlength="2" class="direct-two" tabindex="23">
+        <div class="direct-group direct-group-date" id="reverseDisplayDateGroup_direct">
+          <input type="tel" id="reverseDisplayYear_direct" placeholder="yyyy" maxlength="4" class="direct-year" tabindex="18">
+          <span class="delimiter">/</span>
+          <input type="tel" id="reverseDisplayMonth_direct" placeholder="mm" maxlength="2" class="direct-two" tabindex="19">
+          <span class="delimiter">/</span>
+          <input type="tel" id="reverseDisplayDay_direct" placeholder="dd" maxlength="2" class="direct-two" tabindex="20">
+        </div>
+        <div class="direct-group direct-group-time">
+          <input type="tel" id="reverseDisplayHour_direct" placeholder="hh" maxlength="2" class="direct-two" tabindex="21">
+          <span class="delimiter">:</span>
+          <input type="tel" id="reverseDisplayMin_direct" placeholder="mm" maxlength="2" class="direct-two" tabindex="22">
+        </div>
+        <div class="direct-group direct-group-sec">
+          <input type="tel" id="reverseDisplaySec_direct" placeholder="ss" maxlength="2" class="direct-two" tabindex="23">
+        </div>
       </div>
     </div>
 
