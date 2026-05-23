@@ -1216,24 +1216,19 @@ input:checked + .switch-slider:before {
 }
 
 /* ==========================================
-   画面（モード）ごとの入力枠背景色・統一設定（ON/OFF完全調和）
+   究極の解決：すべての入力枠の背景色を、初期の美しい「#1f1f2f」に完全統一・復元！
    ========================================== */
 
-/* 1. 誤差の計算モード（テーマ色：暗い紺色 #121622 に完全統一） */
-#errorMode .datetime-row input[type="date"],
-#errorMode .datetime-row input[type="time"],
-#errorMode .datetime-row .seconds-select,
-#errorMode .direct-group {
-  background-color: #121622 !important;
-}
-
-/* 直接入力（手入力）の中のインプットは枠全体と一体化させるため【背景は完全に透明】に維持！ */
-#errorMode .datetime-direct-row input,
-#errorMode .direct-group input {
-  background-color: transparent !important;
-}
-
-/* 2. 補正時刻の計算モード（テーマ色：暗い深緑色 #0b2c1d に完全統一） */
+/* 全画面、ON/OFFトグル、すべての入力・選択要素の背景色を一律で #1f1f2f !important に強制統一！ */
+input,
+select,
+.datetime-row input[type="date"],
+.datetime-row input[type="time"],
+.datetime-row .seconds-select,
+.direct-group,
+.direct-group-error-time,
+.unit-input input,
+.unit-input select,
 #correctionMode .datetime-row input[type="date"],
 #correctionMode .datetime-row input[type="time"],
 #correctionMode .datetime-row .seconds-select,
@@ -1241,13 +1236,13 @@ input:checked + .switch-slider:before {
 #correctionMode .direct-group-error-time,
 #correctionMode .unit-input input,
 #correctionMode .unit-input select {
-  background-color: #0b2c1d !important;
+  background-color: #1f1f2f !important;
 }
 
-/* 直接入力・補正誤差手入力の中のインプットは枠全体と一体化させるため【背景は完全に透明】に維持！ */
-#correctionMode .datetime-direct-row input,
-#correctionMode .direct-group input,
-#correctionMode .direct-group-error-time input {
+/* 直接入力（手入力）の枠内にある input 自体は、枠全体（.direct-group）と一体化させるために【完全に背景透明】のまま維持！ */
+.datetime-direct-row input,
+.direct-group input,
+.direct-group-error-time input {
   background-color: transparent !important;
 }
 
