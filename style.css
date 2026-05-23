@@ -569,9 +569,11 @@ input, select {
 /* スマホ向けの新しい入力レイアウト（年月日・時分・秒の3列横並び） */
 .datetime-row {
   display: flex;
+  align-items: center;
   gap: 6px;
   width: 100%;
   margin-top: 6px;
+  height: 38px !important; /* コンテナの高さを38pxに完全固定 */
 }
 
 .datetime-row input[type="date"] {
@@ -778,14 +780,15 @@ input:checked + .switch-slider:before {
 .datetime-row input[type="time"],
 .datetime-row .seconds-select {
   box-sizing: border-box !important;
-  height: 36px !important; /* 41px から 36px へ低く調整！ */
-  padding: 6px 6px !important; /* iOSで文字が潰れず36pxに完璧に収まるパディング */
+  height: 38px !important; /* 38px に完全統一 */
+  padding: 0 6px !important; /* 縦パディングを完全に排除して親要素に揃える */
   font-size: 16px !important;
   background-color: #1f1f2f !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 8px !important;
   color: var(--text-main) !important;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  line-height: 36px !important; /* テキストの縦中央揃え */
 }
 .datetime-row input[type="date"]:focus,
 .datetime-row input[type="time"]:focus,
@@ -804,6 +807,7 @@ input:checked + .switch-slider:before {
   max-width: 290px; /* 入力補助ONの年月日に合わせてコンパクト化 */
   margin: 6px auto 0 auto; /* 画面中央に配置 */
   box-sizing: border-box;
+  height: 38px !important; /* コンテナの高さを38pxに完全固定 */
 }
 
 /* 各スロットグループ（繋がりカードデザイン） */
@@ -818,7 +822,7 @@ input:checked + .switch-slider:before {
   overflow: hidden;
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  height: 36px !important; /* グループの高さをON側の36pxに完全同期！ */
+  height: 38px !important; /* グループの高さをON側の38pxに完全同期！ */
 }
 
 /* 年月日グループ */
@@ -1005,14 +1009,15 @@ input:checked + .switch-slider:before {
 #correctionMode .datetime-row input[type="time"],
 #correctionMode .datetime-row .seconds-select {
   box-sizing: border-box !important;
-  height: 36px !important; /* 36pxに完全同期 */
-  padding: 6px 6px !important;
+  height: 38px !important; /* 38pxに完全同期 */
+  padding: 0 6px !important; /* 縦パディングを完全に排除して親要素に揃える */
   font-size: 16px !important;
   background-color: #1f1f2f !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 8px !important;
   color: var(--text-main) !important;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  line-height: 36px !important; /* テキストの縦中央揃え */
 }
 #correctionMode .datetime-row input[type="date"]:focus,
 #correctionMode .datetime-row input[type="time"]:focus,
