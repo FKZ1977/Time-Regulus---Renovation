@@ -117,7 +117,7 @@
       
       <!-- 入力補助 ON 時の入力欄 -->
       <div class="datetime-row input-helper-on" style="display: none;">
-        <input type="date" id="displayDate" placeholder="yyyy/mm/dd">
+        <input type="date" id="displayDate" placeholder="yyyy/mm/dd" style="display: none;">
         <input type="time" id="displayTime" placeholder="hh:mm">
         <select id="displaySeconds" class="seconds-select">
           <option value="">ss</option>
@@ -126,7 +126,7 @@
 
       <!-- 入力補助 OFF 時の直接入力欄 -->
       <div class="datetime-direct-row input-helper-off">
-        <div class="direct-group direct-group-date" id="displayDateGroup_direct">
+        <div class="direct-group direct-group-date" id="displayDateGroup_direct" style="display: none;">
           <input type="tel" id="displayYear_direct" placeholder="yyyy" maxlength="4" class="direct-year">
           <span class="delimiter">/</span>
           <input type="tel" id="displayMonth_direct" placeholder="mm" maxlength="2" class="direct-two">
@@ -154,7 +154,7 @@
       
       <!-- 入力補助 ON 時の入力欄 -->
       <div class="datetime-row input-helper-on" style="display: none;">
-        <input type="date" id="standardDate" placeholder="yyyy/mm/dd">
+        <input type="date" id="standardDate" placeholder="yyyy/mm/dd" style="display: none;">
         <input type="time" id="standardTime" placeholder="hh:mm">
         <select id="standardSeconds" class="seconds-select">
           <option value="">ss</option>
@@ -163,7 +163,7 @@
 
       <!-- 入力補助 OFF 時の直接入力欄 -->
       <div class="datetime-direct-row input-helper-off">
-        <div class="direct-group direct-group-date" id="standardDateGroup_direct">
+        <div class="direct-group direct-group-date" id="standardDateGroup_direct" style="display: none;">
           <input type="tel" id="standardYear_direct" placeholder="yyyy" maxlength="4" class="direct-year">
           <span class="delimiter">/</span>
           <input type="tel" id="standardMonth_direct" placeholder="mm" maxlength="2" class="direct-two">
@@ -254,8 +254,15 @@
       </div>
     </div>
 
-    <div style="margin: 12px 0;">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 12px 0;">
       <button class="action-btn toggle-btn active-toggle" id="reverseModeToggleBtn" onclick="toggleReverseMode()">⇆切替</button>
+      <div class="helper-toggle-wrapper" style="margin: 0 !important;">
+        <span class="helper-toggle-label" style="font-size: 14px !important;">年月日も計算</span>
+        <label class="switch-container">
+          <input type="checkbox" id="includeDateToggleCorrection" onchange="toggleIncludeDateCorrection(this.checked)">
+          <span class="switch-slider"></span>
+        </label>
+      </div>
     </div>
 
     <div id="reverseTimeBlock" class="input-group">
@@ -263,7 +270,7 @@
       
       <!-- 入力補助 ON 時の入力欄 -->
       <div class="datetime-row input-helper-on" style="display: none;">
-        <input type="date" id="reverseDisplayDate" placeholder="yyyy/mm/dd" tabindex="18">
+        <input type="date" id="reverseDisplayDate" placeholder="yyyy/mm/dd" tabindex="18" style="display: none;">
         <input type="time" id="reverseDisplayTime" placeholder="hh:mm" step="60" tabindex="19">
         <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
           <option value="">ss</option>
@@ -272,7 +279,7 @@
 
       <!-- 入力補助 OFF 時の直接入力欄 -->
       <div class="datetime-direct-row input-helper-off">
-        <div class="direct-group direct-group-date" id="reverseDisplayDateGroup_direct">
+        <div class="direct-group direct-group-date" id="reverseDisplayDateGroup_direct" style="display: none;">
           <input type="tel" id="reverseDisplayYear_direct" placeholder="yyyy" maxlength="4" class="direct-year" tabindex="18">
           <span class="delimiter">/</span>
           <input type="tel" id="reverseDisplayMonth_direct" placeholder="mm" maxlength="2" class="direct-two" tabindex="19">

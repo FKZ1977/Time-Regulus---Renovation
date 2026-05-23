@@ -228,11 +228,14 @@ input[type="date"]::-webkit-date-and-time-value,
 input[type="time"]::-webkit-date-and-time-value {
   margin: 0 !important;
   padding: 0 !important;
-  height: auto !important;
-  min-height: auto !important;
-  line-height: normal !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  line-height: 1 !important;
   display: block !important;
   text-align: center !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
 }
 input[type="date"]::-webkit-datetime-edit,
 input[type="time"]::-webkit-datetime-edit {
@@ -252,6 +255,7 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
   justify-content: center !important;
   align-items: center !important;
   width: auto !important;
+  margin: 0 auto !important;
 }
 /* カレンダー・時計マークを表示しつつ、サイズと余白を最小化して38px内に完璧に収める */
 input[type="date"]::-webkit-calendar-picker-indicator,
@@ -269,6 +273,15 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 input[type="date"]::-webkit-calendar-picker-indicator:hover,
 input[type="time"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1 !important;
+}
+
+/* セレクトボックスの未選択プレースホルダー "ss" を確実に灰色（var(--text-sub)）にする定義 */
+select.placeholder-active {
+  color: var(--text-sub) !important;
+  opacity: 0.6 !important;
+}
+select.placeholder-active option {
+  color: var(--text-main) !important; /* 選択肢自体は通常の白っぽい色にする */
 }
 
 input, select {
@@ -589,13 +602,15 @@ input, select {
     text-decoration: underline; /* ホバー時に下線を表示 */
 }
 
-/* スマホ向けの新しい入力レイアウト（年月日・時分・秒の3列横並び） */
+/* スマホ向けの新しい入力レイアウト（年月日・時分・秒 of 3列横並び） */
 .datetime-row {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
-  margin-top: 6px;
+  max-width: 290px; /* 横幅を290pxに制限して手入力側と揃える！ */
+  margin: 6px auto 0 auto; /* 画面中央に配置 */
+  box-sizing: border-box;
   height: 38px !important; /* コンテナの高さを38pxに完全固定 */
 }
 
@@ -626,6 +641,20 @@ input, select {
 input::placeholder {
   color: var(--text-sub) !important;
   opacity: 0.6;
+}
+
+/* 日付・時刻入力欄のプレースホルダー色の制御 */
+input[type="date"],
+input[type="time"] {
+  color: var(--text-sub) !important;
+  opacity: 0.6 !important;
+}
+input[type="date"].has-value,
+input[type="date"]:focus,
+input[type="time"].has-value,
+input[type="time"]:focus {
+  color: var(--text-main) !important;
+  opacity: 1 !important;
 }
 
 /* モバイルブラウザでの未入力/プレースホルダー時のカラー設定 */
@@ -894,7 +923,8 @@ input:checked + .switch-slider:before {
   min-width: 0;
 }
 .datetime-direct-row .delimiter {
-  color: var(--text-sub);
+  color: var(--text-sub) !important;
+  opacity: 0.6 !important; /* プレースホルダーと同じ不透明度にして一体化 */
   font-size: 15px;
   font-weight: bold;
   padding: 0 1px;
@@ -1032,6 +1062,7 @@ input:checked + .switch-slider:before {
   margin-right: auto !important;
   padding: 0 !important;
   height: 38px !important; /* コンテナの高さを38pxに完全固定 */
+  max-width: 290px !important; /* 横幅を手入力側と完全同期！ */
   align-items: center !important; /* 子要素を縦中央に揃える */
   box-sizing: border-box !important;
 }
@@ -1089,10 +1120,12 @@ input:checked + .switch-slider:before {
   font-size: 14px !important;
 }
 #correctionMode #reverseModeToggleBtn {
-  margin-top: 2px !important;
-  margin-bottom: 2px !important;
-  padding: 6px 12px !important;
-  font-size: 13px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 8px 16px !important;
+  font-size: 15px !important;
+  height: 42px !important; /* 目立つように高さを42pxにサイズアップ */
+  box-sizing: border-box !important;
 }
 
 /* ==========================================
@@ -1170,4 +1203,11 @@ input:checked + .switch-slider:before {
   padding: 2px 6px !important;
   font-size: 11px !important;
   border-radius: 3px !important;
+}
+
+/* 補正誤差のhh, mm個別インプットのフォーカス時発光を排除し、外側のグループ全体だけが光るようにする設定 */
+#correctionMode .direct-group-error-time input:focus {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
 }

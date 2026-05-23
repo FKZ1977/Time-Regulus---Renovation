@@ -9,7 +9,30 @@ const QR_CODE_URL_BASE = "https://fkz1977.github.io/Time-Regulus/";
 
 let inputHelperEnabled = false;
 let includeDateEnabled = false;
+let includeDateEnabledCorrection = false; // 補正画面用の年月日トグル状態
 let autoJumpTimer = null;
+
+// セレクトボックス未選択時の灰色表示同期用ヘルパー
+function updateSelectPlaceholderColor(selectId) {
+  const selectEl = document.getElementById(selectId);
+  if (!selectEl) return;
+  if (selectEl.value === "") {
+    selectEl.classList.add("placeholder-active");
+  } else {
+    selectEl.classList.remove("placeholder-active");
+  }
+}
+
+// 日付・時刻入力欄のプレースホルダー色同期用ヘルパー
+function updateInputPlaceholderColor(inputId) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  if (el.value !== "") {
+    el.classList.add("has-value");
+  } else {
+    el.classList.remove("has-value");
+  }
+}
 
 function toggleIncludeDate(enabled) {
   includeDateEnabled = enabled;
@@ -48,10 +71,10 @@ function toggleIncludeDate(enabled) {
     }
   });
 
-  // デリミタとスペースの非表示化
+  // デリミタとスペースの非表示化（年月日のデリミタだけに限定！）
   const elementsToHide = document.querySelectorAll(
-    "#errorModeDisplayInputGroup .delimiter, #errorModeDisplayInputGroup .direct-space, " +
-    "#errorModeStandardInputGroup .delimiter, #errorModeStandardInputGroup .direct-space"
+    "#errorModeDisplayInputGroup .direct-group-date .delimiter, #errorModeDisplayInputGroup .direct-space, " +
+    "#errorModeStandardInputGroup .direct-group-date .delimiter, #errorModeStandardInputGroup .direct-space"
   );
   elementsToHide.forEach(el => {
     el.style.display = isOmit ? "none" : "";
@@ -59,6 +82,48 @@ function toggleIncludeDate(enabled) {
 
   // 再計算
   calculateError();
+}
+
+function toggleIncludeDateCorrection(enabled) {
+  includeDateEnabledCorrection = enabled;
+  const includeToggle = document.getElementById("includeDateToggleCorrection");
+  if (includeToggle) includeToggle.checked = enabled;
+
+  const rowReverseDirect = document.querySelector("#reverseTimeBlock .datetime-direct-row");
+  const rowReverseOn = document.querySelector("#reverseTimeBlock .datetime-row");
+
+  const isOmit = !enabled;
+
+  if (isOmit) {
+    if (rowReverseDirect) rowReverseDirect.classList.add("omit-date-active");
+    if (rowReverseOn) rowReverseOn.classList.add("omit-date-active");
+  } else {
+    if (rowReverseDirect) rowReverseDirect.classList.remove("omit-date-active");
+    if (rowReverseOn) rowReverseOn.classList.remove("omit-date-active");
+  }
+
+  // 年月日要素（カレンダー等および手入力用のグループ）の個別の非表示化
+  const dateIds = [
+    "reverseDisplayDate", "reverseDisplayDateGroup_direct"
+  ];
+  
+  dateIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.display = isOmit ? "none" : "";
+    }
+  });
+
+  // デリミタの非表示化（年月日のデリミタだけに限定！）
+  const elementsToHide = document.querySelectorAll(
+    "#reverseTimeBlock .direct-group-date .delimiter"
+  );
+  elementsToHide.forEach(el => {
+    el.style.display = isOmit ? "none" : "";
+  });
+
+  // 再計算
+  handleReverseCalculation();
 }
 
 // 補助パース/フォーマット関数
@@ -296,6 +361,28 @@ document.addEventListener("DOMContentLoaded", function () {
   populateSeconds("displaySeconds");
   populateSeconds("reverseDisplaySeconds");
   populateErrorDropdowns();
+
+  // セレクトボックスの未選択プレースホルダー色初期同期 ＆ 監視設定
+  const selectIds = ["standardSeconds", "displaySeconds", "errorSeconds", "reverseDisplaySeconds"];
+  selectIds.forEach(id => {
+    updateSelectPlaceholderColor(id);
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", () => updateSelectPlaceholderColor(id));
+      el.addEventListener("input", () => updateSelectPlaceholderColor(id));
+    }
+  });
+
+  // 日付・時刻入力欄のプレースホルダー色初期同期 ＆ 監視設定
+  const dateTimeInputIds = ["displayDate", "displayTime", "standardDate", "standardTime", "errorTime", "reverseDisplayDate", "reverseDisplayTime"];
+  dateTimeInputIds.forEach(id => {
+    updateInputPlaceholderColor(id);
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", () => updateInputPlaceholderColor(id));
+      el.addEventListener("input", () => updateInputPlaceholderColor(id));
+    }
+  });
 
   // 誤差計算の自動化のためのリスナー設定
   const errorInputs = [
@@ -553,7 +640,18 @@ document.addEventListener("DOMContentLoaded", function () {
   setupDirectInputField({ id: "errorDays_direct", nextId: "errorHours_direct" });
   setupDirectInputField({ id: "errorHours_direct", nextId: "errorMinutes_direct", maxVal: 23 });
   setupDirectInputField({ id: "errorMinutes_direct", nextId: "errorSeconds_direct", maxVal: 59 });
-  setupDirectInputField({ id: "errorSeconds_direct", nextId: "reverseDisplayYear_direct", maxVal: 59 });
+  setupDirectInputField({
+    id: "errorSeconds_direct",
+    maxVal: 59,
+    customEnterHandler: function() {
+      const nextId = !includeDateEnabledCorrection ? "reverseDisplayHour_direct" : "reverseDisplayYear_direct";
+      const nextEl = document.getElementById(nextId);
+      if (nextEl) {
+        nextEl.focus();
+        if (nextEl.select) nextEl.select();
+      }
+    }
+  });
 
   // --- 補正対象（表示/対象時刻） ---
   setupDirectInputField({ id: "reverseDisplayYear_direct", nextId: "reverseDisplayMonth_direct" });
@@ -562,6 +660,10 @@ document.addEventListener("DOMContentLoaded", function () {
   setupDirectInputField({ id: "reverseDisplayHour_direct", nextId: "reverseDisplayMin_direct", maxVal: 23 });
   setupDirectInputField({ id: "reverseDisplayMin_direct", nextId: "reverseDisplaySec_direct", maxVal: 59 });
   setupDirectInputField({ id: "reverseDisplaySec_direct", maxVal: 59 });
+
+  // 起動初期状態のトグル同期を明示的に呼び出してUIと同期
+  toggleIncludeDate(false);
+  toggleIncludeDateCorrection(false);
 });
 
 /**
@@ -772,6 +874,7 @@ function resetApp(onlyInputs = false) {
   
   toggleReverseMode(false);
   toggleIncludeDate(false);
+  toggleIncludeDateCorrection(false);
 
   if (onlyInputs) { 
      resultHistory = [];
@@ -1237,7 +1340,7 @@ function handleReverseCalculation() {
   }
 
   const hasError = (days > 0) || (errorTimeVal !== "") || (seconds > 0);
-  const hasTime = timeDateVal && timeTimeVal && timeSec !== "" && timeSec !== "ss" && timeSec !== "--";
+  const hasTime = (includeDateEnabledCorrection ? timeDateVal : true) && timeTimeVal && timeSec !== "" && timeSec !== "ss" && timeSec !== "--";
 
   document.getElementById("addToListButton").style.display = hasTime && hasError ? "inline-block" : "none";
 
@@ -1249,11 +1352,11 @@ function handleReverseCalculation() {
   // 時間入力項目が一部不足している場合に親切なエラーを表示
   if (!hasTime && hasError) {
     const missing = [];
-    if (!timeDateVal) missing.push("年月日");
+    if (includeDateEnabledCorrection && !timeDateVal) missing.push("年月日");
     if (!timeTimeVal) missing.push("時分");
     if (timeSec === "" || timeSec === "ss" || timeSec === "--") missing.push("秒");
     
-    if (missing.length === 3) {
+    if (missing.length === (includeDateEnabledCorrection ? 3 : 2)) {
       resultElement.innerText = reverseMode === "toDisplay"
         ? "探している時刻を入力してください"
         : "表示時刻を入力してください";
@@ -1268,7 +1371,15 @@ function handleReverseCalculation() {
     return;
   }
 
-  const baseTimeStr = `${timeDateVal}T${timeTimeVal}:${String(timeSec).padStart(2, '0')}`;
+  // --- システム当日の日付を取得（年月日未入力時の補完用） ---
+  const today = new Date();
+  const todayY = today.getFullYear();
+  const todayM = String(today.getMonth() + 1).padStart(2, '0');
+  const todayD = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${todayY}-${todayM}-${todayD}`;
+  const finalTimeDateVal = timeDateVal || todayStr;
+
+  const baseTimeStr = `${finalTimeDateVal}T${timeTimeVal}:${String(timeSec).padStart(2, '0')}`;
   const baseTime = new Date(baseTimeStr);
 
   const totalMs = ((days * 86400) + (hours * 3600) + (minutes * 60) + seconds) * 1000;
