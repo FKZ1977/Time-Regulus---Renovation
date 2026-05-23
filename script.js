@@ -1396,8 +1396,34 @@ function handleReverseCalculation() {
 
   gtag('event', 'calculate_correction'); 
 
-  const baseStr = formatDate(baseTime, true);
-  const resultStr = formatDate(resultTime, true);
+  let baseStr, resultStr;
+  if (includeDateEnabledCorrection) {
+    baseStr = formatDate(baseTime, true);
+    resultStr = formatDate(resultTime, true);
+  } else {
+    const formatTimeOnly = (date) => {
+      const h = String(date.getHours()).padStart(2, '0');
+      const min = String(date.getMinutes()).padStart(2, '0');
+      const s = String(date.getSeconds()).padStart(2, '0');
+      return `${h}:${min}:${s}`;
+    };
+
+    baseStr = formatTimeOnly(baseTime);
+
+    const baseDateOnly = new Date(baseTime.getFullYear(), baseTime.getMonth(), baseTime.getDate());
+    const resultDateOnly = new Date(resultTime.getFullYear(), resultTime.getMonth(), resultTime.getDate());
+    const diffTime = resultDateOnly.getTime() - baseDateOnly.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    const timeOnlyStr = formatTimeOnly(resultTime);
+    if (diffDays === 0) {
+      resultStr = timeOnlyStr;
+    } else if (diffDays > 0) {
+      resultStr = `${diffDays}日後の ${timeOnlyStr}`;
+    } else {
+      resultStr = `${Math.abs(diffDays)}日前の ${timeOnlyStr}`;
+    }
+  }
   
   const isToStandard = reverseMode === "toStandard";
   const resultBgColor = isToStandard ? "var(--result-standard-bg)" : "var(--result-display-bg)";
@@ -1433,7 +1459,8 @@ function handleReverseCalculation() {
     error: { days, hours, minutes, seconds, direction },
     mode: reverseMode,
     base: baseTime,
-    result: resultTime
+    result: resultTime,
+    includeDateCorrection: includeDateEnabledCorrection
   };
   window.latestResult = result;
 }
@@ -1622,8 +1649,34 @@ function renderResultList() {
         line.style.justifyContent = "space-between";
         line.style.alignItems = "center";
         
-        const baseStr = formatDate(entry.base, true);
-        const resultStr = formatDate(entry.result, true);
+        let baseStr, resultStr;
+        if (entry.includeDateCorrection === undefined || entry.includeDateCorrection) {
+          baseStr = formatDate(entry.base, true);
+          resultStr = formatDate(entry.result, true);
+        } else {
+          const formatTimeOnly = (date) => {
+            const h = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            const s = String(date.getSeconds()).padStart(2, '0');
+            return `${h}:${min}:${s}`;
+          };
+
+          baseStr = formatTimeOnly(entry.base);
+
+          const baseDateOnly = new Date(entry.base.getFullYear(), entry.base.getMonth(), entry.base.getDate());
+          const resultDateOnly = new Date(entry.result.getFullYear(), entry.result.getMonth(), entry.result.getDate());
+          const diffTime = resultDateOnly.getTime() - baseDateOnly.getTime();
+          const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+          const timeOnlyStr = formatTimeOnly(entry.result);
+          if (diffDays === 0) {
+            resultStr = timeOnlyStr;
+          } else if (diffDays > 0) {
+            resultStr = `${diffDays}日後の ${timeOnlyStr}`;
+          } else {
+            resultStr = `${Math.abs(diffDays)}日前の ${timeOnlyStr}`;
+          }
+        }
 
         const textSpan = document.createElement("span");
         textSpan.style.display = "block";
