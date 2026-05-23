@@ -1214,3 +1214,22 @@ input:checked + .switch-slider:before {
   box-shadow: none !important;
   outline: none !important;
 }
+
+/* ==========================================
+   画面（モード）ごとの入力枠背景色・統一設定（ON/OFF完全調和）
+   ========================================== */
+
+/* 誤差の計算モード（親カードのネイビーに調和する暗い紺色に完全統一） */
+#errorMode input,
+#errorMode select,
+#errorMode .direct-group {
+  background-color: #121622 !important;
+}
+
+/* 補正時刻の計算モード（親カードの深緑に調和する暗い深緑色に完全統一） */
+#correctionMode input,
+#correctionMode select,
+#correctionMode .direct-group,
+#correctionMode .direct-group-error-time {
+  background-color: #0b2c1d !important;
+}

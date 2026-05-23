@@ -1516,7 +1516,8 @@ function addResultToList() {
     id: Date.now(),
     base: r.base, 
     result: r.result, 
-    mode: r.mode 
+    mode: r.mode,
+    includeDateCorrection: r.includeDateCorrection
   };
   group.entries.push(newEntry);
   
