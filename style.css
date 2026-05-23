@@ -1405,7 +1405,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ==========================================================================
-   時：分：秒 三連極上カスタム無限ドラムロールピッカー（Time Regulus TimePicker）スタイル
+   秒専用 極上カスタム無限ドラムロールピッカー（Time Regulus Picker）スタイル
    ========================================================================== */
 
 /* 1. オーバーレイ（背景フェード） */
@@ -1497,34 +1497,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px; /* 各ドラム間の隙間 */
   position: relative;
   box-sizing: border-box;
-  padding: 0 16px;
 }
 
-/* 各ドラム（時・分・秒）のコンテナ */
+/* ドラム全体を囲むコンテナ */
 .picker-wheel-container {
   position: relative;
-  width: 72px; /* 3連ドラムが綺麗に横並びする完璧な横幅 */
-  height: 180px !important; /* 36px * 5個表示のため 180px に完全固定 */
+  width: 140px;
+  height: 180px;
   overflow: hidden;
   box-sizing: border-box;
-}
-
-/* コロンセパレータ */
-.picker-separator {
-  font-size: 20px;
-  font-weight: bold;
-  color: var(--accent);
-  opacity: 0.6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  padding: 0 2px;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 /* 無限スクロールを行うホイール要素（スクロールバー非表示） */
@@ -1544,12 +1527,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: none; /* Chrome/Safariスクロールバー非表示 */
 }
 
-/* 5. 三連ドラム全体を貫く美しい選択枠 */
+/* 5. 選択枠インディケータ */
 .picker-selection-indicator {
   position: absolute;
   top: 50%;
-  left: 20px;
-  right: 20px;
+  left: 0;
+  width: 100%;
   height: 36px;
   transform: translateY(-50%);
   border-top: 1px solid rgba(0, 255, 224, 0.25); /* 選択行のアウトライン */
@@ -1572,7 +1555,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: color 0.15s ease, font-size 0.15s ease, transform 0.15s ease;
   user-select: none;
   -webkit-user-select: none;
-  cursor: pointer; /* タップ可能であることを示す */
   box-sizing: border-box;
 }
 
