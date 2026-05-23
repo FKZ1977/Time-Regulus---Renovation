@@ -674,3 +674,16 @@ select:has(option[value=""]:checked) {
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* 結果一覧ページのレイアウトを固定（中身が空でも幅が縮まないようにする） */
+#resultListPage {
+  width: 94%;
+  max-width: 393px;
+  margin-top: 20px;
+  text-align: left; /* 基本的な中身を左寄りに */
+}
+
+/* 結果一覧ページのメインタイトルは中央寄せを維持 */
+#resultListPage h1.fkz {
+  text-align: center;
+}
