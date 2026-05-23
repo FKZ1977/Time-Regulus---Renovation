@@ -1259,26 +1259,25 @@ input[type="time"].has-value,
 input[type="time"]:focus,
 select:not(.placeholder-active) {
   color: #ffffff !important;
-  opacity: 1 !important;
+  opacity: 1 !important; /* 不透明度は常に100%（透過なし！） */
 }
 
-/* 直接入力（手入力）の placeholder は美しい灰色に */
+/* 直接入力（手入力）の placeholder は美しい灰色に（透過は使わず色のみで表現） */
 input::placeholder {
-  color: var(--text-sub) !important;
-  opacity: 0.6 !important;
+  color: #777788 !important; /* 透過を使わない美しい薄灰色 */
 }
 
 /* 入力補助ON（カレンダー・時計）の日付・時刻入力欄のデフォルト（未入力ガイド表示）は灰色に */
 input[type="date"],
 input[type="time"] {
-  color: var(--text-sub) !important;
-  opacity: 0.6 !important;
+  color: #777788 !important; /* 透過を使わない美しい薄灰色。背景は絶対に透けさせない！ */
+  opacity: 1 !important; /* 不透明度は常に100%を維持して背景色を透けさせない！ */
 }
 
 /* セレクトボックス（秒）の未選択プレースホルダー（ss）は灰色に */
 select.placeholder-active {
-  color: var(--text-sub) !important;
-  opacity: 0.6 !important;
+  color: #777788 !important; /* 透過を使わない美しい薄灰色 */
+  opacity: 1 !important;
 }
 
 /* ==========================================
