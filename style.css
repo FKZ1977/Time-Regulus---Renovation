@@ -1027,8 +1027,13 @@ input:checked + .switch-slider:before {
 #correctionMode .datetime-direct-row,
 #correctionMode .datetime-row {
   margin-top: 4px !important;
+  margin-bottom: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 0 !important;
   height: 38px !important; /* コンテナの高さを38pxに完全固定 */
   align-items: center !important; /* 子要素を縦中央に揃える */
+  box-sizing: border-box !important;
 }
 #correctionMode .datetime-row input[type="date"],
 #correctionMode .datetime-row input[type="time"],
@@ -1036,6 +1041,7 @@ input:checked + .switch-slider:before {
   box-sizing: border-box !important;
   height: 38px !important; /* 38pxに完全同期 */
   padding: 0 6px !important; /* 縦パディングを完全に排除して親要素に揃える */
+  margin: 0 !important; /* 余計なマージンを完全排除 */
   font-size: 16px !important;
   background-color: #1f1f2f !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -1053,8 +1059,14 @@ input:checked + .switch-slider:before {
 }
 #correctionMode .datetime-direct-row input {
   padding: 0 !important;
+  margin: 0 !important; /* 余計なマージンを完全排除 */
   height: 100% !important;
   font-size: 16px !important;
+}
+#correctionMode .direct-group {
+  margin: 0 !important; /* 余計なマージンを完全排除 */
+  height: 38px !important; /* グループ高さを38pxに強制固定 */
+  box-sizing: border-box !important;
 }
 #correctionMode #reverseResult {
   margin: 6px 0 !important;
