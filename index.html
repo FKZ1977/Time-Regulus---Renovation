@@ -160,11 +160,15 @@
     </div>
 
     <div class="input-group input-group-direction">
-      <label for="errorDirection">表示時刻は標準時刻より：</label>
-      <select id="errorDirection" tabindex="17">
-        <option value="late" class="error-late">進んでいる</option>
-        <option value="early" class="error-early">遅れている</option>
+      <label>表示時刻は標準時刻より：</label>
+      <select id="errorDirection" style="display: none;">
+        <option value="late">進んでいる</option>
+        <option value="early">遅れている</option>
       </select>
+      <div class="segmented-control" id="errorDirectionToggleContainer">
+        <button type="button" class="segment-btn active-late" id="btnLate" onclick="setDirection('late')" tabindex="17">進んでいる</button>
+        <button type="button" class="segment-btn" id="btnEarly" onclick="setDirection('early')">遅れている</button>
+      </div>
     </div>
 
     <div style="margin: 12px 0;">

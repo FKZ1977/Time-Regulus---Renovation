@@ -228,7 +228,7 @@ function resetApp(onlyInputs = false) {
   document.getElementById("errorDays").value = "";
   document.getElementById("errorTime").value = "";
   document.getElementById("errorSeconds").value = "";
-  document.getElementById("errorDirection").value = "late";
+  setDirection("late");
   document.getElementById("reverseDisplayDate").value = "";
   document.getElementById("reverseDisplayTime").value = "";
   document.getElementById("reverseDisplaySeconds").value = "";
@@ -537,6 +537,28 @@ function calculateError() {
   document.getElementById("toReverseButton").style.display = "block";
 }
 
+function setDirection(value) {
+  const select = document.getElementById("errorDirection");
+  if (!select) return;
+  
+  select.value = value;
+  
+  const btnLate = document.getElementById("btnLate");
+  const btnEarly = document.getElementById("btnEarly");
+  
+  if (value === "late") {
+    btnLate.classList.add("active-late");
+    btnEarly.classList.remove("active-early");
+  } else {
+    btnLate.classList.remove("active-late");
+    btnEarly.classList.add("active-early");
+  }
+  
+  // 変更イベントを発火させて再計算をトリガー
+  const event = new Event('change', { bubbles: true });
+  select.dispatchEvent(event);
+}
+
 function applyLastErrorToReverseInputs() {
   if (!lastError) return;
   document.getElementById("errorDays").value = lastError.days || 0;
@@ -547,8 +569,9 @@ function applyLastErrorToReverseInputs() {
   document.getElementById("errorTime").value = `${padH}:${padM}`;
   
   document.getElementById("errorSeconds").value = lastError.seconds || 0;
-  document.getElementById("errorDirection").value = lastError.isFast ? "late" : "early";
-  handleReverseCalculation();
+  
+  // UIトグルの同期と計算実行
+  setDirection(lastError.isFast ? "late" : "early");
 }
 
 function switchToCorrectionMode() {

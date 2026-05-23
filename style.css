@@ -620,3 +620,51 @@ select:has(option[value=""]:checked) {
   font-size: 13px;
   vertical-align: middle;
 }
+
+/* セグメントコントロール（横長トグル） */
+.segmented-control {
+  display: flex;
+  background-color: #1f1f2f; /* 入力エリアの背景色と統一 */
+  border-radius: 8px;
+  padding: 4px;
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.segment-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-sub);
+  padding: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  text-align: center;
+}
+
+/* 進んでいるが選択された状態（ピンク） */
+.segment-btn.active-late {
+  background-color: var(--toggle-bg) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(255, 0, 170, 0.4);
+}
+
+/* 遅れているが選択された状態（緑） */
+.segment-btn.active-early {
+  background-color: var(--error-early-color) !important;
+  color: #0e0f11 !important; /* 視認性の高い暗い文字 */
+  box-shadow: 0 0 10px rgba(0, 255, 128, 0.4);
+}
+
+/* フォーカス時のアクセシビリティ */
+.segment-btn:focus {
+  outline: none;
+}
+.segment-btn:focus-visible {
+  outline: 2px solid var(--accent);
+}
