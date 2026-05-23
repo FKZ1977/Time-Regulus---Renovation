@@ -102,11 +102,13 @@
       <h2>誤差の計算</h2>
 
       <div id="errorModeDisplayInputGroup" class="input-group">
-        <label>表示時刻：</label><br>
-        <input type="datetime-local" id="displayTime">
-        <select id="displaySeconds" class="seconds-select">
-          <option value="">秒</option>
-        </select>
+        <label>表示時刻：</label>
+        <div class="datetime-row">
+          <input type="datetime-local" id="displayTime">
+          <select id="displaySeconds" class="seconds-select">
+            <option value="">秒</option>
+          </select>
+        </div>
       </div>
 
       <div id="swap-button-wrapper" style="text-align: center; margin: 10px 0; position: relative;">
@@ -115,11 +117,13 @@
 
       <div id="errorModeStandardInputGroup" class="input-group">
         <label>標準時刻：</label>
-        <button class="action-btn" id="standardNowButton" onclick="setNowToStandard()" style="margin-left: 8px;">NOW🔄</button><br>
-        <input type="datetime-local" id="standardTime">
-        <select id="standardSeconds" class="seconds-select">
-          <option value="">秒</option>
-        </select>
+        <button class="action-btn" id="standardNowButton" onclick="setNowToStandard()" style="margin-left: 8px;">NOW🔄</button>
+        <div class="datetime-row">
+          <input type="datetime-local" id="standardTime">
+          <select id="standardSeconds" class="seconds-select">
+            <option value="">秒</option>
+          </select>
+        </div>
       </div>
 
       <div class="result-box" id="result"></div>
@@ -163,8 +167,8 @@
       </div>
     </div>
 
-    <div class="input-group">
-      <label for="errorDirection" style="display:inline-block;">表示時刻は標準時刻より：</label>
+    <div class="input-group input-group-direction">
+      <label for="errorDirection">表示時刻は標準時刻より：</label>
       <select id="errorDirection" tabindex="17">
         <option value="late" class="error-late">進んでいる</option>
         <option value="early" class="error-early">遅れている</option>
@@ -176,11 +180,13 @@
     </div>
 
     <div id="reverseTimeBlock" class="input-group">
-      <label id="reverseTimeLabel" for="reverseDisplayTime">表示時刻:</label><br>
-      <input type="datetime-local" id="reverseDisplayTime" step="60" tabindex="19">
-      <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
-        <option value="">--</option>
-      </select>
+      <label id="reverseTimeLabel" for="reverseDisplayTime">表示時刻:</label>
+      <div class="datetime-row">
+        <input type="datetime-local" id="reverseDisplayTime" step="60" tabindex="19">
+        <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
+          <option value="">--</option>
+        </select>
+      </div>
     </div>
 
     <div id="reverseResult" class="result-box"></div>
