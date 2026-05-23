@@ -9,6 +9,7 @@ const QR_CODE_URL_BASE = "https://fkz1977.github.io/Time-Regulus/";
 
 let inputHelperEnabled = false;
 let includeDateEnabled = false;
+let autoJumpTimer = null;
 
 function toggleIncludeDate(enabled) {
   includeDateEnabled = enabled;
@@ -371,11 +372,19 @@ document.addEventListener("DOMContentLoaded", function () {
       skipJumpOnBlur = true;
       setTimeout(() => { skipJumpOnBlur = false; }, 250);
     }
+    if (autoJumpTimer) {
+      clearTimeout(autoJumpTimer);
+      autoJumpTimer = null;
+    }
   }, { passive: true });
   window.addEventListener("mousedown", function(e) {
     if (e.target && !e.target.classList.contains("direct-year") && !e.target.classList.contains("direct-two") && !e.target.id.includes("direct") && !e.target.className.includes("direct")) {
       skipJumpOnBlur = true;
       setTimeout(() => { skipJumpOnBlur = false; }, 250);
+    }
+    if (autoJumpTimer) {
+      clearTimeout(autoJumpTimer);
+      autoJumpTimer = null;
     }
   });
 
@@ -387,6 +396,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // ③ タップ時はクリアせず、入力開始時までクリアを待つためのフラグ
     el.addEventListener("focus", function() {
       el.dataset.freshFocus = "true";
+      if (autoJumpTimer) {
+        clearTimeout(autoJumpTimer);
+        autoJumpTimer = null;
+      }
     });
 
     // ④ 最大値インテリジェント制御 ＆ 入力開始時クリア ＆ 最大桁数自動ジャンプ
@@ -412,6 +425,9 @@ document.addEventListener("DOMContentLoaded", function () {
           const lastChar = val.charAt(val.length - 1);
           el.value = lastChar;
           val = lastChar;
+          
+          calculateError();
+          handleReverseCalculation();
         } else {
           el.value = val;
         }
@@ -1489,10 +1505,10 @@ function renderResultList() {
         const resultStr = formatDate(entry.result, true);
 
         const textSpan = document.createElement("span");
+        textSpan.style.display = "block";
         textSpan.innerHTML = `
-          <span style="font-size: 13px; color: var(--text-sub);">${baseStr}</span>
-          <span style="font-size: 12px; color: var(--text-sub);">→</span>
-          <span style="font-size: 14px; font-weight: bold; color: ${resultColor};">${resultStr}</span>
+          <span style="font-size: 13px; color: var(--text-sub); display: block;">${baseStr} →</span>
+          <span style="font-size: 14px; font-weight: bold; color: ${resultColor}; display: block; margin-top: 1px; padding-left: 8px;">${resultStr}</span>
         `;
         line.appendChild(textSpan);
         
