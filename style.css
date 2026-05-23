@@ -223,6 +223,16 @@ input[type="datetime-local"] {
 }
 
 
+/* iOS Safari対策: 日付・時刻入力欄のインナー高さを完全にリセットし、高さを強制同期可能にする */
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100% !important;
+  min-height: auto !important;
+  line-height: normal !important;
+}
+
 input, select {
   padding: 10px;
   font-size: 16px;
@@ -756,6 +766,18 @@ input:checked + .switch-slider:before {
   height: 41px !important;
   padding: 8px 6px !important; /* iOSで文字が潰れず41pxに完璧に収まるパディング */
   font-size: 16px !important;
+  background-color: #1f1f2f !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  color: var(--text-main) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.datetime-row input[type="date"]:focus,
+.datetime-row input[type="time"]:focus,
+.datetime-row .seconds-select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 6px var(--accent) !important;
+  outline: none !important;
 }
 
 /* 直接入力コンテナ（グループ間に切れ目 gap: 6px を空ける） */
@@ -781,6 +803,7 @@ input:checked + .switch-slider:before {
   overflow: hidden;
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  height: 41px !important; /* グループの高さをON側の41pxに完全同期！ */
 }
 
 /* 年月日グループ */
@@ -807,7 +830,8 @@ input:checked + .switch-slider:before {
 
 .datetime-direct-row input {
   text-align: center;
-  padding: 10px 0; /* 繋がり感を出すため横パディングを0にする */
+  padding: 0 !important; /* 高さを揃えるため縦パディングを0にする */
+  height: 100% !important; /* 高さを親の41pxいっぱいに広げる */
   font-size: 16px;
   background-color: transparent !important; /* 背景を透明にして一体化 */
   color: var(--text-main);
@@ -884,17 +908,62 @@ input:checked + .switch-slider:before {
   margin-bottom: 6px !important;
   gap: 4px !important;
 }
+#correctionMode .flex-wrap {
+  margin-bottom: 6px !important;
+  gap: 4px !important;
+}
 #correctionMode .unit-input {
   gap: 1px !important;
 }
 #correctionMode .unit-input input,
 #correctionMode .unit-input select {
-  padding: 6px 2px !important;
+  box-sizing: border-box !important;
+  height: 32px !important; /* 誤差入力枠の高さを32pxに完全固定！ */
+  padding: 2px 2px !important;
   font-size: 14px !important;
   border-radius: 6px !important;
+  line-height: 1 !important;
+}
+#correctionMode .unit-input input.direct-error-val {
+  text-align: center;
 }
 #correctionMode .unit-label {
   font-size: 12px !important;
+}
+
+/* 補正誤差・手入力用の時分繋がりグループ */
+.direct-group-error-time {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 32px !important; /* 32pxに完全固定 */
+  background-color: #1f1f2f;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 4px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.direct-group-error-time:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+.direct-group-error-time input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: 100%;
+  text-align: center;
+  padding: 0 !important;
+  height: 100% !important;
+  color: var(--text-main);
+  font-size: 14px !important;
+}
+.direct-group-error-time .delimiter {
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: bold;
+  padding: 0 1px;
 }
 #correctionMode .input-group-direction {
   gap: 4px !important;
@@ -917,10 +986,30 @@ input:checked + .switch-slider:before {
 #correctionMode .datetime-row {
   margin-top: 4px !important;
 }
-#correctionMode .datetime-direct-row input,
-#correctionMode .datetime-row input {
-  padding: 6px 2px !important;
-  font-size: 14px !important;
+#correctionMode .datetime-row input[type="date"],
+#correctionMode .datetime-row input[type="time"],
+#correctionMode .datetime-row .seconds-select {
+  box-sizing: border-box !important;
+  height: 41px !important;
+  padding: 8px 6px !important;
+  font-size: 16px !important;
+  background-color: #1f1f2f !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  color: var(--text-main) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#correctionMode .datetime-row input[type="date"]:focus,
+#correctionMode .datetime-row input[type="time"]:focus,
+#correctionMode .datetime-row .seconds-select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 6px var(--accent) !important;
+  outline: none !important;
+}
+#correctionMode .datetime-direct-row input {
+  padding: 0 !important;
+  height: 100% !important;
+  font-size: 16px !important;
 }
 #correctionMode #reverseResult {
   margin: 6px 0 !important;
