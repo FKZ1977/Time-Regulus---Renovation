@@ -723,7 +723,7 @@ function handleReverseCalculation() {
   };
   window.latestResult = result;
 
-  // 計算結果出力時および数値変更時の画面自動押し上げ（iOS対応ハイブリッドスクロール）
+  // 計算結果出力時および数値変更時の画面自動押し上げ（iOS対応・ブレのない固定スクロール）
   setTimeout(() => {
     const listLink = document.getElementById("showListLink");
     const addBtn = document.getElementById("addToListButton");
@@ -735,14 +735,15 @@ function handleReverseCalculation() {
       // 1. 標準スクロール（PC・Android用）
       targetEl.scrollIntoView({ behavior: "smooth", block: "end" });
 
-      // 2. 【ヒロさんの名案！】フォーカスを強制的に当てて、iOS Safariの画面押し上げを強制発動
-      targetEl.focus();
+      // 2. 【スマートフォーカス】二重フォーカスを回避しつつ、iOSの画面押し上げを安全に強制発動
+      if (document.activeElement !== targetEl) {
+        targetEl.focus();
+      }
 
-      // 3. 物理スクロールの強制実行（iOS Safari用の強力なフォールバック）
-      const rect = targetEl.getBoundingClientRect();
-      const targetY = rect.top + window.pageYOffset - window.innerHeight + targetEl.clientHeight + 20;
+      // 3. 【ブレ防止】ドキュメント絶対最下部（scrollHeight）への物理固定スクロール
+      // 座標計算のズレを物理的に無くすため、コンテンツの最下部へスッとスクロールさせます
       window.scrollTo({
-        top: Math.max(0, targetY),
+        top: document.body.scrollHeight,
         behavior: "smooth"
       });
     }
