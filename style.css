@@ -1380,7 +1380,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* 2. サブタイトルやボタンなどをゆっくり浮かび上がらせる（0.8秒かけてふわっと表示） */
-/* 2. サブタイトルやボタンなどをゆっくり浮かび上がらせる（その場で0.8秒かけてふわっとフェードイン） */
+/* 2. サブタイトルやボタンなどをゆっくり浮かび上がらせる（瞬き途中の0.3秒遅延で、その場で0.8秒かけてふわっとフェードイン） */
 @keyframes slowFadeIn {
   0% { opacity: 0; }
   100% { opacity: 1; }
@@ -1388,17 +1388,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .anim-slow-fade {
   animation: slowFadeIn 0.8s ease-out forwards;
+  animation-delay: 0.3s !important; /* 瞬きが始まって中盤の0.3秒後にフェードイン開始 */
   opacity: 0; /* 初期状態は非表示 */
 }
 
-/* 3. メインタイトル Time Regulus を「最後に」ゆっくり上昇させながらすーっと現す（0.5秒遅延して1.2秒かけて威厳のある上昇） */
+/* 3. メインタイトル Time Regulus を「最後に」ゆっくり上昇させながらすーっと現す（0.8秒遅延して1.5秒かけてもっとゆっくり堂々とフェードイン上昇） */
 @keyframes titleRiseUp {
   0% { opacity: 0; transform: translateY(20px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
 .anim-title-rise {
-  animation: titleRiseUp 1.2s ease-out forwards; /* 威厳を出すために元の1.2秒のゆっくり上昇に */
-  animation-delay: 0.5s !important; /* テンキーの瞬きが終わる0.5秒後に浮上開始 */
+  animation: titleRiseUp 1.5s ease-out forwards; /* もっとゆっくり透明からフェードインさせるため1.5秒に設定 */
+  animation-delay: 0.8s !important; /* 瞬きがほぼ収まり、周りの文字が出揃う0.8秒後に堂々と上昇開始 */
   opacity: 0; /* 初期状態は非表示 */
 }
