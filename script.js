@@ -844,7 +844,7 @@ function renderResultList() {
   container.innerHTML = "";
   
   if (resultHistory.length === 0) {
-    container.innerHTML = "<p style='color: var(--text-sub);'>記録された結果はありません。</p>";
+    container.innerHTML = "<p style='color: var(--text-sub); text-align: center;'>記録された結果はありません。</p>";
     document.getElementById("showListLink").style.display = "none";
     return;
   }
