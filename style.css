@@ -565,10 +565,11 @@ input, select {
 
 .datetime-row .seconds-select {
   flex: 0.7; /* 秒の幅はコンパクトに */
-  min-width: 0;
+  min-width: 62px; /* 文字被り防止のため最小幅を62pxに確保 */
   width: auto;
   text-align: center;
   margin-top: 0;
+  padding-right: 20px !important; /* スクロール矢印との被りを完全に防ぐ */
 }
 
 /* プレースホルダーの薄い字（グレー）スタイル設定 */
@@ -747,23 +748,52 @@ input:checked + .switch-slider:before {
   transform: translateX(22px);
 }
 
-/* 直接入力7分割フレックスレイアウト */
+/* ON/OFFの入力欄高さを完全に統一して画面ガタつきを根絶 */
+.datetime-row input[type="date"],
+.datetime-row input[type="time"],
+.datetime-row .seconds-select {
+  box-sizing: border-box !important;
+  height: 41px !important;
+  padding: 10px 6px !important;
+  font-size: 16px !important;
+}
+
+/* 直接入力フレックスレイアウト（繋がりカードデザインへ一体化 ＆ スリム化） */
 .datetime-direct-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0; /* 各スロット間の隙間をゼロにして一体化 */
   width: 100%;
-  margin-top: 6px;
+  max-width: 280px; /* 入力補助ONの年月日に合わせて幅をコンパクト化 */
+  margin: 6px auto 0 auto; /* 画面中央に配置 */
+  background-color: #1f1f2f; /* 繋がり背景色 */
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 4px;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
+
+/* いずれかの入力枠がフォーカスされた際、カード全体が水色に美しく発光 */
+.datetime-direct-row:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
 .datetime-direct-row input {
   text-align: center;
-  padding: 10px 4px;
+  padding: 10px 0; /* 繋がり感を出すため横パディングを0にする */
   font-size: 16px;
-  background-color: #1f1f2f;
+  background-color: transparent !important; /* 背景を透明にしてコンテナと一体化 */
   color: var(--text-main);
-  border-radius: 8px;
-  border: none;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  outline: none !important;
+  box-sizing: border-box;
 }
+
 .datetime-direct-row .direct-year {
   flex: 1.4;
   min-width: 0;
@@ -896,7 +926,10 @@ input:checked + .switch-slider:before {
 /* ==========================================
    年月日省略（トグルOFF）時のフレックス中央寄せ＆サイズ固定スタイル
    ========================================== */
-.datetime-direct-row.omit-date-active,
+.datetime-direct-row.omit-date-active {
+  max-width: 180px !important; /* 横幅をギュッと縮めて、ON側の時分幅に極限まで近づける */
+  justify-content: center !important;
+}
 .datetime-row.omit-date-active {
   justify-content: center !important;
 }

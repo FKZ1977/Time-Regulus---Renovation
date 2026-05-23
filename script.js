@@ -393,13 +393,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const el = document.getElementById(id);
     if (!el) return;
 
-    // ③ タップ時はクリアせず、入力開始時までクリアを待つためのフラグ
+    // ③ タップ時はクリアせず、入力開始時までクリアを待つためのフラグ ＆ 手動選択時の全選択
     el.addEventListener("focus", function() {
       el.dataset.freshFocus = "true";
+      el.dataset.keyPressed = "false"; // フォーカス時は未入力にリセット
       if (autoJumpTimer) {
         clearTimeout(autoJumpTimer);
         autoJumpTimer = null;
       }
+      // 再選択時に新キー1打で確実に上書きクリアできるよう、50msディレイでテキストを全選択
+      setTimeout(() => {
+        if (el.select) el.select();
+      }, 50);
     });
 
     // ④ 最大値インテリジェント制御 ＆ 入力開始時クリア ＆ 最大桁数自動ジャンプ
@@ -435,8 +440,9 @@ document.addEventListener("DOMContentLoaded", function () {
         el.value = val;
       }
 
-      // 最大入力桁数に達した時の自動フォーカスジャンプ
-      if (el.maxLength > 0 && val.length >= el.maxLength) {
+      // 実際のキー入力(keyPressed)があった場合のみ、最大入力桁数で自動フォーカスジャンプ
+      if (el.dataset.keyPressed === "true" && el.maxLength > 0 && val.length >= el.maxLength) {
+        el.dataset.keyPressed = "false"; // 二重ジャンプを防ぐためリセット
         triggerNextJump();
       }
     });
@@ -448,9 +454,11 @@ document.addEventListener("DOMContentLoaded", function () {
       } else if (nextId) {
         const nextEl = document.getElementById(nextId);
         if (nextEl) {
-          setTimeout(() => {
+          if (autoJumpTimer) clearTimeout(autoJumpTimer);
+          autoJumpTimer = setTimeout(() => {
             nextEl.focus();
             if (nextEl.select) nextEl.select();
+            autoJumpTimer = null;
           }, 60); // iOSのキーボード昇降アニメーションに合わせるためのわずかなディレイ
         }
       } else {
@@ -458,22 +466,25 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
-    // ③ & ⑥ テンキーの「Enter/完了（✓）」キー連動型フォーカスジャンプ
+    // キー入力の存在検知（iOSの「∧」「∨」フォーカス移動による自動ジャンプ誤発火・蠢きを防ぐ）
     el.addEventListener("keydown", function(e) {
+      el.dataset.keyPressed = "true";
       if (e.key === "Enter") {
         e.preventDefault();
         triggerNextJump();
       }
     });
+    el.addEventListener("beforeinput", function() {
+      el.dataset.keyPressed = "true";
+    });
 
-    // ② iOSのテンキー右上「✓ (Done)」でのフォーカスアウト時の自動ジャンプ
+    // フォーカスアウト時、1桁の数字（月・日・時・分・秒）であれば自動で頭に「0」を埋めて2桁化
     el.addEventListener("blur", function() {
-      if (skipJumpOnBlur) {
-        // 余白タップによるフォーカスアウトなので、次の枠へはジャンプせず選択解除
-        return;
-      }
-      if (el.value !== "") {
-        triggerNextJump();
+      let val = el.value.replace(/[^0-9]/g, "");
+      if (val !== "" && el.maxLength === 2 && val.length === 1) {
+        el.value = val.padStart(2, '0');
+        calculateError();
+        handleReverseCalculation();
       }
     });
   }
