@@ -223,14 +223,29 @@ input[type="datetime-local"] {
 }
 
 
-/* iOS Safari対策: 日付・時刻入力欄のインナー高さを完全にリセットし、高さを強制同期可能にする */
+/* iOS Safari・Chrome対策: 日付・時刻入力欄のインナー Shadow DOM を完全にリセット */
 input[type="date"]::-webkit-date-and-time-value,
 input[type="time"]::-webkit-date-and-time-value {
   margin: 0 !important;
   padding: 0 !important;
-  height: 100% !important;
+  height: auto !important;
   min-height: auto !important;
   line-height: normal !important;
+  display: block !important;
+}
+input[type="date"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit {
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none !important; /* ブラウザ標準アイコンを消去し、高さの縮小を許可 */
+  -webkit-appearance: none !important;
 }
 
 input, select {
@@ -763,8 +778,8 @@ input:checked + .switch-slider:before {
 .datetime-row input[type="time"],
 .datetime-row .seconds-select {
   box-sizing: border-box !important;
-  height: 41px !important;
-  padding: 8px 6px !important; /* iOSで文字が潰れず41pxに完璧に収まるパディング */
+  height: 36px !important; /* 41px から 36px へ低く調整！ */
+  padding: 6px 6px !important; /* iOSで文字が潰れず36pxに完璧に収まるパディング */
   font-size: 16px !important;
   background-color: #1f1f2f !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -803,7 +818,7 @@ input:checked + .switch-slider:before {
   overflow: hidden;
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  height: 41px !important; /* グループの高さをON側の41pxに完全同期！ */
+  height: 36px !important; /* グループの高さをON側の36pxに完全同期！ */
 }
 
 /* 年月日グループ */
@@ -990,8 +1005,8 @@ input:checked + .switch-slider:before {
 #correctionMode .datetime-row input[type="time"],
 #correctionMode .datetime-row .seconds-select {
   box-sizing: border-box !important;
-  height: 41px !important;
-  padding: 8px 6px !important;
+  height: 36px !important; /* 36pxに完全同期 */
+  padding: 6px 6px !important;
   font-size: 16px !important;
   background-color: #1f1f2f !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
