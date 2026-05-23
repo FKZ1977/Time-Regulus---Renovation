@@ -1219,17 +1219,65 @@ input:checked + .switch-slider:before {
    画面（モード）ごとの入力枠背景色・統一設定（ON/OFF完全調和）
    ========================================== */
 
-/* 誤差の計算モード（親カードのネイビーに調和する暗い紺色に完全統一） */
+/* 誤差の計算モード（親カードのネイビーに調和する暗い紺色 #121622 に完全統一） */
 #errorMode input,
 #errorMode select,
-#errorMode .direct-group {
+#errorMode .direct-group,
+#errorMode .datetime-row input[type="date"],
+#errorMode .datetime-row input[type="time"],
+#errorMode .datetime-row .seconds-select {
   background-color: #121622 !important;
 }
 
-/* 補正時刻の計算モード（親カードの深緑に調和する暗い深緑色に完全統一） */
+/* 補正時刻の計算モード（親カードの深緑に調和する暗い深緑色 #0b2c1d に完全統一） */
 #correctionMode input,
 #correctionMode select,
 #correctionMode .direct-group,
-#correctionMode .direct-group-error-time {
+#correctionMode .direct-group-error-time,
+#correctionMode .datetime-row input[type="date"],
+#correctionMode .datetime-row input[type="time"],
+#correctionMode .datetime-row .seconds-select,
+#correctionMode .unit-input input,
+#correctionMode .unit-input select {
   background-color: #0b2c1d !important;
+}
+
+/* ==========================================
+   入力枠内テキスト・プレースホルダーの極美中央寄せ＆純白表示
+   ========================================== */
+
+/* 値が入力されている（.has-value）またはフォーカス時の文字色は「純白色」でくっきり表示 */
+input[type="date"].has-value,
+input[type="date"]:focus,
+input[type="time"].has-value,
+input[type="time"]:focus {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* セレクトボックスのテキストを iOS / Android / PC 全環境で完璧に中央寄せ */
+select {
+  text-align: center !important;
+  text-align-last: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  text-indent: 0 !important;
+}
+
+/* カレンダー入力の日付テキストを完璧にど真ん中へ中央寄せ */
+input[type="date"]::-webkit-datetime-edit {
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+}
+
+/* カレンダーピッカーマークを右端に絶対配置して中央寄せの邪魔をさせない */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute !important;
+  right: 6px !important;
+  margin: 0 !important;
 }

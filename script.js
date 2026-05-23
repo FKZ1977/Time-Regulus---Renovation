@@ -34,6 +34,15 @@ function updateInputPlaceholderColor(inputId) {
   }
 }
 
+// すべての入力枠・セレクトボックスのプレースホルダー色を一括同期する
+function syncAllPlaceholderColors() {
+  const selectIds = ["standardSeconds", "displaySeconds", "errorSeconds", "reverseDisplaySeconds"];
+  selectIds.forEach(id => updateSelectPlaceholderColor(id));
+
+  const dateTimeInputIds = ["displayDate", "displayTime", "standardDate", "standardTime", "errorTime", "reverseDisplayDate", "reverseDisplayTime"];
+  dateTimeInputIds.forEach(id => updateInputPlaceholderColor(id));
+}
+
 function toggleIncludeDate(enabled) {
   includeDateEnabled = enabled;
   const includeToggle = document.getElementById("includeDateToggle");
@@ -297,6 +306,7 @@ function syncInputValues(toON) {
     document.getElementById("reverseDisplayMin_direct").value = revT.m;
     document.getElementById("reverseDisplaySec_direct").value = revS !== "" ? String(revS).padStart(2, '0') : "";
   }
+  syncAllPlaceholderColors();
 }
 
 function checkPass() {
@@ -754,6 +764,7 @@ function setNowToStandard() {
   }
 
   calculateError();
+  syncAllPlaceholderColors();
 }
 
 function showErrorMode() {
@@ -881,8 +892,10 @@ function resetApp(onlyInputs = false) {
      localStorage.removeItem('resultHistory');
      document.getElementById("showListLink").style.display = "none";
   } else {
+     syncAllPlaceholderColors();
      return;
   }
+  syncAllPlaceholderColors();
 }
 
 /**
@@ -1257,6 +1270,7 @@ function applyLastErrorToReverseInputs() {
   
   // UIトグルの同期と計算実行
   setDirection(lastError.isFast ? "late" : "early");
+  syncAllPlaceholderColors();
 }
 
 function switchToCorrectionMode() {
