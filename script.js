@@ -309,6 +309,165 @@ function syncInputValues(toON) {
   syncAllPlaceholderColors();
 }
 
+// ==========================================================================
+// 秒専用 極上カスタム無限ドラムロールピッカー（Time Regulus Picker）制御ロジック
+// ==========================================================================
+let activePickerSelectId = null;
+const ITEM_HEIGHT = 36;      // アイテム1個の高さ (px)
+const TOTAL_ITEMS = 61;      // ss + 00〜59 の計61個
+const ONE_SET_HEIGHT = TOTAL_ITEMS * ITEM_HEIGHT; // 2196px
+let isWarping = false;
+let scrollTimeout = null;
+
+function initSecPicker() {
+  const wheel = document.getElementById("pickerWheel");
+  if (!wheel) return;
+
+  const items = ["ss"];
+  for (let i = 0; i <= 59; i++) {
+    items.push(String(i).padStart(2, '0'));
+  }
+
+  // 無限ループ用に3セット分連結 (計183アイテム)
+  const totalItems = [...items, ...items, ...items];
+  wheel.innerHTML = "";
+
+  totalItems.forEach((val, idx) => {
+    const div = document.createElement("div");
+    div.className = "picker-item";
+    div.innerText = val;
+    // ss は空文字列、数値は数値型として data-val を設定
+    div.setAttribute("data-val", val === "ss" ? "" : parseInt(val));
+    div.setAttribute("data-index", idx);
+    wheel.appendChild(div);
+  });
+
+  // スクロールイベント監視による「無限座標ワープ」と「アクティブハイライト」
+  wheel.addEventListener("scroll", () => {
+    if (isWarping) return;
+
+    const top = wheel.scrollTop;
+
+    // 真ん中のセットは [2196px, 4392px] の間。ここから大きくはみ出したら反対側へワープ
+    if (top < ONE_SET_HEIGHT - 360) {
+      isWarping = true;
+      wheel.scrollTop = top + ONE_SET_HEIGHT;
+      setTimeout(() => { isWarping = false; }, 10);
+    } else if (top > ONE_SET_HEIGHT * 2 + 360) {
+      isWarping = true;
+      wheel.scrollTop = top - ONE_SET_HEIGHT;
+      setTimeout(() => { isWarping = false; }, 10);
+    }
+
+    updateActivePickerItem();
+
+    // スナップ吸着のタイマー監視
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      snapToNearestItem();
+    }, 80);
+  });
+}
+
+function updateActivePickerItem() {
+  const wheel = document.getElementById("pickerWheel");
+  if (!wheel) return;
+
+  const wheelCenter = wheel.scrollTop + (wheel.clientHeight / 2);
+  const activeIdx = Math.floor(wheelCenter / ITEM_HEIGHT);
+
+  const items = wheel.getElementsByClassName("picker-item");
+  for (let i = 0; i < items.length; i++) {
+    items[i].classList.remove("active");
+  }
+
+  const activeItem = wheel.querySelector(`.picker-item[data-index="${activeIdx}"]`);
+  if (activeItem) {
+    activeItem.classList.add("active");
+    syncValueFromPicker(activeItem.getAttribute("data-val"));
+  }
+}
+
+function snapToNearestItem() {
+  if (isWarping) return;
+  const wheel = document.getElementById("pickerWheel");
+  if (!wheel) return;
+
+  const top = wheel.scrollTop;
+  const nearestIdx = Math.round(top / ITEM_HEIGHT);
+  const targetScrollTop = nearestIdx * ITEM_HEIGHT;
+
+  if (Math.abs(wheel.scrollTop - targetScrollTop) > 1) {
+    isWarping = true;
+    wheel.scrollTo({
+      top: targetScrollTop,
+      behavior: "smooth"
+    });
+    setTimeout(() => {
+      isWarping = false;
+      updateActivePickerItem();
+    }, 150);
+  } else {
+    updateActivePickerItem();
+  }
+}
+
+function openSecPicker(targetSelectId) {
+  activePickerSelectId = targetSelectId;
+
+  const overlay = document.getElementById("pickerOverlay");
+  const sheet = document.getElementById("regulusSecPicker");
+  if (!overlay || !sheet) return;
+
+  overlay.classList.add("show");
+  sheet.classList.add("show");
+
+  // 現在のセレクトボックスの値を読み取ってドラムの初期位置に設定
+  const selectEl = document.getElementById(targetSelectId);
+  const currentVal = selectEl ? selectEl.value : "";
+
+  const wheel = document.getElementById("pickerWheel");
+  if (!wheel) return;
+
+  // 真ん中のセット (インデックス 61 〜 121) から該当する数字の位置を特定
+  let targetIdx = 61; // デフォルトは ss (61)
+  if (currentVal !== "") {
+    const secNum = parseInt(currentVal);
+    targetIdx = 61 + 1 + secNum; // ss の次が 00 なので +1
+  }
+
+  // アニメーションなしで初期位置へ座標ジャンプ
+  isWarping = true;
+  wheel.scrollTop = targetIdx * ITEM_HEIGHT;
+  setTimeout(() => {
+    isWarping = false;
+    updateActivePickerItem();
+  }, 40);
+}
+
+function closeSecPicker() {
+  const overlay = document.getElementById("pickerOverlay");
+  const sheet = document.getElementById("regulusSecPicker");
+  if (overlay) overlay.classList.remove("show");
+  if (sheet) sheet.classList.remove("show");
+  activePickerSelectId = null;
+}
+
+function syncValueFromPicker(val) {
+  if (!activePickerSelectId) return;
+  const selectEl = document.getElementById(activePickerSelectId);
+  if (selectEl && selectEl.value !== val) {
+    selectEl.value = val;
+
+    // イベントを発火して再計算処理をリアルタイム自動トリガー
+    selectEl.dispatchEvent(new Event("change"));
+    selectEl.dispatchEvent(new Event("input"));
+
+    // プレースホルダー表示色の連動更新
+    updateSelectPlaceholderColor(activePickerSelectId);
+  }
+}
+
 function checkPass() {
   const inputField = document.getElementById("passcode");
   const input = inputField.value;
@@ -409,6 +568,26 @@ document.addEventListener("DOMContentLoaded", function () {
   populateSeconds("displaySeconds");
   populateSeconds("reverseDisplaySeconds");
   populateErrorDropdowns();
+
+  // カスタム秒ピッカーの初期化
+  initSecPicker();
+
+  // 秒セレクトボックスのネイティブピッカー起動を抑止し、カスタム無限ドラムロールをフック起動
+  const regulusSecSelectIds = ["standardSeconds", "displaySeconds", "reverseDisplaySeconds"];
+  regulusSecSelectIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      const handler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.blur();
+        openSecPicker(id);
+      };
+      // mousedownとtouchstartの両方をパッシブ:falseでフックし、ネイティブのせり上がりを確実に抑止
+      el.addEventListener("mousedown", handler, { passive: false });
+      el.addEventListener("touchstart", handler, { passive: false });
+    }
+  });
 
   // セレクトボックスの未選択プレースホルダー色初期同期 ＆ 監視設定
   const selectIds = ["standardSeconds", "displaySeconds", "errorSeconds", "reverseDisplaySeconds"];
@@ -864,6 +1043,7 @@ function backToCorrectionMode() {
  * アプリをリセットする
  */
 function resetApp(onlyInputs = false) {
+  closeSecPicker();
   
   // 入力内容のリセット処理
   document.getElementById("displayDate").value = "";

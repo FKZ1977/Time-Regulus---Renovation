@@ -1403,3 +1403,186 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   animation-delay: 0.8s !important; /* 瞬きがほぼ収まり、周りの文字が出揃う0.8秒後に堂々と上昇開始 */
   opacity: 0; /* 初期状態は非表示 */
 }
+
+/* ==========================================================================
+   秒専用 極上カスタム無限ドラムロールピッカー（Time Regulus Picker）スタイル
+   ========================================================================== */
+
+/* 1. オーバーレイ（背景フェード） */
+.picker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.picker-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 2. ボトムシートコンテナ (ガラスモルフィズム) */
+.picker-bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  width: 100%;
+  max-width: 393px; /* iPhoneの代表的横幅に上限を固定して浮遊カードに見せる */
+  height: 280px;
+  background: rgba(21, 28, 39, 0.85); /* アッシュネイビー */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0, 255, 224, 0.3); /* 美しい水色の極細境界線 */
+  border-left: 1px solid rgba(0, 255, 224, 0.15);
+  border-right: 1px solid rgba(0, 255, 224, 0.15);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.6);
+  z-index: 100000;
+  transform: translate(-50%, 100%); /* 初期は画面下に隠す */
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.picker-bottom-sheet.show {
+  transform: translate(-50%, 0); /* 画面下からスッとせり上がる */
+}
+
+/* 3. ヘッダー部 */
+.picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+}
+
+.picker-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: var(--text-main);
+  letter-spacing: 1px;
+}
+
+.picker-confirm-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--accent); /* 水色 */
+  cursor: pointer;
+  padding: 4px 12px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  outline: none !important;
+}
+
+.picker-confirm-btn:hover {
+  opacity: 0.8;
+}
+
+.picker-confirm-btn:active {
+  transform: scale(0.95);
+}
+
+/* 4. コンテンツ・ドラムロール部 */
+.picker-content {
+  height: 220px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* ドラム全体を囲むコンテナ */
+.picker-wheel-container {
+  position: relative;
+  width: 140px;
+  height: 180px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* 無限スクロールを行うホイール要素（スクロールバー非表示） */
+.picker-wheel {
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+  scroll-behavior: auto; /* 座標ワープ時は瞬時移動させるためauto固定 */
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: y mandatory; /* スナップ吸着をネイティブレベルでアシスト */
+  scrollbar-width: none; /* Firefoxスクロールバー非表示 */
+  -ms-overflow-style: none; /* IEスクロールバー非表示 */
+  box-sizing: border-box;
+}
+
+.picker-wheel::-webkit-scrollbar {
+  display: none; /* Chrome/Safariスクロールバー非表示 */
+}
+
+/* 5. 選択枠インディケータ */
+.picker-selection-indicator {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 36px;
+  transform: translateY(-50%);
+  border-top: 1px solid rgba(0, 255, 224, 0.25); /* 選択行のアウトライン */
+  border-bottom: 1px solid rgba(0, 255, 224, 0.25);
+  background: rgba(0, 255, 224, 0.04);
+  pointer-events: none;
+  border-radius: 6px;
+  z-index: 3;
+}
+
+/* 6. ドラム要素（各アイテム） */
+.picker-item {
+  height: 36px;
+  line-height: 36px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.3); /* 初期状態（周りの文字）は薄暗く */
+  scroll-snap-align: center; /* 常に中央にスナップアライン */
+  transition: color 0.15s ease, font-size 0.15s ease, transform 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  box-sizing: border-box;
+}
+
+/* 中央で選択されているアクティブアイテム（JSから動的に付与） */
+.picker-item.active {
+  color: #ffffff !important; /* 中央は純白 */
+  font-size: 21px !important; /* 大きく強調 */
+  font-weight: bold !important;
+  text-shadow: 0 0 8px rgba(0, 255, 224, 0.4);
+}
+
+/* 7. 上下を立体的にフェード消去する美麗3Dグラデーションマスク */
+.picker-mask-top,
+.picker-mask-bottom {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 72px; /* 36px * 2個分をマスク */
+  pointer-events: none;
+  z-index: 2;
+}
+
+.picker-mask-top {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(21, 28, 39, 0.98) 0%, rgba(21, 28, 39, 0.7) 45%, rgba(21, 28, 39, 0) 100%);
+}
+
+.picker-mask-bottom {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(21, 28, 39, 0.98) 0%, rgba(21, 28, 39, 0.7) 45%, rgba(21, 28, 39, 0) 100%);
+}

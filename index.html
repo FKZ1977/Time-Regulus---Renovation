@@ -349,6 +349,23 @@
     <button class="action-btn" onclick="closeQRCodePage()" style="margin-top: 40px; background-color: #ff4d4d;">☒ 閉じる</button>
   </div>
 
+  <!-- 秒専用の極上カスタム無限ドラムロールピッカー (ボトムシート) -->
+  <div id="pickerOverlay" class="picker-overlay" onclick="closeSecPicker()"></div>
+  <div id="regulusSecPicker" class="picker-bottom-sheet">
+    <div class="picker-header">
+      <span class="picker-title">秒を選択</span>
+      <button class="picker-confirm-btn" onclick="closeSecPicker()">完了</button>
+    </div>
+    <div class="picker-content">
+      <div class="picker-wheel-container">
+        <div class="picker-selection-indicator"></div>
+        <div class="picker-wheel" id="pickerWheel"></div>
+        <div class="picker-mask-top"></div>
+        <div class="picker-mask-bottom"></div>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js" defer></script>
   <script>
     if ("serviceWorker" in navigator) {
