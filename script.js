@@ -205,11 +205,7 @@ function syncInputValues(toON) {
     const dS = document.getElementById("displaySec_direct").value;
     
     document.getElementById("displayDate").value = buildDateString(dY, dM, dD);
-    document.getElementById("displayTime").value = buildTimeString(dH, dMin);
-    
-    // 型不一致（文字列型 '05' と数値型 5）の同期バグを解消
-    const dSVal = parseInt(dS, 10);
-    document.getElementById("displaySeconds").value = isNaN(dSVal) ? "" : dSVal;
+    document.getElementById("displayTime").value = (dH && dMin && dS) ? `${dH.padStart(2, '0')}:${dMin.padStart(2, '0')}:${dS.padStart(2, '0')}` : "";
 
     // --- 誤差の計算: 標準時刻 ---
     const sY = document.getElementById("standardYear_direct").value;
@@ -220,12 +216,10 @@ function syncInputValues(toON) {
     const sS = document.getElementById("standardSec_direct").value;
     
     document.getElementById("standardDate").value = buildDateString(sY, sM, sD);
-    document.getElementById("standardTime").value = buildTimeString(sH, sMin);
     if (isStandardOnTop) {
-      document.getElementById("standardSeconds").value = "0";
+      document.getElementById("standardTime").value = (sH && sMin) ? `${sH.padStart(2, '0')}:${sMin.padStart(2, '0')}:00` : "";
     } else {
-      const sSVal = parseInt(sS, 10);
-      document.getElementById("standardSeconds").value = isNaN(sSVal) ? "" : sSVal;
+      document.getElementById("standardTime").value = (sH && sMin && sS) ? `${sH.padStart(2, '0')}:${sMin.padStart(2, '0')}:${sS.padStart(2, '0')}` : "";
     }
 
     // --- 補正に使う誤差 ---
@@ -235,10 +229,7 @@ function syncInputValues(toON) {
     const errS = document.getElementById("errorSeconds_direct").value;
     
     document.getElementById("errorDays").value = errD;
-    document.getElementById("errorTime").value = buildTimeString(errH, errM);
-    
-    const errSVal = parseInt(errS, 10);
-    document.getElementById("errorSeconds").value = isNaN(errSVal) ? "" : errSVal;
+    document.getElementById("errorTime").value = (errH && errM && errS) ? `${errH.padStart(2, '0')}:${errM.padStart(2, '0')}:${errS.padStart(2, '0')}` : "";
 
     // --- 補正時刻: 表示/対象時刻 ---
     const rY = document.getElementById("reverseDisplayYear_direct").value;
@@ -249,131 +240,155 @@ function syncInputValues(toON) {
     const rS = document.getElementById("reverseDisplaySec_direct").value;
     
     document.getElementById("reverseDisplayDate").value = buildDateString(rY, rM, rD);
-    document.getElementById("reverseDisplayTime").value = buildTimeString(rH, rMin);
-    
-    const rSVal = parseInt(rS, 10);
-    document.getElementById("reverseDisplaySeconds").value = isNaN(rSVal) ? "" : rSVal;
+    document.getElementById("reverseDisplayTime").value = (rH && rMin && rS) ? `${rH.padStart(2, '0')}:${rMin.padStart(2, '0')}:${rS.padStart(2, '0')}` : "";
 
   } else {
     // ON -> OFF への同期
     // --- 誤差の計算: 表示時刻 ---
     const dispD = parseDateString(document.getElementById("displayDate").value);
-    const dispT = parseTimeString(document.getElementById("displayTime").value);
-    const dispS = document.getElementById("displaySeconds").value;
+    const dispT = document.getElementById("displayTime").value.split(":");
     
     document.getElementById("displayYear_direct").value = dispD.y;
     document.getElementById("displayMonth_direct").value = dispD.m;
     document.getElementById("displayDay_direct").value = dispD.d;
-    document.getElementById("displayHour_direct").value = dispT.h;
-    document.getElementById("displayMin_direct").value = dispT.m;
-    document.getElementById("displaySec_direct").value = dispS !== "" ? String(dispS).padStart(2, '0') : "";
+    document.getElementById("displayHour_direct").value = dispT[0] || "";
+    document.getElementById("displayMin_direct").value = dispT[1] || "";
+    document.getElementById("displaySec_direct").value = dispT[2] || "";
 
     // --- 誤差の計算: 標準時刻 ---
     const stdD = parseDateString(document.getElementById("standardDate").value);
-    const stdT = parseTimeString(document.getElementById("standardTime").value);
-    const stdS = document.getElementById("standardSeconds").value;
+    const stdT = document.getElementById("standardTime").value.split(":");
     
     document.getElementById("standardYear_direct").value = stdD.y;
     document.getElementById("standardMonth_direct").value = stdD.m;
     document.getElementById("standardDay_direct").value = stdD.d;
-    document.getElementById("standardHour_direct").value = stdT.h;
-    document.getElementById("standardMin_direct").value = stdT.m;
+    document.getElementById("standardHour_direct").value = stdT[0] || "";
+    document.getElementById("standardMin_direct").value = stdT[1] || "";
     if (isStandardOnTop) {
       document.getElementById("standardSec_direct").value = "00";
     } else {
-      document.getElementById("standardSec_direct").value = stdS !== "" ? String(stdS).padStart(2, '0') : "";
+      document.getElementById("standardSec_direct").value = stdT[2] || "";
     }
 
     // --- 補正に使う誤差 ---
     const errD = document.getElementById("errorDays").value;
-    const errT = parseTimeString(document.getElementById("errorTime").value);
-    const errS = document.getElementById("errorSeconds").value;
+    const errT = document.getElementById("errorTime").value.split(":");
     
     document.getElementById("errorDays_direct").value = errD;
-    document.getElementById("errorHours_direct").value = errT.h;
-    document.getElementById("errorMinutes_direct").value = errT.m;
-    document.getElementById("errorSeconds_direct").value = errS !== "" ? String(errS).padStart(2, '0') : "";
+    document.getElementById("errorHours_direct").value = errT[0] || "";
+    document.getElementById("errorMinutes_direct").value = errT[1] || "";
+    document.getElementById("errorSeconds_direct").value = errT[2] || "";
 
     // --- 補正時刻: 表示/対象時刻 ---
     const revD = parseDateString(document.getElementById("reverseDisplayDate").value);
-    const revT = parseTimeString(document.getElementById("reverseDisplayTime").value);
-    const revS = document.getElementById("reverseDisplaySeconds").value;
+    const revT = document.getElementById("reverseDisplayTime").value.split(":");
     
     document.getElementById("reverseDisplayYear_direct").value = revD.y;
     document.getElementById("reverseDisplayMonth_direct").value = revD.m;
     document.getElementById("reverseDisplayDay_direct").value = revD.d;
-    document.getElementById("reverseDisplayHour_direct").value = revT.h;
-    document.getElementById("reverseDisplayMin_direct").value = revT.m;
-    document.getElementById("reverseDisplaySec_direct").value = revS !== "" ? String(revS).padStart(2, '0') : "";
+    document.getElementById("reverseDisplayHour_direct").value = revT[0] || "";
+    document.getElementById("reverseDisplayMin_direct").value = revT[1] || "";
+    document.getElementById("reverseDisplaySec_direct").value = revT[2] || "";
   }
   syncAllPlaceholderColors();
 }
 
 // ==========================================================================
-// 秒専用 極上カスタム無限ドラムロールピッカー（Time Regulus Picker）制御ロジック
+// 時：分：秒 三連極上カスタム無限ドラムロールピッカー（Time Regulus TimePicker）制御ロジック
 // ==========================================================================
-let activePickerSelectId = null;
-const ITEM_HEIGHT = 36;      // アイテム1個の高さ (px)
-const TOTAL_ITEMS = 61;      // ss + 00〜59 の計61個
-const ONE_SET_HEIGHT = TOTAL_ITEMS * ITEM_HEIGHT; // 2196px
-let isWarping = false;
-let scrollTimeout = null;
+let activeTimePickerTarget = null; // { hourMinId, secId } を保持
+const ITEM_HEIGHT = 36;            // 各アイテムの高さ (px)
 
-function initSecPicker() {
-  const wheel = document.getElementById("pickerWheel");
-  if (!wheel) return;
+// 各ドラムホイールのスペック定義
+const WHEEL_SPECS = {
+  hour: { id: "pickerHourWheel", type: "hour", total: 25, label: "hh", maxVal: 23 },
+  min: { id: "pickerMinWheel", type: "min", total: 61, label: "mm", maxVal: 59 },
+  sec: { id: "pickerSecWheel", type: "sec", total: 61, label: "ss", maxVal: 59 }
+};
 
-  const items = ["ss"];
-  for (let i = 0; i <= 59; i++) {
-    items.push(String(i).padStart(2, '0'));
-  }
+// 重複スクロールワープガード用のフラグ
+let isWarping = { hour: false, min: false, sec: false };
+let snapTimeouts = { hour: null, min: null, sec: null };
 
-  // 無限ループ用に3セット分連結 (計183アイテム)
-  const totalItems = [...items, ...items, ...items];
-  wheel.innerHTML = "";
+function initTimePicker() {
+  Object.values(WHEEL_SPECS).forEach(spec => {
+    const wheel = document.getElementById(spec.id);
+    if (!wheel) return;
 
-  totalItems.forEach((val, idx) => {
-    const div = document.createElement("div");
-    div.className = "picker-item";
-    div.innerText = val;
-    // ss は空文字列、数値は数値型として data-val を設定
-    div.setAttribute("data-val", val === "ss" ? "" : parseInt(val));
-    div.setAttribute("data-index", idx);
-    wheel.appendChild(div);
-  });
-
-  // スクロールイベント監視による「無限座標ワープ」と「アクティブハイライト」
-  wheel.addEventListener("scroll", () => {
-    if (isWarping) return;
-
-    const top = wheel.scrollTop;
-
-    // 真ん中のセットは [2196px, 4392px] の間。ここから大きくはみ出したら反対側へワープ
-    if (top < ONE_SET_HEIGHT - 360) {
-      isWarping = true;
-      wheel.scrollTop = top + ONE_SET_HEIGHT;
-      setTimeout(() => { isWarping = false; }, 10);
-    } else if (top > ONE_SET_HEIGHT * 2 + 360) {
-      isWarping = true;
-      wheel.scrollTop = top - ONE_SET_HEIGHT;
-      setTimeout(() => { isWarping = false; }, 10);
+    const items = [spec.label];
+    for (let i = 0; i <= spec.maxVal; i++) {
+      items.push(String(i).padStart(2, '0'));
     }
 
-    updateActivePickerItem();
+    // 無限ループ用に3セット分連結して挿入 (計75または183個のアイテム)
+    const totalItems = [...items, ...items, ...items];
+    wheel.innerHTML = "";
 
-    // スナップ吸着のタイマー監視
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      snapToNearestItem();
-    }, 80);
+    totalItems.forEach((val, idx) => {
+      const div = document.createElement("div");
+      div.className = "picker-item";
+      div.innerText = val;
+      // ラベル文字(hh/mm/ss)は空文字列、数字は数値型にして data-val にセット
+      div.setAttribute("data-val", val === spec.label ? "" : parseInt(val));
+      div.setAttribute("data-index", idx);
+
+      // 【感動体験】ドラム上の数字をタップしたら、そこへスッと自転（自動スクロール＆スナップ選択）する機能
+      div.onclick = (e) => {
+        if (isWarping[spec.type]) return;
+        
+        // アイテムの中央がスクロールボックスの中央（高さを5個表示=180pxに設定したため、(180/2)-(36/2)=72px分のオフセット）
+        const targetScrollTop = idx * ITEM_HEIGHT - 72;
+        
+        isWarping[spec.type] = true;
+        wheel.scrollTo({
+          top: targetScrollTop,
+          behavior: "smooth"
+        });
+        
+        setTimeout(() => {
+          isWarping[spec.type] = false;
+          updateActiveItemForWheel(spec.type);
+        }, 200);
+      };
+
+      wheel.appendChild(div);
+    });
+
+    // スクロールイベント監視 (無限ワープ ＆ アクティブハイライト)
+    const oneSetHeight = spec.total * ITEM_HEIGHT;
+    wheel.addEventListener("scroll", () => {
+      if (isWarping[spec.type]) return;
+
+      const top = wheel.scrollTop;
+
+      // 5個表示(180px)の高さに合わせ、真ん中のセット[oneSetHeight, oneSetHeight*2]から大きく外れたら対向側へ座標ワープ！
+      if (top < oneSetHeight - 180) {
+        isWarping[spec.type] = true;
+        wheel.scrollTop = top + oneSetHeight;
+        setTimeout(() => { isWarping[spec.type] = false; }, 10);
+      } else if (top > oneSetHeight * 2 + 180) {
+        isWarping[spec.type] = true;
+        wheel.scrollTop = top - oneSetHeight;
+        setTimeout(() => { isWarping[spec.type] = false; }, 10);
+      }
+
+      updateActiveItemForWheel(spec.type);
+
+      // 自動スナップ吸着のタイマー起動 (スクロール停止の検知)
+      clearTimeout(snapTimeouts[spec.type]);
+      snapTimeouts[spec.type] = setTimeout(() => {
+        snapWheel(spec.type);
+      }, 80);
+    });
   });
 }
 
-function updateActivePickerItem() {
-  const wheel = document.getElementById("pickerWheel");
+function updateActiveItemForWheel(type) {
+  const spec = WHEEL_SPECS[type];
+  const wheel = document.getElementById(spec.id);
   if (!wheel) return;
 
-  const wheelCenter = wheel.scrollTop + (wheel.clientHeight / 2);
+  const wheelCenter = wheel.scrollTop + 90; // 高さが 180px になったため、中央は scrollTop + (180/2 = 90) px
   const activeIdx = Math.floor(wheelCenter / ITEM_HEIGHT);
 
   const items = wheel.getElementsByClassName("picker-item");
@@ -384,13 +399,15 @@ function updateActivePickerItem() {
   const activeItem = wheel.querySelector(`.picker-item[data-index="${activeIdx}"]`);
   if (activeItem) {
     activeItem.classList.add("active");
-    syncValueFromPicker(activeItem.getAttribute("data-val"));
+    // 3つのドラムの値変更を元の画面インプットへ即座に同期書き出し
+    syncValueFromPicker();
   }
 }
 
-function snapToNearestItem() {
-  if (isWarping) return;
-  const wheel = document.getElementById("pickerWheel");
+function snapWheel(type) {
+  if (isWarping[type]) return;
+  const spec = WHEEL_SPECS[type];
+  const wheel = document.getElementById(spec.id);
   if (!wheel) return;
 
   const top = wheel.scrollTop;
@@ -398,73 +415,111 @@ function snapToNearestItem() {
   const targetScrollTop = nearestIdx * ITEM_HEIGHT;
 
   if (Math.abs(wheel.scrollTop - targetScrollTop) > 1) {
-    isWarping = true;
+    isWarping[type] = true;
     wheel.scrollTo({
       top: targetScrollTop,
       behavior: "smooth"
     });
     setTimeout(() => {
-      isWarping = false;
-      updateActivePickerItem();
+      isWarping[type] = false;
+      updateActiveItemForWheel(type);
     }, 150);
   } else {
-    updateActivePickerItem();
+    updateActiveItemForWheel(type);
   }
 }
 
-function openSecPicker(targetSelectId) {
-  activePickerSelectId = targetSelectId;
+function openTimePicker(titleLabel, targetId) {
+  activeTimePickerTarget = { targetId };
+
+  // ヘッダータイトルをタップされた箇所に合わせて動的更新
+  const titleEl = document.getElementById("pickerTitle");
+  if (titleEl) titleEl.innerText = titleLabel + "を選択";
 
   const overlay = document.getElementById("pickerOverlay");
-  const sheet = document.getElementById("regulusSecPicker");
-  if (!overlay || !sheet) return;
+  const sheet = document.getElementById("regulusTimePicker");
+  if (overlay) overlay.classList.add("show");
+  if (sheet) sheet.classList.add("show");
 
-  overlay.classList.add("show");
-  sheet.classList.add("show");
+  // 元の入力フォームの現在値の取得
+  const el = document.getElementById(targetId);
 
-  // 現在のセレクトボックスの値を読み取ってドラムの初期位置に設定
-  const selectEl = document.getElementById(targetSelectId);
-  const currentVal = selectEl ? selectEl.value : "";
+  let hVal = "";
+  let mVal = "";
+  let sVal = "";
 
-  const wheel = document.getElementById("pickerWheel");
-  if (!wheel) return;
-
-  // 真ん中のセット (インデックス 61 〜 121) から該当する数字の位置を特定
-  let targetIdx = 61; // デフォルトは ss (61)
-  if (currentVal !== "") {
-    const secNum = parseInt(currentVal);
-    targetIdx = 61 + 1 + secNum; // ss の次が 00 なので +1
+  if (el && el.value !== "") {
+    const parts = el.value.split(":");
+    if (parts.length >= 3) {
+      hVal = parts[0] === "" ? "" : parseInt(parts[0]);
+      mVal = parts[1] === "" ? "" : parseInt(parts[1]);
+      sVal = parts[2] === "" ? "" : parseInt(parts[2]);
+    }
   }
 
-  // アニメーションなしで初期位置へ座標ジャンプ
-  isWarping = true;
-  wheel.scrollTop = targetIdx * ITEM_HEIGHT;
+  // 3つのドラムを一瞬で該当位置へワープ配置
+  positionWheel("hour", hVal);
+  positionWheel("min", mVal);
+  positionWheel("sec", sVal);
+}
+
+function positionWheel(type, currentVal) {
+  const spec = WHEEL_SPECS[type];
+  const wheel = document.getElementById(spec.id);
+  if (!wheel) return;
+
+  let targetIdx = spec.total; // デフォルトは各ラベル(真ん中のセットの先頭)
+  if (currentVal !== "" && currentVal !== null && !isNaN(currentVal)) {
+    targetIdx = spec.total + 1 + parseInt(currentVal);
+  }
+
+  isWarping[type] = true;
+  // 5個表示コンテナ(180px)の中央に綺麗に合わせるオフセット 72px を引く
+  wheel.scrollTop = targetIdx * ITEM_HEIGHT - 72;
+
   setTimeout(() => {
-    isWarping = false;
-    updateActivePickerItem();
+    isWarping[type] = false;
+    updateActiveItemForWheel(type);
   }, 40);
 }
 
-function closeSecPicker() {
+function closeTimePicker() {
   const overlay = document.getElementById("pickerOverlay");
-  const sheet = document.getElementById("regulusSecPicker");
+  const sheet = document.getElementById("regulusTimePicker");
   if (overlay) overlay.classList.remove("show");
   if (sheet) sheet.classList.remove("show");
-  activePickerSelectId = null;
+  activeTimePickerTarget = null;
 }
 
-function syncValueFromPicker(val) {
-  if (!activePickerSelectId) return;
-  const selectEl = document.getElementById(activePickerSelectId);
-  if (selectEl && selectEl.value !== val) {
-    selectEl.value = val;
+function syncValueFromPicker() {
+  if (!activeTimePickerTarget) return;
 
-    // イベントを発火して再計算処理をリアルタイム自動トリガー
-    selectEl.dispatchEvent(new Event("change"));
-    selectEl.dispatchEvent(new Event("input"));
+  const { targetId } = activeTimePickerTarget;
+  const el = document.getElementById(targetId);
+  if (!el) return;
 
-    // プレースホルダー表示色の連動更新
-    updateSelectPlaceholderColor(activePickerSelectId);
+  // 各ドラムのアクティブ要素の値を読み取る
+  const hItem = document.querySelector(`#${WHEEL_SPECS.hour.id} .picker-item.active`);
+  const mItem = document.querySelector(`#${WHEEL_SPECS.min.id} .picker-item.active`);
+  const sItem = document.querySelector(`#${WHEEL_SPECS.sec.id} .picker-item.active`);
+
+  const hVal = hItem ? hItem.getAttribute("data-val") : "";
+  const mVal = mItem ? mItem.getAttribute("data-val") : "";
+  const sVal = sItem ? sItem.getAttribute("data-val") : "";
+
+  let targetVal = "";
+  if (hVal !== "" && mVal !== "" && sVal !== "") {
+    const hh = String(hVal).padStart(2, '0');
+    const mm = String(mVal).padStart(2, '0');
+    const ss = (isStandardOnTop && targetId === "standardTime") ? "00" : String(sVal).padStart(2, '0');
+    targetVal = `${hh}:${mm}:${ss}`;
+  }
+
+  if (el.value !== targetVal) {
+    el.value = targetVal;
+    el.dispatchEvent(new Event("change"));
+    el.dispatchEvent(new Event("input"));
+    updateInputPlaceholderColor(targetId);
   }
 }
 
@@ -569,34 +624,42 @@ document.addEventListener("DOMContentLoaded", function () {
   populateSeconds("reverseDisplaySeconds");
   populateErrorDropdowns();
 
-  // カスタム秒ピッカーの初期化
-  initSecPicker();
+  // 三連極上カスタム無限ドラムロールピッカーの初期化
+  initTimePicker();
 
-  // 秒セレクトボックスのネイティブピッカー起動を抑止し、カスタム無限ドラムロールをフック起動
-  const regulusSecSelectIds = ["standardSeconds", "displaySeconds", "reverseDisplaySeconds"];
-  regulusSecSelectIds.forEach(id => {
-    const el = document.getElementById(id);
+  // 各画面における一体化インプットをトリガーとする 3連ピッカー起動定義
+  const pickerTriggerInfos = [
+    { id: "displayTime", title: "表示時刻" },
+    { id: "standardTime", title: "標準時刻" },
+    { id: "errorTime", title: "誤差" },
+    { id: "reverseDisplayTime", title: "対象時刻" }
+  ];
+
+  pickerTriggerInfos.forEach(info => {
+    const el = document.getElementById(info.id);
     if (el) {
       const handler = (e) => {
+        if (!inputHelperEnabled) return; // 入力補助トグルOFF(手入力)のときは何もしない
+        
         e.preventDefault();
         e.stopPropagation();
         el.blur();
-        openSecPicker(id);
+        
+        // 補正対象の時刻に関しては、その時点での reverseTimeLabel の表示テキスト（"表示時刻" または "探している時刻"）を動的に設定する
+        let title = info.title;
+        if (info.id === "reverseDisplayTime") {
+          const labelEl = document.getElementById("reverseTimeLabel");
+          if (labelEl) {
+            title = labelEl.innerText.replace(":", "").trim();
+          }
+        }
+        
+        openTimePicker(title, info.id);
       };
-      // mousedownとtouchstartの両方をパッシブ:falseでフックし、ネイティブのせり上がりを確実に抑止
+
+      // mousedownとtouchstartの両方をパッシブ:falseでフックし、ネイティブキーボードおよびピッカーを完全封殺
       el.addEventListener("mousedown", handler, { passive: false });
       el.addEventListener("touchstart", handler, { passive: false });
-    }
-  });
-
-  // セレクトボックスの未選択プレースホルダー色初期同期 ＆ 監視設定
-  const selectIds = ["standardSeconds", "displaySeconds", "errorSeconds", "reverseDisplaySeconds"];
-  selectIds.forEach(id => {
-    updateSelectPlaceholderColor(id);
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener("change", () => updateSelectPlaceholderColor(id));
-      el.addEventListener("input", () => updateSelectPlaceholderColor(id));
     }
   });
 
@@ -613,7 +676,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 誤差計算の自動化のためのリスナー設定
   const errorInputs = [
-    "standardDate", "standardTime", "displayDate", "displayTime", "standardSeconds", "displaySeconds"
+    "standardDate", "standardTime", "displayDate", "displayTime"
   ];
   errorInputs.forEach(id => {
     const el = document.getElementById(id);
@@ -921,27 +984,6 @@ function populateSeconds(selectId) {
   }
 }
 
-function populateErrorDropdowns() {
-  const secondSelect = document.getElementById("errorSeconds");
-  if (!secondSelect) return;
-
-  // オプションをクリア
-  secondSelect.innerHTML = "";
-
-  // 初期値の ss を追加
-  const defaultOption = document.createElement("option");
-  defaultOption.value = "";
-  defaultOption.text = "ss";
-  secondSelect.appendChild(defaultOption);
-
-  for (let i = 0; i <= 59; i++) {
-    const secOpt = document.createElement("option");
-    secOpt.value = i;
-    secOpt.text = i.toString().padStart(2, '0');
-    secondSelect.appendChild(secOpt);
-  }
-}
-
 function setNowToStandard() {
   const now = new Date();
 
@@ -953,11 +995,9 @@ function setNowToStandard() {
   const sec = now.getSeconds();
 
   const dateVal = `${yyyy}-${mm}-${dd}`;
-  const timeVal = `${hh}:${min}`;
 
   document.getElementById("standardDate").value = dateVal;
-  document.getElementById("standardTime").value = timeVal;
-  document.getElementById("standardSeconds").value = sec;
+  document.getElementById("standardTime").value = `${hh}:${min}:${String(sec).padStart(2, '0')}`;
 
   // 直接入力側にも値を設定
   const sY = document.getElementById("standardYear_direct");
@@ -1043,7 +1083,6 @@ function backToCorrectionMode() {
  * アプリをリセットする
  */
 function resetApp(onlyInputs = false) {
-  closeSecPicker();
   
   // 入力内容のリセット処理
   document.getElementById("displayDate").value = "";
@@ -1153,7 +1192,7 @@ function swapErrorModeInputs() {
   const standardGroup = document.getElementById("errorModeStandardInputGroup");
   const modeCard = displayGroup.parentElement;
   const nowButton = document.getElementById("standardNowButton");
-  const standardSeconds = document.getElementById("standardSeconds");
+  const standardTimeEl = document.getElementById("standardTime");
   const standardSecDirect = document.getElementById("standardSec_direct");
   const swapButtonWrapper = document.querySelector('.swap-btn').parentElement; // ⇅ボタンの親div
 
@@ -1181,11 +1220,17 @@ function swapErrorModeInputs() {
       modeCard.insertBefore(swapButtonWrapper, displayGroup);
       
       // 機能の変更 (標準時刻が上)
-      nowButton.style.display = "none";
-      standardSeconds.value = "0"; // 00秒に固定
-      standardSeconds.disabled = true; // 無効化
-      standardSeconds.style.pointerEvents = 'none'; // 無効化の視覚的強調
-      standardSeconds.classList.add('seconds-fixed-00'); // 新しいスタイル適用
+      if (nowButton) nowButton.style.display = "none";
+      
+      // ON側の一体化時間枠の秒を00固定にする
+      if (standardTimeEl && standardTimeEl.value !== "") {
+        const parts = standardTimeEl.value.split(":");
+        if (parts.length >= 3) {
+          standardTimeEl.value = `${parts[0]}:${parts[1]}:00`;
+        } else if (parts.length === 2) {
+          standardTimeEl.value = `${parts[0]}:${parts[1]}:00`;
+        }
+      }
       
       // 直接入力側も00秒に固定
       if (standardSecDirect) {
@@ -1201,11 +1246,12 @@ function swapErrorModeInputs() {
       modeCard.insertBefore(swapButtonWrapper, standardGroup);
       
       // 機能の復元 (標準時刻が下)
-      nowButton.style.display = "inline-block"; // NOWボタン表示
-      standardSeconds.disabled = false; // 有効化
-      standardSeconds.style.pointerEvents = 'auto'; // 有効化
-      standardSeconds.classList.remove('seconds-fixed-00'); // スタイルを削除
-      standardSeconds.value = ""; // 「ss」に戻す (初期値)
+      if (nowButton) nowButton.style.display = "inline-block"; // NOWボタン表示
+      
+      // ON側の秒固定を解除（値をクリアして再入力を促す）
+      if (standardTimeEl) {
+        standardTimeEl.value = "";
+      }
       
       // 直接入力側も有効化して空に戻す
       if (standardSecDirect) {
@@ -1247,12 +1293,28 @@ function calculateError() {
   
   if (inputHelperEnabled) {
     standardDateVal = document.getElementById("standardDate").value;
-    standardTimeVal = document.getElementById("standardTime").value;
     displayDateVal = document.getElementById("displayDate").value;
-    displayTimeVal = document.getElementById("displayTime").value;
     
-    standardSecValue = document.getElementById("standardSeconds").value; 
-    displaySecValue = document.getElementById("displaySeconds").value;
+    const sTimeWhole = document.getElementById("standardTime").value;
+    const dTimeWhole = document.getElementById("displayTime").value;
+
+    if (sTimeWhole && sTimeWhole.split(":").length >= 3) {
+      const sParts = sTimeWhole.split(":");
+      standardTimeVal = `${sParts[0]}:${sParts[1]}`;
+      standardSecValue = sParts[2];
+    } else {
+      standardTimeVal = "";
+      standardSecValue = "";
+    }
+
+    if (dTimeWhole && dTimeWhole.split(":").length >= 3) {
+      const dParts = dTimeWhole.split(":");
+      displayTimeVal = `${dParts[0]}:${dParts[1]}`;
+      displaySecValue = dParts[2];
+    } else {
+      displayTimeVal = "";
+      displaySecValue = "";
+    }
   } else {
     const sY = document.getElementById("standardYear_direct").value;
     const sM = document.getElementById("standardMonth_direct").value;
@@ -1469,12 +1531,11 @@ function applyLastErrorToReverseInputs() {
   if (!lastError) return;
   document.getElementById("errorDays").value = lastError.days || 0;
   
-  // hh:mm 形式にフォーマットして errorTime に代入
+  // hh:mm:ss 形式にフォーマットして errorTime に代入
   const padH = String(lastError.hours || 0).padStart(2, '0');
   const padM = String(lastError.minutes || 0).padStart(2, '0');
-  document.getElementById("errorTime").value = `${padH}:${padM}`;
-  
-  document.getElementById("errorSeconds").value = lastError.seconds || 0;
+  const padS = String(lastError.seconds || 0).padStart(2, '0');
+  document.getElementById("errorTime").value = `${padH}:${padM}:${padS}`;
 
   // 直接入力側にも設定
   const errDaysD = document.getElementById("errorDays_direct");
@@ -1485,7 +1546,7 @@ function applyLastErrorToReverseInputs() {
   if (errDaysD) errDaysD.value = lastError.days || 0;
   if (errHoursD) errHoursD.value = padH;
   if (errMinD) errMinD.value = padM;
-  if (errSecD) errSecD.value = String(lastError.seconds || 0).padStart(2, '0');
+  if (errSecD) errSecD.value = padS;
   
   // UIトグルの同期と計算実行
   setDirection(lastError.isFast ? "late" : "early");
@@ -1541,12 +1602,28 @@ function handleReverseCalculation() {
 
   if (inputHelperEnabled) {
     days = Number(document.getElementById("errorDays").value || 0);
-    errorTimeVal = document.getElementById("errorTime").value;
-    seconds = Number(document.getElementById("errorSeconds").value || 0);
+    
+    const errTimeWhole = document.getElementById("errorTime").value;
+    if (errTimeWhole && errTimeWhole.split(":").length >= 3) {
+      const eParts = errTimeWhole.split(":");
+      errorTimeVal = `${eParts[0]}:${eParts[1]}`;
+      seconds = Number(eParts[2] || 0);
+    } else {
+      errorTimeVal = "";
+      seconds = 0;
+    }
 
     timeDateVal = document.getElementById("reverseDisplayDate").value;
-    timeTimeVal = document.getElementById("reverseDisplayTime").value;
-    timeSec = document.getElementById("reverseDisplaySeconds").value;
+    
+    const rTimeWhole = document.getElementById("reverseDisplayTime").value;
+    if (rTimeWhole && rTimeWhole.split(":").length >= 3) {
+      const rParts = rTimeWhole.split(":");
+      timeTimeVal = `${rParts[0]}:${rParts[1]}`;
+      timeSec = rParts[2];
+    } else {
+      timeTimeVal = "";
+      timeSec = "";
+    }
   } else {
     days = Number(document.getElementById("errorDays_direct").value || 0);
     const eH = document.getElementById("errorHours_direct").value;

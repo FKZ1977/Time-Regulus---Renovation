@@ -863,7 +863,9 @@ input:checked + .switch-slider:before {
 }
 
 /* 各スロットグループ（繋がりカードデザイン） */
-.direct-group {
+.direct-group,
+.direct-group-time-sec,
+.direct-group-error-time-sec {
   display: flex;
   align-items: center;
   gap: 0; /* グループ内は隙間ゼロで一体化 */
@@ -893,8 +895,15 @@ input:checked + .switch-slider:before {
   justify-content: center;
 }
 
+/* 時分秒グループ（完全一体化） */
+.direct-group-time-sec {
+  flex: 1.8;
+}
+
 /* いずれかの入力枠がフォーカスされた際、カード全体が水色に美しく発光 */
-.direct-group:focus-within {
+.direct-group:focus-within,
+.direct-group-time-sec:focus-within,
+.direct-group-error-time-sec:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 6px var(--accent);
 }
@@ -1246,10 +1255,46 @@ input:checked + .switch-slider:before {
 }
 
 /* 補正誤差のhh, mm個別インプットのフォーカス時発光を排除し、外側のグループ全体だけが光るようにする設定 */
-#correctionMode .direct-group-error-time input:focus {
+#correctionMode .direct-group-error-time input:focus,
+#correctionMode .direct-group-error-time-sec input:focus {
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
+}
+
+/* ON側の「時：分：秒」一体化入力枠の極美スタイル */
+input.time-whole-input {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 290px !important;
+  height: 38px !important; /* 38pxに完全同期 */
+  padding: 0 8px !important;
+  font-size: 16px !important;
+  background-color: #1f1f2f !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  color: #777788 !important; /* 初期プレースホルダー色 */
+  text-align: center !important;
+  caret-color: transparent !important; /* カーソルを非表示にしてreadonly感向上 */
+  cursor: pointer !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  line-height: 36px !important;
+}
+input.time-whole-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 6px var(--accent) !important;
+  outline: none !important;
+}
+/* 値が設定されている時は純白色へ */
+input.time-whole-input.has-value,
+input.time-whole-input:focus {
+  color: #ffffff !important;
+}
+/* 補正誤差のON側一体化時間枠は高さ32px */
+#correctionMode input.time-whole-input {
+  height: 32px !important;
+  line-height: 30px !important;
+  border-radius: 6px !important;
 }
 
 /* ==========================================
@@ -1263,14 +1308,18 @@ select,
 .datetime-row input[type="time"],
 .datetime-row .seconds-select,
 .direct-group,
+.direct-group-time-sec,
 .direct-group-error-time,
+.direct-group-error-time-sec,
 .unit-input input,
 .unit-input select,
 #correctionMode .datetime-row input[type="date"],
 #correctionMode .datetime-row input[type="time"],
 #correctionMode .datetime-row .seconds-select,
 #correctionMode .direct-group,
+#correctionMode .direct-group-time-sec,
 #correctionMode .direct-group-error-time,
+#correctionMode .direct-group-error-time-sec,
 #correctionMode .unit-input input,
 #correctionMode .unit-input select {
   background-color: #1f1f2f !important;
@@ -1279,7 +1328,9 @@ select,
 /* 直接入力（手入力）の枠内にある input 自体は、枠全体（.direct-group）と一体化させるために【完全に背景透明】のまま維持！ */
 .datetime-direct-row input,
 .direct-group input,
-.direct-group-error-time input {
+.direct-group-time-sec input,
+.direct-group-error-time input,
+.direct-group-error-time-sec input {
   background-color: transparent !important;
 }
 
@@ -1405,7 +1456,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ==========================================================================
-   秒専用 極上カスタム無限ドラムロールピッカー（Time Regulus Picker）スタイル
+   時：分：秒 三連極上カスタム無限ドラムロールピッカー（Time Regulus TimePicker）スタイル
    ========================================================================== */
 
 /* 1. オーバーレイ（背景フェード） */
@@ -1497,17 +1548,34 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 8px; /* 各ドラム間の隙間 */
   position: relative;
+  box-sizing: border-box;
+  padding: 0 16px;
+}
+
+/* 各ドラム（時・分・秒）のコンテナ */
+.picker-wheel-container {
+  position: relative;
+  width: 72px; /* 3連ドラムが綺麗に横並びする完璧な横幅 */
+  height: 180px !important; /* 36px * 5個表示のため 180px に完全固定 */
+  overflow: hidden;
   box-sizing: border-box;
 }
 
-/* ドラム全体を囲むコンテナ */
-.picker-wheel-container {
-  position: relative;
-  width: 140px;
-  height: 180px;
-  overflow: hidden;
-  box-sizing: border-box;
+/* コロンセパレータ */
+.picker-separator {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--accent);
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 2px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* 無限スクロールを行うホイール要素（スクロールバー非表示） */
@@ -1527,12 +1595,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: none; /* Chrome/Safariスクロールバー非表示 */
 }
 
-/* 5. 選択枠インディケータ */
+/* 5. 三連ドラム全体を貫く美しい選択枠 */
 .picker-selection-indicator {
   position: absolute;
   top: 50%;
-  left: 0;
-  width: 100%;
+  left: 20px;
+  right: 20px;
   height: 36px;
   transform: translateY(-50%);
   border-top: 1px solid rgba(0, 255, 224, 0.25); /* 選択行のアウトライン */
@@ -1555,6 +1623,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: color 0.15s ease, font-size 0.15s ease, transform 0.15s ease;
   user-select: none;
   -webkit-user-select: none;
+  cursor: pointer; /* タップ可能であることを示す */
   box-sizing: border-box;
 }
 
