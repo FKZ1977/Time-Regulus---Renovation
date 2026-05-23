@@ -232,6 +232,7 @@ input[type="time"]::-webkit-date-and-time-value {
   min-height: auto !important;
   line-height: normal !important;
   display: block !important;
+  text-align: center !important;
 }
 input[type="date"]::-webkit-datetime-edit,
 input[type="time"]::-webkit-datetime-edit {
@@ -241,11 +242,33 @@ input[type="time"]::-webkit-datetime-edit {
   box-sizing: border-box !important;
   display: inline-flex !important;
   align-items: center !important;
+  justify-content: center !important; /* PC・スマホ共通で横方向中央寄せ */
+  text-align: center !important;
+  width: 100% !important;
 }
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: auto !important;
+}
+/* カレンダー・時計マークを表示しつつ、サイズと余白を最小化して38px内に完璧に収める */
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
-  display: none !important; /* ブラウザ標準アイコンを消去し、高さの縮小を許可 */
-  -webkit-appearance: none !important;
+  display: block !important; /* 表示を復活させてPCでピッカーを起動可能にする */
+  width: 14px !important;
+  height: 14px !important;
+  padding: 0 !important;
+  margin: 0 0 0 4px !important; /* 右側にスマートに配置 */
+  cursor: pointer !important;
+  opacity: 0.6 !important;
+  transition: opacity 0.2s ease;
+  background-size: contain !important;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1 !important;
 }
 
 input, select {
@@ -1004,6 +1027,8 @@ input:checked + .switch-slider:before {
 #correctionMode .datetime-direct-row,
 #correctionMode .datetime-row {
   margin-top: 4px !important;
+  height: 38px !important; /* コンテナの高さを38pxに完全固定 */
+  align-items: center !important; /* 子要素を縦中央に揃える */
 }
 #correctionMode .datetime-row input[type="date"],
 #correctionMode .datetime-row input[type="time"],
