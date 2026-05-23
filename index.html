@@ -96,44 +96,42 @@
     
   </div>
 
-  <div id="errorMode" style="display:none;">
-    <div class="mode-card">
-      <button class="back-btn" onclick="backToModeSelect()">← モード選択に戻る</button>
-      <h2>誤差の計算</h2>
+  <div id="errorMode" class="mode-card" style="display:none;">
+    <button class="back-btn" onclick="backToModeSelect()">← モード選択に戻る</button>
+    <h2>誤差の計算</h2>
 
-      <div id="errorModeDisplayInputGroup" class="input-group">
-        <label>表示時刻：</label>
-        <div class="datetime-row">
-          <input type="datetime-local" id="displayTime">
-          <select id="displaySeconds" class="seconds-select">
-            <option value="">秒</option>
-          </select>
-        </div>
+    <div id="errorModeDisplayInputGroup" class="input-group">
+      <label>表示時刻：</label>
+      <div class="datetime-row">
+        <input type="datetime-local" id="displayTime">
+        <select id="displaySeconds" class="seconds-select">
+          <option value="">秒</option>
+        </select>
       </div>
+    </div>
 
-      <div id="swap-button-wrapper" style="text-align: center; margin: 10px 0; position: relative;">
-    <button id="swapButton" class="action-btn toggle-btn swap-btn" onclick="swapErrorModeInputs()">🔃</button>
-</div>
+    <div id="swap-button-wrapper" style="text-align: center; margin: 10px 0; position: relative;">
+      <button id="swapButton" class="action-btn toggle-btn swap-btn" onclick="swapErrorModeInputs()">🔃</button>
+    </div>
 
-      <div id="errorModeStandardInputGroup" class="input-group">
-        <label>標準時刻：</label>
-        <button class="action-btn" id="standardNowButton" onclick="setNowToStandard()" style="margin-left: 8px;">NOW🔄</button>
-        <div class="datetime-row">
-          <input type="datetime-local" id="standardTime">
-          <select id="standardSeconds" class="seconds-select">
-            <option value="">秒</option>
-          </select>
-        </div>
+    <div id="errorModeStandardInputGroup" class="input-group">
+      <label>標準時刻：</label>
+      <button class="action-btn" id="standardNowButton" onclick="setNowToStandard()" style="margin-left: 8px;">NOW🔄</button>
+      <div class="datetime-row">
+        <input type="datetime-local" id="standardTime">
+        <select id="standardSeconds" class="seconds-select">
+          <option value="">秒</option>
+        </select>
       </div>
+    </div>
 
-      <div class="result-box" id="result"></div>
-      <div style="text-align: right;">
-        <div id="toReverseButton" 
-     onclick="switchToCorrectionMode()" 
-     class="to-reverse-link" 
-     style="display: none;">
-    補正時刻を計算→
-</div>
+    <div class="result-box" id="result"></div>
+    <div style="text-align: right;">
+      <div id="toReverseButton" 
+           onclick="switchToCorrectionMode()" 
+           class="to-reverse-link" 
+           style="display: none;">
+        補正時刻を計算→
       </div>
     </div>
   </div>
