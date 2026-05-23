@@ -349,17 +349,38 @@
     <button class="action-btn" onclick="closeQRCodePage()" style="margin-top: 40px; background-color: #ff4d4d;">☒ 閉じる</button>
   </div>
 
-  <!-- 秒専用の極上カスタム無限ドラムロールピッカー (ボトムシート) -->
-  <div id="pickerOverlay" class="picker-overlay" onclick="closeSecPicker()"></div>
-  <div id="regulusSecPicker" class="picker-bottom-sheet">
+  <!-- 時：分：秒 三連極上カスタム無限ドラムロールピッカー (Time Regulus TimePicker) -->
+  <div id="pickerOverlay" class="picker-overlay" onclick="closeTimePicker()"></div>
+  <div id="regulusTimePicker" class="picker-bottom-sheet">
     <div class="picker-header">
-      <span class="picker-title">秒を選択</span>
-      <button class="picker-confirm-btn" onclick="closeSecPicker()">完了</button>
+      <span id="pickerTitle" class="picker-title">時刻を選択</span>
+      <button class="picker-confirm-btn" onclick="closeTimePicker()">完了</button>
     </div>
     <div class="picker-content">
+      <!-- 三連ドラム全体を貫く美しい選択枠 -->
+      <div class="picker-selection-indicator"></div>
+      
+      <!-- 時ドラム -->
       <div class="picker-wheel-container">
-        <div class="picker-selection-indicator"></div>
-        <div class="picker-wheel" id="pickerWheel"></div>
+        <div class="picker-wheel" id="pickerHourWheel"></div>
+        <div class="picker-mask-top"></div>
+        <div class="picker-mask-bottom"></div>
+      </div>
+      
+      <span class="picker-separator">:</span>
+      
+      <!-- 分ドラム -->
+      <div class="picker-wheel-container">
+        <div class="picker-wheel" id="pickerMinWheel"></div>
+        <div class="picker-mask-top"></div>
+        <div class="picker-mask-bottom"></div>
+      </div>
+      
+      <span class="picker-separator">:</span>
+      
+      <!-- 秒ドラム -->
+      <div class="picker-wheel-container">
+        <div class="picker-wheel" id="pickerSecWheel"></div>
         <div class="picker-mask-top"></div>
         <div class="picker-mask-bottom"></div>
       </div>

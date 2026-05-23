@@ -310,70 +310,101 @@ function syncInputValues(toON) {
 }
 
 // ==========================================================================
-// 秒専用 極上カスタム無限ドラムロールピッカー（Time Regulus Picker）制御ロジック
+// 時：分：秒 三連極上カスタム無限ドラムロールピッカー（Time Regulus TimePicker）制御ロジック
 // ==========================================================================
-let activePickerSelectId = null;
-const ITEM_HEIGHT = 36;      // アイテム1個の高さ (px)
-const TOTAL_ITEMS = 61;      // ss + 00〜59 の計61個
-const ONE_SET_HEIGHT = TOTAL_ITEMS * ITEM_HEIGHT; // 2196px
-let isWarping = false;
-let scrollTimeout = null;
+let activeTimePickerTarget = null; // { hourMinId, secId } を保持
+const ITEM_HEIGHT = 36;            // 各アイテムの高さ (px)
 
-function initSecPicker() {
-  const wheel = document.getElementById("pickerWheel");
-  if (!wheel) return;
+// 各ドラムホイールのスペック定義
+const WHEEL_SPECS = {
+  hour: { id: "pickerHourWheel", type: "hour", total: 25, label: "hh", maxVal: 23 },
+  min: { id: "pickerMinWheel", type: "min", total: 61, label: "mm", maxVal: 59 },
+  sec: { id: "pickerSecWheel", type: "sec", total: 61, label: "ss", maxVal: 59 }
+};
 
-  const items = ["ss"];
-  for (let i = 0; i <= 59; i++) {
-    items.push(String(i).padStart(2, '0'));
-  }
+// 重複スクロールワープガード用のフラグ
+let isWarping = { hour: false, min: false, sec: false };
+let snapTimeouts = { hour: null, min: null, sec: null };
 
-  // 無限ループ用に3セット分連結 (計183アイテム)
-  const totalItems = [...items, ...items, ...items];
-  wheel.innerHTML = "";
+function initTimePicker() {
+  Object.values(WHEEL_SPECS).forEach(spec => {
+    const wheel = document.getElementById(spec.id);
+    if (!wheel) return;
 
-  totalItems.forEach((val, idx) => {
-    const div = document.createElement("div");
-    div.className = "picker-item";
-    div.innerText = val;
-    // ss は空文字列、数値は数値型として data-val を設定
-    div.setAttribute("data-val", val === "ss" ? "" : parseInt(val));
-    div.setAttribute("data-index", idx);
-    wheel.appendChild(div);
-  });
-
-  // スクロールイベント監視による「無限座標ワープ」と「アクティブハイライト」
-  wheel.addEventListener("scroll", () => {
-    if (isWarping) return;
-
-    const top = wheel.scrollTop;
-
-    // 真ん中のセットは [2196px, 4392px] の間。ここから大きくはみ出したら反対側へワープ
-    if (top < ONE_SET_HEIGHT - 360) {
-      isWarping = true;
-      wheel.scrollTop = top + ONE_SET_HEIGHT;
-      setTimeout(() => { isWarping = false; }, 10);
-    } else if (top > ONE_SET_HEIGHT * 2 + 360) {
-      isWarping = true;
-      wheel.scrollTop = top - ONE_SET_HEIGHT;
-      setTimeout(() => { isWarping = false; }, 10);
+    const items = [spec.label];
+    for (let i = 0; i <= spec.maxVal; i++) {
+      items.push(String(i).padStart(2, '0'));
     }
 
-    updateActivePickerItem();
+    // 無限ループ用に3セット分連結して挿入 (計75または183個のアイテム)
+    const totalItems = [...items, ...items, ...items];
+    wheel.innerHTML = "";
 
-    // スナップ吸着のタイマー監視
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      snapToNearestItem();
-    }, 80);
+    totalItems.forEach((val, idx) => {
+      const div = document.createElement("div");
+      div.className = "picker-item";
+      div.innerText = val;
+      // ラベル文字(hh/mm/ss)は空文字列、数字は数値型にして data-val にセット
+      div.setAttribute("data-val", val === spec.label ? "" : parseInt(val));
+      div.setAttribute("data-index", idx);
+
+      // 【感動体験】ドラム上の数字をタップしたら、そこへスッと自転（自動スクロール＆スナップ選択）する機能
+      div.onclick = (e) => {
+        if (isWarping[spec.type]) return;
+        
+        // アイテムの中央がスクロールボックスの中央（高さを5個表示=180pxに設定したため、(180/2)-(36/2)=72px分のオフセット）
+        const targetScrollTop = idx * ITEM_HEIGHT - 72;
+        
+        isWarping[spec.type] = true;
+        wheel.scrollTo({
+          top: targetScrollTop,
+          behavior: "smooth"
+        });
+        
+        setTimeout(() => {
+          isWarping[spec.type] = false;
+          updateActiveItemForWheel(spec.type);
+        }, 200);
+      };
+
+      wheel.appendChild(div);
+    });
+
+    // スクロールイベント監視 (無限ワープ ＆ アクティブハイライト)
+    const oneSetHeight = spec.total * ITEM_HEIGHT;
+    wheel.addEventListener("scroll", () => {
+      if (isWarping[spec.type]) return;
+
+      const top = wheel.scrollTop;
+
+      // 5個表示(180px)の高さに合わせ、真ん中のセット[oneSetHeight, oneSetHeight*2]から大きく外れたら対向側へ座標ワープ！
+      if (top < oneSetHeight - 180) {
+        isWarping[spec.type] = true;
+        wheel.scrollTop = top + oneSetHeight;
+        setTimeout(() => { isWarping[spec.type] = false; }, 10);
+      } else if (top > oneSetHeight * 2 + 180) {
+        isWarping[spec.type] = true;
+        wheel.scrollTop = top - oneSetHeight;
+        setTimeout(() => { isWarping[spec.type] = false; }, 10);
+      }
+
+      updateActiveItemForWheel(spec.type);
+
+      // 自動スナップ吸着のタイマー起動 (スクロール停止の検知)
+      clearTimeout(snapTimeouts[spec.type]);
+      snapTimeouts[spec.type] = setTimeout(() => {
+        snapWheel(spec.type);
+      }, 80);
+    });
   });
 }
 
-function updateActivePickerItem() {
-  const wheel = document.getElementById("pickerWheel");
+function updateActiveItemForWheel(type) {
+  const spec = WHEEL_SPECS[type];
+  const wheel = document.getElementById(spec.id);
   if (!wheel) return;
 
-  const wheelCenter = wheel.scrollTop + (wheel.clientHeight / 2);
+  const wheelCenter = wheel.scrollTop + 90; // 高さが 180px になったため、中央は scrollTop + (180/2 = 90) px
   const activeIdx = Math.floor(wheelCenter / ITEM_HEIGHT);
 
   const items = wheel.getElementsByClassName("picker-item");
@@ -384,13 +415,15 @@ function updateActivePickerItem() {
   const activeItem = wheel.querySelector(`.picker-item[data-index="${activeIdx}"]`);
   if (activeItem) {
     activeItem.classList.add("active");
-    syncValueFromPicker(activeItem.getAttribute("data-val"));
+    // 3つのドラムの値変更を元の画面インプットへ即座に同期書き出し
+    syncValueFromPicker();
   }
 }
 
-function snapToNearestItem() {
-  if (isWarping) return;
-  const wheel = document.getElementById("pickerWheel");
+function snapWheel(type) {
+  if (isWarping[type]) return;
+  const spec = WHEEL_SPECS[type];
+  const wheel = document.getElementById(spec.id);
   if (!wheel) return;
 
   const top = wheel.scrollTop;
@@ -398,73 +431,122 @@ function snapToNearestItem() {
   const targetScrollTop = nearestIdx * ITEM_HEIGHT;
 
   if (Math.abs(wheel.scrollTop - targetScrollTop) > 1) {
-    isWarping = true;
+    isWarping[type] = true;
     wheel.scrollTo({
       top: targetScrollTop,
       behavior: "smooth"
     });
     setTimeout(() => {
-      isWarping = false;
-      updateActivePickerItem();
+      isWarping[type] = false;
+      updateActiveItemForWheel(type);
     }, 150);
   } else {
-    updateActivePickerItem();
+    updateActiveItemForWheel(type);
   }
 }
 
-function openSecPicker(targetSelectId) {
-  activePickerSelectId = targetSelectId;
+function openTimePicker(titleLabel, hourMinId, secId) {
+  activeTimePickerTarget = { hourMinId, secId };
+
+  // ヘッダータイトルをタップされた箇所に合わせて動的更新
+  const titleEl = document.getElementById("pickerTitle");
+  if (titleEl) titleEl.innerText = titleLabel + "を選択";
 
   const overlay = document.getElementById("pickerOverlay");
-  const sheet = document.getElementById("regulusSecPicker");
-  if (!overlay || !sheet) return;
+  const sheet = document.getElementById("regulusTimePicker");
+  if (overlay) overlay.classList.add("show");
+  if (sheet) sheet.classList.add("show");
 
-  overlay.classList.add("show");
-  sheet.classList.add("show");
+  // 元の入力フォームの現在値の取得
+  const hmEl = document.getElementById(hourMinId);
+  const secEl = document.getElementById(secId);
 
-  // 現在のセレクトボックスの値を読み取ってドラムの初期位置に設定
-  const selectEl = document.getElementById(targetSelectId);
-  const currentVal = selectEl ? selectEl.value : "";
+  let hVal = "";
+  let mVal = "";
+  let sVal = secEl ? secEl.value : "";
 
-  const wheel = document.getElementById("pickerWheel");
-  if (!wheel) return;
-
-  // 真ん中のセット (インデックス 61 〜 121) から該当する数字の位置を特定
-  let targetIdx = 61; // デフォルトは ss (61)
-  if (currentVal !== "") {
-    const secNum = parseInt(currentVal);
-    targetIdx = 61 + 1 + secNum; // ss の次が 00 なので +1
+  if (hmEl && hmEl.value !== "") {
+    const parts = hmEl.value.split(":");
+    if (parts.length >= 2) {
+      hVal = parts[0] === "" ? "" : parseInt(parts[0]);
+      mVal = parts[1] === "" ? "" : parseInt(parts[1]);
+    }
   }
 
-  // アニメーションなしで初期位置へ座標ジャンプ
-  isWarping = true;
-  wheel.scrollTop = targetIdx * ITEM_HEIGHT;
+  // 3つのドラムを一瞬で該当位置へワープ配置
+  positionWheel("hour", hVal);
+  positionWheel("min", mVal);
+  positionWheel("sec", sVal);
+}
+
+function positionWheel(type, currentVal) {
+  const spec = WHEEL_SPECS[type];
+  const wheel = document.getElementById(spec.id);
+  if (!wheel) return;
+
+  let targetIdx = spec.total; // デフォルトは各ラベル(真ん中のセットの先頭)
+  if (currentVal !== "" && currentVal !== null && !isNaN(currentVal)) {
+    targetIdx = spec.total + 1 + parseInt(currentVal);
+  }
+
+  isWarping[type] = true;
+  // 5個表示コンテナ(180px)の中央に綺麗に合わせるオフセット 72px を引く
+  wheel.scrollTop = targetIdx * ITEM_HEIGHT - 72;
+
   setTimeout(() => {
-    isWarping = false;
-    updateActivePickerItem();
+    isWarping[type] = false;
+    updateActiveItemForWheel(type);
   }, 40);
 }
 
-function closeSecPicker() {
+function closeTimePicker() {
   const overlay = document.getElementById("pickerOverlay");
-  const sheet = document.getElementById("regulusSecPicker");
+  const sheet = document.getElementById("regulusTimePicker");
   if (overlay) overlay.classList.remove("show");
   if (sheet) sheet.classList.remove("show");
-  activePickerSelectId = null;
+  activeTimePickerTarget = null;
 }
 
-function syncValueFromPicker(val) {
-  if (!activePickerSelectId) return;
-  const selectEl = document.getElementById(activePickerSelectId);
-  if (selectEl && selectEl.value !== val) {
-    selectEl.value = val;
+function syncValueFromPicker() {
+  if (!activeTimePickerTarget) return;
 
-    // イベントを発火して再計算処理をリアルタイム自動トリガー
-    selectEl.dispatchEvent(new Event("change"));
-    selectEl.dispatchEvent(new Event("input"));
+  const { hourMinId, secId } = activeTimePickerTarget;
+  const hmEl = document.getElementById(hourMinId);
+  const secEl = document.getElementById(secId);
 
-    // プレースホルダー表示色の連動更新
-    updateSelectPlaceholderColor(activePickerSelectId);
+  // 各ドラムのアクティブ要素の値を読み取る
+  const hItem = document.querySelector(`#${WHEEL_SPECS.hour.id} .picker-item.active`);
+  const mItem = document.querySelector(`#${WHEEL_SPECS.min.id} .picker-item.active`);
+  const sItem = document.querySelector(`#${WHEEL_SPECS.sec.id} .picker-item.active`);
+
+  const hVal = hItem ? hItem.getAttribute("data-val") : "";
+  const mVal = mItem ? mItem.getAttribute("data-val") : "";
+  const sVal = sItem ? sItem.getAttribute("data-val") : "";
+
+  // 時：分の同期
+  if (hmEl) {
+    let targetHM = "";
+    if (hVal !== "" && mVal !== "") {
+      const hh = String(hVal).padStart(2, '0');
+      const mm = String(mVal).padStart(2, '0');
+      targetHM = `${hh}:${mm}`;
+    }
+    if (hmEl.value !== targetHM) {
+      hmEl.value = targetHM;
+      hmEl.dispatchEvent(new Event("change"));
+      hmEl.dispatchEvent(new Event("input"));
+      updateInputPlaceholderColor(hourMinId);
+    }
+  }
+
+  // 秒の同期
+  if (secEl) {
+    if (secEl.value !== sVal) {
+      secEl.value = sVal;
+      secEl.dispatchEvent(new Event("change"));
+      secEl.dispatchEvent(new Event("input"));
+      updateSelectPlaceholderColor(secId);
+    }
   }
 }
 
@@ -569,24 +651,65 @@ document.addEventListener("DOMContentLoaded", function () {
   populateSeconds("reverseDisplaySeconds");
   populateErrorDropdowns();
 
-  // カスタム秒ピッカーの初期化
-  initSecPicker();
+  // 三連極上カスタム無限ドラムロールピッカーの初期化
+  initTimePicker();
 
-  // 秒セレクトボックスのネイティブピッカー起動を抑止し、カスタム無限ドラムロールをフック起動
-  const regulusSecSelectIds = ["standardSeconds", "displaySeconds", "reverseDisplaySeconds"];
-  regulusSecSelectIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      const handler = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        el.blur();
-        openSecPicker(id);
-      };
-      // mousedownとtouchstartの両方をパッシブ:falseでフックし、ネイティブのせり上がりを確実に抑止
-      el.addEventListener("mousedown", handler, { passive: false });
-      el.addEventListener("touchstart", handler, { passive: false });
+  // 各画面における、時分枠と秒枠の両方をトリガーとする 3連ピッカー起動定義
+  const pickerTriggerGroups = [
+    {
+      title: "表示時刻",
+      ids: ["displayTime", "displaySeconds"],
+      hourMinId: "displayTime",
+      secId: "displaySeconds"
+    },
+    {
+      title: "標準時刻",
+      ids: ["standardTime", "standardSeconds"],
+      hourMinId: "standardTime",
+      secId: "standardSeconds"
+    },
+    {
+      title: "誤差",
+      ids: ["errorTime", "errorSeconds"],
+      hourMinId: "errorTime",
+      secId: "errorSeconds"
+    },
+    {
+      title: "対象時刻", // label テキストを読み取って動的設定
+      ids: ["reverseDisplayTime", "reverseDisplaySeconds"],
+      hourMinId: "reverseDisplayTime",
+      secId: "reverseDisplaySeconds"
     }
+  ];
+
+  pickerTriggerGroups.forEach(group => {
+    group.ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        const handler = (e) => {
+          if (!inputHelperEnabled) return; // 入力補助トグルOFF(手入力)のときは何もしない
+          
+          e.preventDefault();
+          e.stopPropagation();
+          el.blur();
+          
+          // 補正対象の時刻に関しては、その時点での reverseTimeLabel の表示テキスト（"表示時刻" または "探している時刻"）を動的に設定する
+          let title = group.title;
+          if (group.ids.includes("reverseDisplayTime")) {
+            const labelEl = document.getElementById("reverseTimeLabel");
+            if (labelEl) {
+              title = labelEl.innerText.replace(":", "").trim();
+            }
+          }
+          
+          openTimePicker(title, group.hourMinId, group.secId);
+        };
+
+        // mousedownとtouchstartの両方をパッシブ:falseでフックし、ネイティブキーボードおよびピッカーを完全封殺
+        el.addEventListener("mousedown", handler, { passive: false });
+        el.addEventListener("touchstart", handler, { passive: false });
+      }
+    });
   });
 
   // セレクトボックスの未選択プレースホルダー色初期同期 ＆ 監視設定
