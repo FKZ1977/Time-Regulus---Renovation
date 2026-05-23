@@ -99,15 +99,39 @@
   <div id="errorMode" class="mode-card" style="display:none;">
     <button class="back-btn" onclick="backToModeSelect()">← モード選択に戻る</button>
     <h2>誤差の計算</h2>
+    <div class="helper-toggle-wrapper">
+      <span class="helper-toggle-label">入力補助</span>
+      <label class="switch-container">
+        <input type="checkbox" id="inputHelperToggleError" checked onchange="toggleInputHelper(this.checked)">
+        <span class="switch-slider"></span>
+      </label>
+    </div>
 
     <div id="errorModeDisplayInputGroup" class="input-group">
       <label>表示時刻：</label>
-      <div class="datetime-row">
+      
+      <!-- 入力補助 ON 時の入力欄 -->
+      <div class="datetime-row input-helper-on">
         <input type="date" id="displayDate" placeholder="yyyy/mm/dd">
         <input type="time" id="displayTime" placeholder="hh:mm">
         <select id="displaySeconds" class="seconds-select">
           <option value="">ss</option>
         </select>
+      </div>
+
+      <!-- 入力補助 OFF 時の直接入力欄 -->
+      <div class="datetime-direct-row input-helper-off" style="display: none;">
+        <input type="tel" id="displayYear_direct" placeholder="yyyy" maxlength="4" class="direct-year">
+        <span class="delimiter">/</span>
+        <input type="tel" id="displayMonth_direct" placeholder="mm" maxlength="2" class="direct-two">
+        <span class="delimiter">/</span>
+        <input type="tel" id="displayDay_direct" placeholder="dd" maxlength="2" class="direct-two">
+        <span class="direct-space"></span>
+        <input type="tel" id="displayHour_direct" placeholder="hh" maxlength="2" class="direct-two">
+        <span class="delimiter">:</span>
+        <input type="tel" id="displayMin_direct" placeholder="mm" maxlength="2" class="direct-two">
+        <span class="delimiter">:</span>
+        <input type="tel" id="displaySec_direct" placeholder="ss" maxlength="2" class="direct-two">
       </div>
     </div>
 
@@ -118,12 +142,29 @@
     <div id="errorModeStandardInputGroup" class="input-group">
       <label>標準時刻：</label>
       <button class="action-btn" id="standardNowButton" onclick="setNowToStandard()" style="margin-left: 8px;">NOW🔄</button>
-      <div class="datetime-row">
+      
+      <!-- 入力補助 ON 時の入力欄 -->
+      <div class="datetime-row input-helper-on">
         <input type="date" id="standardDate" placeholder="yyyy/mm/dd">
         <input type="time" id="standardTime" placeholder="hh:mm">
         <select id="standardSeconds" class="seconds-select">
           <option value="">ss</option>
         </select>
+      </div>
+
+      <!-- 入力補助 OFF 時の直接入力欄 -->
+      <div class="datetime-direct-row input-helper-off" style="display: none;">
+        <input type="tel" id="standardYear_direct" placeholder="yyyy" maxlength="4" class="direct-year">
+        <span class="delimiter">/</span>
+        <input type="tel" id="standardMonth_direct" placeholder="mm" maxlength="2" class="direct-two">
+        <span class="delimiter">/</span>
+        <input type="tel" id="standardDay_direct" placeholder="dd" maxlength="2" class="direct-two">
+        <span class="direct-space"></span>
+        <input type="tel" id="standardHour_direct" placeholder="hh" maxlength="2" class="direct-two">
+        <span class="delimiter">:</span>
+        <input type="tel" id="standardMin_direct" placeholder="mm" maxlength="2" class="direct-two">
+        <span class="delimiter">:</span>
+        <input type="tel" id="standardSec_direct" placeholder="ss" maxlength="2" class="direct-two">
       </div>
     </div>
 
@@ -141,8 +182,17 @@
   <div id="correctionMode" class="mode-card deep-green" style="display:none;">
     <button class="back-btn" onclick="backToModeSelect()" tabindex="12">← モード選択に戻る</button>
     <h2>補正時刻の計算</h2>
+    <div class="helper-toggle-wrapper">
+      <span class="helper-toggle-label">入力補助</span>
+      <label class="switch-container">
+        <input type="checkbox" id="inputHelperToggleCorrection" checked onchange="toggleInputHelper(this.checked)">
+        <span class="switch-slider"></span>
+      </label>
+    </div>
+
     <label>補正に使う誤差：</label>
-    <div class="flex-wrap">
+    <!-- 入力補助 ON 時の入力欄 -->
+    <div class="flex-wrap input-helper-on">
       <div class="unit-input">
         <input type="number" id="errorDays" min="0" step="1" placeholder="d" tabindex="13">
         <span class="unit-label">日</span>
@@ -155,6 +205,26 @@
         <select id="errorSeconds" tabindex="15">
           <option value="">ss</option>
         </select>
+        <span class="unit-label">秒</span>
+      </div>
+    </div>
+
+    <!-- 入力補助 OFF 時の直接入力欄 -->
+    <div class="flex-wrap input-helper-off" style="display: none;">
+      <div class="unit-input" style="flex: 1.2;">
+        <input type="tel" id="errorDays_direct" placeholder="d" tabindex="13" inputmode="numeric" pattern="[0-9]*">
+        <span class="unit-label">日</span>
+      </div>
+      <div class="unit-input" style="flex: 1.2;">
+        <input type="tel" id="errorHours_direct" placeholder="hh" maxlength="2" tabindex="14">
+        <span class="unit-label">時</span>
+      </div>
+      <div class="unit-input" style="flex: 1.2;">
+        <input type="tel" id="errorMinutes_direct" placeholder="mm" maxlength="2" tabindex="15">
+        <span class="unit-label">分</span>
+      </div>
+      <div class="unit-input" style="flex: 1.2;">
+        <input type="tel" id="errorSeconds_direct" placeholder="ss" maxlength="2" tabindex="16">
         <span class="unit-label">秒</span>
       </div>
     </div>
@@ -177,12 +247,29 @@
 
     <div id="reverseTimeBlock" class="input-group">
       <label id="reverseTimeLabel" for="reverseDisplayTime">表示時刻:</label>
-      <div class="datetime-row">
+      
+      <!-- 入力補助 ON 時の入力欄 -->
+      <div class="datetime-row input-helper-on">
         <input type="date" id="reverseDisplayDate" placeholder="yyyy/mm/dd" tabindex="18">
         <input type="time" id="reverseDisplayTime" placeholder="hh:mm" step="60" tabindex="19">
         <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
           <option value="">ss</option>
         </select>
+      </div>
+
+      <!-- 入力補助 OFF 時の直接入力欄 -->
+      <div class="datetime-direct-row input-helper-off" style="display: none;">
+        <input type="tel" id="reverseDisplayYear_direct" placeholder="yyyy" maxlength="4" class="direct-year" tabindex="18">
+        <span class="delimiter">/</span>
+        <input type="tel" id="reverseDisplayMonth_direct" placeholder="mm" maxlength="2" class="direct-two" tabindex="19">
+        <span class="delimiter">/</span>
+        <input type="tel" id="reverseDisplayDay_direct" placeholder="dd" maxlength="2" class="direct-two" tabindex="20">
+        <span class="direct-space"></span>
+        <input type="tel" id="reverseDisplayHour_direct" placeholder="hh" maxlength="2" class="direct-two" tabindex="21">
+        <span class="delimiter">:</span>
+        <input type="tel" id="reverseDisplayMin_direct" placeholder="mm" maxlength="2" class="direct-two" tabindex="22">
+        <span class="delimiter">:</span>
+        <input type="tel" id="reverseDisplaySec_direct" placeholder="ss" maxlength="2" class="direct-two" tabindex="23">
       </div>
     </div>
 

@@ -7,6 +7,173 @@ let resultHistory = [];
 let isStandardOnTop = false; // 標準時刻が上に配置されているかを示す状態変数
 const QR_CODE_URL_BASE = "https://fkz1977.github.io/Time-Regulus/";
 
+let inputHelperEnabled = true;
+
+// 補助パース/フォーマット関数
+function parseDateString(dateStr) {
+  if (!dateStr) return { y: "", m: "", d: "" };
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    return { y: parts[0], m: parts[1], d: parts[2] };
+  }
+  return { y: "", m: "", d: "" };
+}
+
+function parseTimeString(timeStr) {
+  if (!timeStr) return { h: "", m: "" };
+  const parts = timeStr.split(":");
+  if (parts.length === 2) {
+    return { h: parts[0], m: parts[1] };
+  }
+  return { h: "", m: "" };
+}
+
+function buildDateString(y, m, d) {
+  if (!y && !m && !d) return "";
+  const padY = String(y || "").padStart(4, '0');
+  const padM = String(m || "").padStart(2, '0');
+  const padD = String(d || "").padStart(2, '0');
+  if (!y || !m || !d) return "";
+  return `${padY}-${padM}-${padD}`;
+}
+
+function buildTimeString(h, min) {
+  if (!h && !min) return "";
+  const padH = String(h || "").padStart(2, '0');
+  const padM = String(min || "").padStart(2, '0');
+  if (!h || !min) return "";
+  return `${padH}:${padM}`;
+}
+
+function toggleInputHelper(enabled) {
+  inputHelperEnabled = enabled;
+  const toggleErr = document.getElementById("inputHelperToggleError");
+  const toggleCorr = document.getElementById("inputHelperToggleCorrection");
+  if (toggleErr) toggleErr.checked = enabled;
+  if (toggleCorr) toggleCorr.checked = enabled;
+  
+  // 表示の切り替え
+  document.querySelectorAll('.input-helper-on').forEach(el => {
+    el.style.display = enabled ? 'flex' : 'none';
+  });
+  document.querySelectorAll('.input-helper-off').forEach(el => {
+    el.style.display = enabled ? 'none' : 'flex';
+  });
+  
+  syncInputValues(enabled); // 双方向引き継ぎ
+  
+  // 切り替え後に再計算を走らせる
+  calculateError();
+  handleReverseCalculation();
+}
+
+function syncInputValues(toON) {
+  if (toON) {
+    // OFF -> ON への同期
+    // --- 誤差の計算: 表示時刻 ---
+    const dY = document.getElementById("displayYear_direct").value;
+    const dM = document.getElementById("displayMonth_direct").value;
+    const dD = document.getElementById("displayDay_direct").value;
+    const dH = document.getElementById("displayHour_direct").value;
+    const dMin = document.getElementById("displayMin_direct").value;
+    const dS = document.getElementById("displaySec_direct").value;
+    
+    document.getElementById("displayDate").value = buildDateString(dY, dM, dD);
+    document.getElementById("displayTime").value = buildTimeString(dH, dMin);
+    document.getElementById("displaySeconds").value = dS;
+
+    // --- 誤差の計算: 標準時刻 ---
+    const sY = document.getElementById("standardYear_direct").value;
+    const sM = document.getElementById("standardMonth_direct").value;
+    const sD = document.getElementById("standardDay_direct").value;
+    const sH = document.getElementById("standardHour_direct").value;
+    const sMin = document.getElementById("standardMin_direct").value;
+    const sS = document.getElementById("standardSec_direct").value;
+    
+    document.getElementById("standardDate").value = buildDateString(sY, sM, sD);
+    document.getElementById("standardTime").value = buildTimeString(sH, sMin);
+    if (isStandardOnTop) {
+      document.getElementById("standardSeconds").value = "0";
+    } else {
+      document.getElementById("standardSeconds").value = sS;
+    }
+
+    // --- 補正に使う誤差 ---
+    const errD = document.getElementById("errorDays_direct").value;
+    const errH = document.getElementById("errorHours_direct").value;
+    const errM = document.getElementById("errorMinutes_direct").value;
+    const errS = document.getElementById("errorSeconds_direct").value;
+    
+    document.getElementById("errorDays").value = errD;
+    document.getElementById("errorTime").value = buildTimeString(errH, errM);
+    document.getElementById("errorSeconds").value = errS;
+
+    // --- 補正時刻: 表示/対象時刻 ---
+    const rY = document.getElementById("reverseDisplayYear_direct").value;
+    const rM = document.getElementById("reverseDisplayMonth_direct").value;
+    const rD = document.getElementById("reverseDisplayDay_direct").value;
+    const rH = document.getElementById("reverseDisplayHour_direct").value;
+    const rMin = document.getElementById("reverseDisplayMin_direct").value;
+    const rS = document.getElementById("reverseDisplaySec_direct").value;
+    
+    document.getElementById("reverseDisplayDate").value = buildDateString(rY, rM, rD);
+    document.getElementById("reverseDisplayTime").value = buildTimeString(rH, rMin);
+    document.getElementById("reverseDisplaySeconds").value = rS;
+
+  } else {
+    // ON -> OFF への同期
+    // --- 誤差の計算: 表示時刻 ---
+    const dispD = parseDateString(document.getElementById("displayDate").value);
+    const dispT = parseTimeString(document.getElementById("displayTime").value);
+    const dispS = document.getElementById("displaySeconds").value;
+    
+    document.getElementById("displayYear_direct").value = dispD.y;
+    document.getElementById("displayMonth_direct").value = dispD.m;
+    document.getElementById("displayDay_direct").value = dispD.d;
+    document.getElementById("displayHour_direct").value = dispT.h;
+    document.getElementById("displayMin_direct").value = dispT.m;
+    document.getElementById("displaySec_direct").value = dispS;
+
+    // --- 誤差の計算: 標準時刻 ---
+    const stdD = parseDateString(document.getElementById("standardDate").value);
+    const stdT = parseTimeString(document.getElementById("standardTime").value);
+    const stdS = document.getElementById("standardSeconds").value;
+    
+    document.getElementById("standardYear_direct").value = stdD.y;
+    document.getElementById("standardMonth_direct").value = stdD.m;
+    document.getElementById("standardDay_direct").value = stdD.d;
+    document.getElementById("standardHour_direct").value = stdT.h;
+    document.getElementById("standardMin_direct").value = stdT.m;
+    if (isStandardOnTop) {
+      document.getElementById("standardSec_direct").value = "00";
+    } else {
+      document.getElementById("standardSec_direct").value = stdS !== "" ? String(stdS).padStart(2, '0') : "";
+    }
+
+    // --- 補正に使う誤差 ---
+    const errD = document.getElementById("errorDays").value;
+    const errT = parseTimeString(document.getElementById("errorTime").value);
+    const errS = document.getElementById("errorSeconds").value;
+    
+    document.getElementById("errorDays_direct").value = errD;
+    document.getElementById("errorHours_direct").value = errT.h;
+    document.getElementById("errorMinutes_direct").value = errT.m;
+    document.getElementById("errorSeconds_direct").value = errS !== "" ? String(errS).padStart(2, '0') : "";
+
+    // --- 補正時刻: 表示/対象時刻 ---
+    const revD = parseDateString(document.getElementById("reverseDisplayDate").value);
+    const revT = parseTimeString(document.getElementById("reverseDisplayTime").value);
+    const revS = document.getElementById("reverseDisplaySeconds").value;
+    
+    document.getElementById("reverseDisplayYear_direct").value = revD.y;
+    document.getElementById("reverseDisplayMonth_direct").value = revD.m;
+    document.getElementById("reverseDisplayDay_direct").value = revD.d;
+    document.getElementById("reverseDisplayHour_direct").value = revT.h;
+    document.getElementById("reverseDisplayMin_direct").value = revT.m;
+    document.getElementById("reverseDisplaySec_direct").value = revS;
+  }
+}
+
 function checkPass() {
   const inputField = document.getElementById("passcode");
   const input = inputField.value;
@@ -82,6 +249,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // 誤差計算の直接入力欄のイベントリスナー設定
+  const directErrorInputs = [
+    "displayYear_direct", "displayMonth_direct", "displayDay_direct", "displayHour_direct", "displayMin_direct", "displaySec_direct",
+    "standardYear_direct", "standardMonth_direct", "standardDay_direct", "standardHour_direct", "standardMin_direct", "standardSec_direct"
+  ];
+  directErrorInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input", calculateError);
+      el.addEventListener("change", calculateError);
+    }
+  });
 
   // 結果一覧の復元
   const savedHistory = localStorage.getItem('resultHistory');
@@ -111,6 +290,120 @@ document.addEventListener("DOMContentLoaded", function () {
       el.addEventListener("change", handleReverseCalculation);
     }
   });
+
+  // 補正計算の直接入力欄のイベントリスナー設定
+  const directReverseInputs = [
+    "errorDays_direct", "errorHours_direct", "errorMinutes_direct", "errorSeconds_direct",
+    "reverseDisplayYear_direct", "reverseDisplayMonth_direct", "reverseDisplayDay_direct", "reverseDisplayHour_direct", "reverseDisplayMin_direct", "reverseDisplaySec_direct"
+  ];
+  directReverseInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input", handleReverseCalculation);
+      el.addEventListener("change", handleReverseCalculation);
+    }
+  });
+
+  // 自動フォーカスジャンプの設定関数
+  function setupDirectInputJump(currentId, nextId, maxLength) {
+    const currentEl = document.getElementById(currentId);
+    if (!currentEl) return;
+    currentEl.addEventListener("input", function() {
+      // 半角数字以外の入力を排除
+      currentEl.value = currentEl.value.replace(/[^0-9]/g, "");
+      if (currentEl.value.length >= maxLength) {
+        const nextEl = document.getElementById(nextId);
+        if (nextEl) {
+          nextEl.focus();
+          if (nextEl.select) nextEl.select();
+        }
+      }
+    });
+  }
+
+  // 自動フォーカスジャンプ設定の実行
+  // 表示時刻
+  setupDirectInputJump("displayYear_direct", "displayMonth_direct", 4);
+  setupDirectInputJump("displayMonth_direct", "displayDay_direct", 2);
+  setupDirectInputJump("displayDay_direct", "displayHour_direct", 2);
+  setupDirectInputJump("displayHour_direct", "displayMin_direct", 2);
+  setupDirectInputJump("displayMin_direct", "displaySec_direct", 2);
+  
+  const dispSecDir = document.getElementById("displaySec_direct");
+  if (dispSecDir) {
+    dispSecDir.addEventListener("input", function() {
+      dispSecDir.value = dispSecDir.value.replace(/[^0-9]/g, "");
+      if (dispSecDir.value.length >= 2) {
+        dispSecDir.blur();
+      }
+    });
+  }
+
+  // 標準時刻
+  setupDirectInputJump("standardYear_direct", "standardMonth_direct", 4);
+  setupDirectInputJump("standardMonth_direct", "standardDay_direct", 2);
+  setupDirectInputJump("standardDay_direct", "standardHour_direct", 2);
+  setupDirectInputJump("standardHour_direct", "standardMin_direct", 2);
+  setupDirectInputJump("standardMin_direct", "standardSec_direct", 2);
+  
+  const stdSecDir = document.getElementById("standardSec_direct");
+  if (stdSecDir) {
+    stdSecDir.addEventListener("input", function() {
+      stdSecDir.value = stdSecDir.value.replace(/[^0-9]/g, "");
+      if (stdSecDir.value.length >= 2) {
+        stdSecDir.blur();
+      }
+    });
+  }
+
+  // 補正対象（表示/対象時刻）
+  setupDirectInputJump("reverseDisplayYear_direct", "reverseDisplayMonth_direct", 4);
+  setupDirectInputJump("reverseDisplayMonth_direct", "reverseDisplayDay_direct", 2);
+  setupDirectInputJump("reverseDisplayDay_direct", "reverseDisplayHour_direct", 2);
+  setupDirectInputJump("reverseDisplayHour_direct", "reverseDisplayMin_direct", 2);
+  setupDirectInputJump("reverseDisplayMin_direct", "reverseDisplaySec_direct", 2);
+  
+  const revDispSecDir = document.getElementById("reverseDisplaySec_direct");
+  if (revDispSecDir) {
+    revDispSecDir.addEventListener("input", function() {
+      revDispSecDir.value = revDispSecDir.value.replace(/[^0-9]/g, "");
+      if (revDispSecDir.value.length >= 2) {
+        revDispSecDir.blur();
+      }
+    });
+  }
+
+  // 補正誤差
+  setupDirectInputJump("errorHours_direct", "errorMinutes_direct", 2);
+  setupDirectInputJump("errorMinutes_direct", "errorSeconds_direct", 2);
+  
+  const errSecDir = document.getElementById("errorSeconds_direct");
+  if (errSecDir) {
+    errSecDir.addEventListener("input", function() {
+      errSecDir.value = errSecDir.value.replace(/[^0-9]/g, "");
+      if (errSecDir.value.length >= 2) {
+        errSecDir.blur();
+      }
+    });
+  }
+
+  // 補正誤差の日は桁数制限なし、Enterキーで時にジャンプ
+  const errorDaysDirect = document.getElementById("errorDays_direct");
+  if (errorDaysDirect) {
+    errorDaysDirect.addEventListener("input", function() {
+      errorDaysDirect.value = errorDaysDirect.value.replace(/[^0-9]/g, "");
+    });
+    errorDaysDirect.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const nextEl = document.getElementById("errorHours_direct");
+        if (nextEl) {
+          nextEl.focus();
+          if (nextEl.select) nextEl.select();
+        }
+      }
+    });
+  }
 });
 
 /**
@@ -179,6 +472,27 @@ function setNowToStandard() {
   document.getElementById("standardTime").value = timeVal;
   document.getElementById("standardSeconds").value = sec;
 
+  // 直接入力側にも値を設定
+  const sY = document.getElementById("standardYear_direct");
+  const sM = document.getElementById("standardMonth_direct");
+  const sD = document.getElementById("standardDay_direct");
+  const sH = document.getElementById("standardHour_direct");
+  const sMin = document.getElementById("standardMin_direct");
+  const sS = document.getElementById("standardSec_direct");
+
+  if (sY) sY.value = yyyy;
+  if (sM) sM.value = mm;
+  if (sD) sD.value = dd;
+  if (sH) sH.value = hh;
+  if (sMin) sMin.value = min;
+  if (sS) {
+    if (isStandardOnTop) {
+      sS.value = "00";
+    } else {
+      sS.value = String(sec).padStart(2, '0');
+    }
+  }
+
   calculateError();
 }
 
@@ -234,6 +548,18 @@ function resetApp(onlyInputs = false) {
   document.getElementById("reverseDisplaySeconds").value = "";
   document.getElementById("reverseResult").innerHTML = "";
 
+  // 直接入力欄のリセット
+  const directInputs = [
+    "displayYear_direct", "displayMonth_direct", "displayDay_direct", "displayHour_direct", "displayMin_direct", "displaySec_direct",
+    "standardYear_direct", "standardMonth_direct", "standardDay_direct", "standardHour_direct", "standardMin_direct", "standardSec_direct",
+    "errorDays_direct", "errorHours_direct", "errorMinutes_direct", "errorSeconds_direct",
+    "reverseDisplayYear_direct", "reverseDisplayMonth_direct", "reverseDisplayDay_direct", "reverseDisplayHour_direct", "reverseDisplayMin_direct", "reverseDisplaySec_direct"
+  ];
+  directInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
   lastError = null;
   hasCalculated = false;
   reverseMode = "toStandard";
@@ -249,6 +575,14 @@ function resetApp(onlyInputs = false) {
      standardSeconds.style.pointerEvents = 'auto';
      standardSeconds.classList.remove('seconds-fixed-00'); // スタイルを戻す
      standardSeconds.value = "";
+
+     const standardSecDirect = document.getElementById("standardSec_direct");
+     if (standardSecDirect) {
+       standardSecDirect.disabled = false;
+       standardSecDirect.style.pointerEvents = 'auto';
+       standardSecDirect.classList.remove('seconds-fixed-00');
+       standardSecDirect.value = "";
+     }
   }
   
   toggleReverseMode(false);
@@ -299,6 +633,7 @@ function swapErrorModeInputs() {
   const modeCard = displayGroup.parentElement;
   const nowButton = document.getElementById("standardNowButton");
   const standardSeconds = document.getElementById("standardSeconds");
+  const standardSecDirect = document.getElementById("standardSec_direct");
   const swapButtonWrapper = document.querySelector('.swap-btn').parentElement; // ⇅ボタンの親div
 
   // 既存のアニメーションクラスをクリア
@@ -331,6 +666,14 @@ function swapErrorModeInputs() {
       standardSeconds.style.pointerEvents = 'none'; // 無効化の視覚的強調
       standardSeconds.classList.add('seconds-fixed-00'); // 新しいスタイル適用
       
+      // 直接入力側も00秒に固定
+      if (standardSecDirect) {
+        standardSecDirect.value = "00";
+        standardSecDirect.disabled = true;
+        standardSecDirect.style.pointerEvents = 'none';
+        standardSecDirect.classList.add('seconds-fixed-00');
+      }
+      
     } else {
       // 標準時刻を下 (isStandardOnTop = false) に戻す
       modeCard.insertBefore(displayGroup, standardGroup);
@@ -342,6 +685,14 @@ function swapErrorModeInputs() {
       standardSeconds.style.pointerEvents = 'auto'; // 有効化
       standardSeconds.classList.remove('seconds-fixed-00'); // スタイルを削除
       standardSeconds.value = ""; // 「ss」に戻す (初期値)
+      
+      // 直接入力側も有効化して空に戻す
+      if (standardSecDirect) {
+        standardSecDirect.disabled = false;
+        standardSecDirect.style.pointerEvents = 'auto';
+        standardSecDirect.classList.remove('seconds-fixed-00');
+        standardSecDirect.value = "";
+      }
     }
     
     // 状態更新
@@ -363,7 +714,7 @@ function swapErrorModeInputs() {
     setTimeout(() => {
       displayGroup.classList.remove("animate-up-in", "animate-down-in");
       standardGroup.classList.remove("animate-up-in", "animate-down-in");
-      calculateError(); // 入れ替え後にも計算を試みる
+      calculateError(); // 入れ替え後にも計算を試める
     }, 300);
 
   }, 300); // 0.3秒のアニメーション後にDOM操作
@@ -371,13 +722,42 @@ function swapErrorModeInputs() {
 
 
 function calculateError() {
-  const standardDateVal = document.getElementById("standardDate").value;
-  const standardTimeVal = document.getElementById("standardTime").value;
-  const displayDateVal = document.getElementById("displayDate").value;
-  const displayTimeVal = document.getElementById("displayTime").value;
+  let standardDateVal, standardTimeVal, displayDateVal, displayTimeVal, standardSecValue, displaySecValue;
   
-  const standardSecValue = document.getElementById("standardSeconds").value; 
-  const displaySecValue = document.getElementById("displaySeconds").value;
+  if (inputHelperEnabled) {
+    standardDateVal = document.getElementById("standardDate").value;
+    standardTimeVal = document.getElementById("standardTime").value;
+    displayDateVal = document.getElementById("displayDate").value;
+    displayTimeVal = document.getElementById("displayTime").value;
+    
+    standardSecValue = document.getElementById("standardSeconds").value; 
+    displaySecValue = document.getElementById("displaySeconds").value;
+  } else {
+    const sY = document.getElementById("standardYear_direct").value;
+    const sM = document.getElementById("standardMonth_direct").value;
+    const sD = document.getElementById("standardDay_direct").value;
+    const sH = document.getElementById("standardHour_direct").value;
+    const sMin = document.getElementById("standardMin_direct").value;
+    
+    standardDateVal = buildDateString(sY, sM, sD);
+    standardTimeVal = buildTimeString(sH, sMin);
+    
+    if (isStandardOnTop) {
+      standardSecValue = "0";
+    } else {
+      standardSecValue = document.getElementById("standardSec_direct").value;
+    }
+
+    const dY = document.getElementById("displayYear_direct").value;
+    const dM = document.getElementById("displayMonth_direct").value;
+    const dD = document.getElementById("displayDay_direct").value;
+    const dH = document.getElementById("displayHour_direct").value;
+    const dMin = document.getElementById("displayMin_direct").value;
+    
+    displayDateVal = buildDateString(dY, dM, dD);
+    displayTimeVal = buildTimeString(dH, dMin);
+    displaySecValue = document.getElementById("displaySec_direct").value;
+  }
   
   const resultElement = document.getElementById("result");
   const toReverseButton = document.getElementById("toReverseButton");
@@ -569,6 +949,17 @@ function applyLastErrorToReverseInputs() {
   document.getElementById("errorTime").value = `${padH}:${padM}`;
   
   document.getElementById("errorSeconds").value = lastError.seconds || 0;
+
+  // 直接入力側にも設定
+  const errDaysD = document.getElementById("errorDays_direct");
+  const errHoursD = document.getElementById("errorHours_direct");
+  const errMinD = document.getElementById("errorMinutes_direct");
+  const errSecD = document.getElementById("errorSeconds_direct");
+
+  if (errDaysD) errDaysD.value = lastError.days || 0;
+  if (errHoursD) errHoursD.value = padH;
+  if (errMinD) errMinD.value = padM;
+  if (errSecD) errSecD.value = String(lastError.seconds || 0).padStart(2, '0');
   
   // UIトグルの同期と計算実行
   setDirection(lastError.isFast ? "late" : "early");
@@ -616,10 +1007,35 @@ function handleReverseCalculation() {
   const resultElement = document.getElementById("reverseResult");
   resultElement.innerHTML = "";
 
-  const days = Number(document.getElementById("errorDays").value || 0);
-  const errorTimeVal = document.getElementById("errorTime").value;
-  const seconds = Number(document.getElementById("errorSeconds").value || 0);
-  const direction = document.getElementById("errorDirection").value;
+  let days, errorTimeVal, seconds, direction;
+  let timeDateVal, timeTimeVal, timeSec;
+
+  direction = document.getElementById("errorDirection").value;
+
+  if (inputHelperEnabled) {
+    days = Number(document.getElementById("errorDays").value || 0);
+    errorTimeVal = document.getElementById("errorTime").value;
+    seconds = Number(document.getElementById("errorSeconds").value || 0);
+
+    timeDateVal = document.getElementById("reverseDisplayDate").value;
+    timeTimeVal = document.getElementById("reverseDisplayTime").value;
+    timeSec = document.getElementById("reverseDisplaySeconds").value;
+  } else {
+    days = Number(document.getElementById("errorDays_direct").value || 0);
+    const eH = document.getElementById("errorHours_direct").value;
+    const eM = document.getElementById("errorMinutes_direct").value;
+    errorTimeVal = buildTimeString(eH, eM);
+    seconds = Number(document.getElementById("errorSeconds_direct").value || 0);
+
+    const rY = document.getElementById("reverseDisplayYear_direct").value;
+    const rM = document.getElementById("reverseDisplayMonth_direct").value;
+    const rD = document.getElementById("reverseDisplayDay_direct").value;
+    const rH = document.getElementById("reverseDisplayHour_direct").value;
+    const rMin = document.getElementById("reverseDisplayMin_direct").value;
+    timeDateVal = buildDateString(rY, rM, rD);
+    timeTimeVal = buildTimeString(rH, rMin);
+    timeSec = document.getElementById("reverseDisplaySec_direct").value;
+  }
 
   let hours = 0;
   let minutes = 0;
@@ -628,10 +1044,6 @@ function handleReverseCalculation() {
     hours = Number(parts[0]);
     minutes = Number(parts[1]);
   }
-
-  const timeDateVal = document.getElementById("reverseDisplayDate").value;
-  const timeTimeVal = document.getElementById("reverseDisplayTime").value;
-  const timeSec = document.getElementById("reverseDisplaySeconds").value;
 
   const hasError = (days > 0) || (errorTimeVal !== "") || (seconds > 0);
   const hasTime = timeDateVal && timeTimeVal && timeSec !== "" && timeSec !== "ss" && timeSec !== "--";

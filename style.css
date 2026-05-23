@@ -687,3 +687,99 @@ select:has(option[value=""]:checked) {
 #resultListPage h1.fkz {
   text-align: center;
 }
+
+/* ==========================================
+   入力補助トグル ＆ 直接入力用CSS
+   ========================================== */
+
+/* トグルスイッチデザイン */
+.helper-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  margin-bottom: 20px;
+}
+.helper-toggle-label {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text-main);
+}
+.switch-container {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+.switch-container input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #1f1f2f;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: .3s;
+  border-radius: 34px;
+}
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+input:checked + .switch-slider {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+input:checked + .switch-slider:before {
+  transform: translateX(22px);
+}
+
+/* 直接入力7分割フレックスレイアウト */
+.datetime-direct-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin-top: 6px;
+}
+.datetime-direct-row input {
+  text-align: center;
+  padding: 10px 4px;
+  font-size: 16px;
+  background-color: #1f1f2f;
+  color: var(--text-main);
+  border-radius: 8px;
+  border: none;
+}
+.datetime-direct-row .direct-year {
+  flex: 1.4;
+  min-width: 0;
+}
+.datetime-direct-row .direct-two {
+  flex: 0.9;
+  min-width: 0;
+}
+.datetime-direct-row .delimiter {
+  color: var(--text-sub);
+  font-size: 15px;
+  font-weight: bold;
+}
+.datetime-direct-row .direct-space {
+  width: 8px;
+}
+.flex-wrap.input-helper-off input {
+  text-align: center;
+}
