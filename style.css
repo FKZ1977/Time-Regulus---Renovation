@@ -1131,11 +1131,14 @@ input:checked + .switch-slider:before {
 /* ==========================================
    年月日省略（トグルOFF）時のフレックス中央寄せ＆サイズ固定スタイル
    ========================================== */
-.datetime-direct-row.omit-date-active {
+.datetime-direct-row.omit-date-active,
+#correctionMode .datetime-direct-row.omit-date-active {
   max-width: 180px !important; /* 横幅をギュッと縮めて、ON側の時分幅に極限まで近づける */
   justify-content: center !important;
 }
-.datetime-row.omit-date-active {
+.datetime-row.omit-date-active,
+#correctionMode .datetime-row.omit-date-active {
+  max-width: 180px !important; /* ON側も横幅を縮めて手入力側と揃える */
   justify-content: center !important;
 }
 
