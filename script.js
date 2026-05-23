@@ -1433,7 +1433,7 @@ function handleReverseCalculation() {
     if (diffDays === 0) {
       resultStr = timeOnlyStr;
     } else if (diffDays > 0) {
-      resultStr = `${diffDays}日後の ${timeOnlyStr}`;
+      resultStr = `${diffDays}日先の ${timeOnlyStr}`;
     } else {
       resultStr = `${Math.abs(diffDays)}日前の ${timeOnlyStr}`;
     }
@@ -1687,7 +1687,7 @@ function renderResultList() {
           if (diffDays === 0) {
             resultStr = timeOnlyStr;
           } else if (diffDays > 0) {
-            resultStr = `${diffDays}日後の ${timeOnlyStr}`;
+            resultStr = `${diffDays}日先の ${timeOnlyStr}`;
           } else {
             resultStr = `${Math.abs(diffDays)}日前の ${timeOnlyStr}`;
           }
