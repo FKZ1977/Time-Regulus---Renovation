@@ -47,7 +47,7 @@ function generateKeypad() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  // 起動時のポップアップ (修正: function showModeSelect()0.0の内容に変更)
+  // 起動時のポップアップ
   if (localStorage.getItem("lastVersion") !== currentVersion) {
     alert("Time RegulusはV2.1.3です！");
     localStorage.setItem("lastVersion", currentVersion);
@@ -72,12 +72,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 誤差計算の自動化のためのリスナー設定
   const errorInputs = [
-    "standardTime", "displayTime", "standardSeconds", "displaySeconds"
+    "standardDate", "standardTime", "displayDate", "displayTime", "standardSeconds", "displaySeconds"
   ];
   errorInputs.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
-      // input, changeイベントで即座に計算を試みる
       el.addEventListener("input", calculateError);
       el.addEventListener("change", calculateError);
     }
@@ -102,8 +101,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   const reverseInputs = [
-    "errorDays", "errorHours", "errorMinutes", "errorSeconds",
-    "errorDirection", "reverseDisplayTime", "reverseDisplaySeconds"
+    "errorDays", "errorTime", "errorSeconds",
+    "errorDirection", "reverseDisplayDate", "reverseDisplayTime", "reverseDisplaySeconds"
   ];
   reverseInputs.forEach(id => {
     const el = document.getElementById(id);
@@ -131,7 +130,7 @@ function populateSeconds(selectId) {
 
   const defaultOption = document.createElement("option");
   defaultOption.value = "";
-  defaultOption.text = "秒";
+  defaultOption.text = "ss"; // 「秒」から「ss」へ変更
   select.appendChild(defaultOption);
 
   for (let i = 0; i <= 59; i++) {
@@ -143,39 +142,22 @@ function populateSeconds(selectId) {
 }
 
 function populateErrorDropdowns() {
-  const hourSelect = document.getElementById("errorHours");
-  const minuteSelect = document.getElementById("errorMinutes");
   const secondSelect = document.getElementById("errorSeconds");
+  if (!secondSelect) return;
 
   // オプションをクリア
-  hourSelect.innerHTML = "";
-  minuteSelect.innerHTML = "";
   secondSelect.innerHTML = "";
 
-  // 初期値の -- を追加
-  [hourSelect, minuteSelect, secondSelect].forEach(select => {
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.text = "--";
-    select.appendChild(defaultOption);
-  });
-
-  for (let i = 0; i <= 23; i++) {
-    const option = document.createElement("option");
-    option.value = i;
-    option.text = `${i}`;
-    hourSelect.appendChild(option);
-  }
+  // 初期値の ss を追加
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.text = "ss";
+  secondSelect.appendChild(defaultOption);
 
   for (let i = 0; i <= 59; i++) {
-    const minOpt = document.createElement("option");
-    minOpt.value = i;
-    minOpt.text = `${i}`;
-    minuteSelect.appendChild(minOpt);
-
     const secOpt = document.createElement("option");
     secOpt.value = i;
-    secOpt.text = `${i}`;
+    secOpt.text = i.toString().padStart(2, '0');
     secondSelect.appendChild(secOpt);
   }
 }
@@ -190,9 +172,11 @@ function setNowToStandard() {
   const min = String(now.getMinutes()).padStart(2, '0');
   const sec = now.getSeconds();
 
-  const datetimeLocal = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  const dateVal = `${yyyy}-${mm}-${dd}`;
+  const timeVal = `${hh}:${min}`;
 
-  document.getElementById("standardTime").value = datetimeLocal;
+  document.getElementById("standardDate").value = dateVal;
+  document.getElementById("standardTime").value = timeVal;
   document.getElementById("standardSeconds").value = sec;
 
   calculateError();
@@ -203,23 +187,23 @@ function showErrorMode() {
   document.getElementById("errorMode").style.display = "block";
 }
 
-function showCorrectionMode() { document.getElementById("modeSelect").style.display = "none"; document.getElementById("correctionMode").style.display = "block";
- // 【変更点】誤差計算の結果が残っていれば反映する
- if (lastError) { applyLastErrorToReverseInputs();
- }
- // 初期モードを toStandard に設定
- reverseMode = "toStandard";
- toggleReverseMode(false);
- // 初期表示（表示時刻から補正時刻を求める）
- }
+function showCorrectionMode() { 
+  document.getElementById("modeSelect").style.display = "none"; 
+  document.getElementById("correctionMode").style.display = "block";
+  if (lastError) { 
+    applyLastErrorToReverseInputs();
+  }
+  reverseMode = "toStandard";
+  toggleReverseMode(false);
+}
 
 function backToModeSelect() {
   document.getElementById("errorMode").style.display = "none";
   document.getElementById("correctionMode").style.display = "none";
   document.getElementById("resultListPage").style.display = "none";
   document.getElementById("modeSelect").style.display = "block";
- // ★追加: リセット確認ボタンを非表示に戻す
-  document.getElementById("resetConfirmContainer").style.display = "none"; }
+  document.getElementById("resetConfirmContainer").style.display = "none"; 
+}
 
 function backToCorrectionMode() {
   document.getElementById("resultListPage").style.display = "none";
@@ -232,7 +216,9 @@ function backToCorrectionMode() {
 function resetApp(onlyInputs = false) {
   
   // 入力内容のリセット処理
+  document.getElementById("displayDate").value = "";
   document.getElementById("displayTime").value = "";
+  document.getElementById("standardDate").value = "";
   document.getElementById("standardTime").value = "";
   document.getElementById("displaySeconds").value = "";
   document.getElementById("standardSeconds").value = "";
@@ -240,10 +226,10 @@ function resetApp(onlyInputs = false) {
   document.getElementById("toReverseButton").style.display = "none";
   
   document.getElementById("errorDays").value = "";
-  document.getElementById("errorHours").value = "";
-  document.getElementById("errorMinutes").value = "";
+  document.getElementById("errorTime").value = "";
   document.getElementById("errorSeconds").value = "";
   document.getElementById("errorDirection").value = "late";
+  document.getElementById("reverseDisplayDate").value = "";
   document.getElementById("reverseDisplayTime").value = "";
   document.getElementById("reverseDisplaySeconds").value = "";
   document.getElementById("reverseResult").innerHTML = "";
@@ -267,18 +253,12 @@ function resetApp(onlyInputs = false) {
   
   toggleReverseMode(false);
 
-  // ポップアップ処理を削除し、処理をシンプル化
-  // 【重要】resultHistoryの消去処理は、onlyInputsがtrueのときのみ行うようにする
-  //          また、画面遷移とアラートは resetAppAndReturnToLock() で制御する。
-  if (onlyInputs) { 
-    // 結果一覧も消去
-    resultHistory = [];
-    localStorage.removeItem('resultHistory');
-    document.getElementById("showListLink").style.display = "none";
-  } else {
-    // onlyInputsがfalse（リセットリンク初回クリック時）の場合は、
-    // ここで何もしない (showResetConfirmation()が呼ばれるため)
-    return;
+  if (onlyInputs) { 
+     resultHistory = [];
+     localStorage.removeItem('resultHistory');
+     document.getElementById("showListLink").style.display = "none";
+  } else {
+     return;
   }
 }
 
@@ -286,17 +266,10 @@ function resetApp(onlyInputs = false) {
  * 入力情報のリセット確認ボタンを表示する
  */
 function showResetConfirmation() {
-  // 他の画面要素が表示されている可能性を排除するため、モード選択画面に戻る処理を実行
-  // backToModeSelect()はモード選択画面を表示する関数ですが、
-  // ここでは画面の状態を変えないために、直接コンテナを表示します。
-
-  // モード選択画面以外が表示されていた場合を想定し、画面をモード選択に固定する
   document.getElementById("errorMode").style.display = "none";
   document.getElementById("correctionMode").style.display = "none";
   document.getElementById("resultListPage").style.display = "none";
   document.getElementById("modeSelect").style.display = "block";
-  
-  // 確認ボタンを表示
   document.getElementById("resetConfirmContainer").style.display = "block";
 }
 
@@ -304,22 +277,16 @@ function showResetConfirmation() {
  * 入力情報を消去し、初期画面に戻る
  */
 function resetAppAndReturnToLock() {
-  // 1. 全てのリセット処理を実行（入力欄と履歴の消去）
-  //    => 履歴も消去するため、trueを渡して resetApp() を呼び出す
   resetApp(true); 
 
-  // 2. 画面をロック画面に戻す
   document.getElementById("modeSelect").style.display = "none";
   document.getElementById("lockScreen").style.display = "block";
   
-  // 3. パスコード入力欄をクリアし、フォーカスを戻す
   document.getElementById("passcode").value = "";
   document.getElementById("passcode").focus();
 
-  // 4. 確認ボタンを非表示に戻す
   document.getElementById("resetConfirmContainer").style.display = "none"; 
 
-  // 5. 完了メッセージを表示
   alert("全てのリセットが完了しました。初期画面に戻ります。");
 }
 
@@ -374,14 +341,13 @@ function swapErrorModeInputs() {
       standardSeconds.disabled = false; // 有効化
       standardSeconds.style.pointerEvents = 'auto'; // 有効化
       standardSeconds.classList.remove('seconds-fixed-00'); // スタイルを削除
-      standardSeconds.value = ""; // 「秒」に戻す (初期値)
+      standardSeconds.value = ""; // 「ss」に戻す (初期値)
     }
     
     // 状態更新
     isStandardOnTop = isMovingStandardUp;
 
     // 3. 入れ替え後のフェードインクラスを適用
-    // アニメーションクラスをクリア
     displayGroup.classList.remove("animate-down-out", "animate-up-out");
     standardGroup.classList.remove("animate-down-out", "animate-up-out");
 
@@ -405,8 +371,10 @@ function swapErrorModeInputs() {
 
 
 function calculateError() {
-  const standardInput = document.getElementById("standardTime").value;
-  const displayInput = document.getElementById("displayTime").value;
+  const standardDateVal = document.getElementById("standardDate").value;
+  const standardTimeVal = document.getElementById("standardTime").value;
+  const displayDateVal = document.getElementById("displayDate").value;
+  const displayTimeVal = document.getElementById("displayTime").value;
   
   const standardSecValue = document.getElementById("standardSeconds").value; 
   const displaySecValue = document.getElementById("displaySeconds").value;
@@ -419,20 +387,26 @@ function calculateError() {
   const missingStandardInputs = [];
   const missingDisplayInputs = [];
   
-  // 1. 標準時刻の日付時刻入力欄のチェック
-  if (!standardInput) {
-    missingStandardInputs.push("日時");
+  // 1. 標準時刻の入力欄チェック
+  if (!standardDateVal) {
+    missingStandardInputs.push("年月日");
+  }
+  if (!standardTimeVal) {
+    missingStandardInputs.push("時分");
   }
   
-  // 2. 表示時刻の日付時刻入力欄のチェック
-  if (!displayInput) {
-    missingDisplayInputs.push("日時");
+  // 2. 表示時刻の入力欄チェック
+  if (!displayDateVal) {
+    missingDisplayInputs.push("年月日");
+  }
+  if (!displayTimeVal) {
+    missingDisplayInputs.push("時分");
   }
   
   // 秒の入力チェックに必要な変数の定義
   // isStandardOnTop が true の場合、standardSecValue は "0" に固定されている
-  const isStandardSecValid = isStandardOnTop ? (standardSecValue === "0") : (standardSecValue !== "" && standardSecValue !== "秒");
-  const isDisplaySecValid = (displaySecValue !== "" && displaySecValue !== "秒");
+  const isStandardSecValid = isStandardOnTop ? (standardSecValue === "0") : (standardSecValue !== "" && standardSecValue !== "ss" && standardSecValue !== "秒");
+  const isDisplaySecValid = (displaySecValue !== "" && displaySecValue !== "ss" && displaySecValue !== "秒");
 
   // 3. 標準時刻の秒入力チェック
   if (!isStandardSecValid) {
@@ -447,33 +421,26 @@ function calculateError() {
   // すべての入力が揃っていない場合
   if (missingStandardInputs.length > 0 || missingDisplayInputs.length > 0) {
     
-// --- 【変更点 START】 ---
-    
-    // 標準時刻と表示時刻の両方で「日時」と「秒」が不足しているかチェック
-    // isStandardOnTop == true の場合は標準時刻の秒は固定(00)なので、displayInput + displaySecValue の不足のみをチェック
+    // 標準時刻と表示時刻の両方で「年月日」「時分」「秒」が不足しているかチェック
     const isTotallyEmpty = (isStandardOnTop ?
-        (!standardInput && !displayInput && !isDisplaySecValid) :
-        (!standardInput && !displayInput && !isStandardSecValid && !isDisplaySecValid)
+        (!standardDateVal && !standardTimeVal && !displayDateVal && !displayTimeVal && !isDisplaySecValid) :
+        (!standardDateVal && !standardTimeVal && !displayDateVal && !displayTimeVal && !isStandardSecValid && !isDisplaySecValid)
     );
     
     let messageContent;
-    let messageStyle = `font-size: 14px; color: #FFFF00; text-decoration: font-weight: bold; line-height: 1.5;`;
+    let messageStyle = `font-size: 14px; color: #FFFF00; font-weight: bold; line-height: 1.5;`;
 
     if (isTotallyEmpty) {
-        // 全く入力がない場合: 画像のメッセージに変更
-        // 標準時刻と表示時刻が入れ替わっている状態（isStandardOnTop=true）にも対応
         const firstLine = isStandardOnTop ? "標準時刻から誤差を算出" : "表示時刻から誤差を算出";
         messageContent = `
             ${firstLine}<br>
-            <span style="font-size: 14px; color: var(--text-sub); text-decoration: none; font-weight: normal; line-height: 1.5;">
-                日時と秒の両方を入力してください
+            <span style="font-size: 14px; color: var(--text-sub); font-weight: normal; line-height: 1.5;">
+                年月日、時分、秒を入力してください
             </span>
         `;
-        // スタイルを上書きしないようにする (外側のspanで制御)
         messageStyle = `font-size: 16px; color: var(--accent); font-weight: bold; line-height: 1.5; text-decoration: none;`; 
 
     } else {
-        // 一部入力が不足している場合: 既存の不足項目メッセージを使用
         const standardMessage = missingStandardInputs.length > 0
           ? `標準時刻: ${missingStandardInputs.join(", ")}が不足`
           : "";
@@ -484,7 +451,6 @@ function calculateError() {
 
         let finalMessageLines = [];
         
-        // 表示順序を isStandardOnTop に連動させる
         if (isStandardOnTop) {
             if (standardMessage) finalMessageLines.push(standardMessage);
             if (displayMessage) finalMessageLines.push(displayMessage);
@@ -493,20 +459,15 @@ function calculateError() {
             if (standardMessage) finalMessageLines.push(standardMessage);
         }
         
-        // メッセージ全体を構築（行区切りとスタイル適用）
         messageContent = finalMessageLines.join("<br>");
-        // 元のスタイル
-        messageStyle = `font-size: 14px; color: #FFFF00; text-decoration: font-weight: bold; line-height: 1.5;`; 
+        messageStyle = `font-size: 14px; color: #FFFF00; font-weight: bold; line-height: 1.5;`; 
     }
     
-    // 結果表示エリアの更新
     resultElement.innerHTML = `
         <span style="${messageStyle}">
             ${messageContent}
         </span>
     `;
-    
-    // --- 【変更点 END】 ---
     
     toReverseButton.style.display = "none";
     hasCalculatedError = false;
@@ -516,14 +477,15 @@ function calculateError() {
   // すべての入力が揃っている
   hasCalculatedError = true;
 
-
   const standardSec = Number(standardSecValue);
   const displaySec = Number(displaySecValue);
 
-  const standard = new Date(standardInput);
-  const display = new Date(displayInput);
-  standard.setSeconds(standardSec);
-  display.setSeconds(displaySec);
+  // iOS/Androidでの互換性を高めるため、ISO 8601形式の文字列（T区切り）を生成してパース
+  const standardDateStr = `${standardDateVal}T${standardTimeVal}:${String(standardSec).padStart(2, '0')}`;
+  const displayDateStr = `${displayDateVal}T${displayTimeVal}:${String(displaySec).padStart(2, '0')}`;
+
+  const standard = new Date(standardDateStr);
+  const display = new Date(displayDateStr);
 
   const diffMs = standard.getTime() - display.getTime(); // 標準 - 表示
   const diffAbsMs = Math.abs(diffMs);
@@ -557,11 +519,9 @@ function calculateError() {
   let directionColor;
 
   if (isFast) {
-    // 表示時刻が進んでいる
     directionText = "進んでいます。";
     directionColor = "var(--error-late-color)"; // 太文字の赤
   } else {
-    // 表示時刻が遅れている
     directionText = "遅れています。";
     directionColor = "var(--error-early-color)"; // 太文字の黄緑
   }
@@ -571,7 +531,7 @@ function calculateError() {
     <span style="color: ${directionColor}; font-weight: bold;">${directionText}</span>
   `;
 
-  gtag('event', 'calculate_error'); // Google Analyticsイベント
+  gtag('event', 'calculate_error'); 
 
   lastError = { days, hours, minutes, seconds, isFast };
   document.getElementById("toReverseButton").style.display = "block";
@@ -579,11 +539,14 @@ function calculateError() {
 
 function applyLastErrorToReverseInputs() {
   if (!lastError) return;
-  document.getElementById("errorDays").value    = lastError.days    || 0;
-  document.getElementById("errorHours").value   = lastError.hours   || 0;
-  document.getElementById("errorMinutes").value = lastError.minutes || 0;
+  document.getElementById("errorDays").value = lastError.days || 0;
+  
+  // hh:mm 形式にフォーマットして errorTime に代入
+  const padH = String(lastError.hours || 0).padStart(2, '0');
+  const padM = String(lastError.minutes || 0).padStart(2, '0');
+  document.getElementById("errorTime").value = `${padH}:${padM}`;
+  
   document.getElementById("errorSeconds").value = lastError.seconds || 0;
-  // isFast (表示時刻が進んでいる) は direction の "late" (進んでいる) に相当
   document.getElementById("errorDirection").value = lastError.isFast ? "late" : "early";
   handleReverseCalculation();
 }
@@ -593,22 +556,16 @@ function switchToCorrectionMode() {
   document.getElementById("correctionMode").style.display = "block";
 
   const prevSeconds = document.getElementById("reverseDisplaySeconds").value;
-  // 秒のオプションを再設定
   populateSeconds("reverseDisplaySeconds");
-  // 以前の値があれば復元（なければ「秒」のまま）
-  if (prevSeconds !== "" && prevSeconds !== "秒" && prevSeconds !== "--") {
+  if (prevSeconds !== "" && prevSeconds !== "ss" && prevSeconds !== "--") {
     document.getElementById("reverseDisplaySeconds").value = prevSeconds;
   }
 
-  // 誤差計算の結果を反映
   applyLastErrorToReverseInputs();
   reverseMode = "toStandard";
-  toggleReverseMode(false); // 初期表示（表示時刻から補正時刻を求める）
+  toggleReverseMode(false); 
 }
 
-/**
- * ⇆切替ボタンのロジック (修正: スタイルの制御)
- */
 function toggleReverseMode(doToggle = true) {
   const toggleBtn = document.getElementById("reverseModeToggleBtn");
   const label = document.getElementById("reverseTimeLabel");
@@ -617,19 +574,16 @@ function toggleReverseMode(doToggle = true) {
     reverseMode = reverseMode === "toStandard" ? "toDisplay" : "toStandard";
   }
 
-  // ボタン名を「⇆切替」に統一
   toggleBtn.innerText = "⇆切替";
 
   if (reverseMode === "toDisplay") {
-    // 探している時刻 → 表示時刻 (ピンク色)
-    label.innerHTML = '<span style="color: var(--toggle-bg); font-weight: bold;">探している時刻:</span>'; // ピンク太字
+    label.innerHTML = '<span style="color: var(--toggle-bg); font-weight: bold;">探している時刻:</span>'; 
     toggleBtn.classList.add("active-toggle-pink");
     toggleBtn.classList.remove("active-toggle");
   } else {
-    // 表示時刻 → 補正時刻 (水色)
-    label.innerHTML = '<span style="color: var(--accent); font-weight: bold;">表示時刻:</span>'; // 水色太字
+    label.innerHTML = '<span style="color: var(--accent); font-weight: bold;">表示時刻:</span>'; 
     toggleBtn.classList.remove("active-toggle-pink");
-    toggleBtn.classList.add("active-toggle"); // active-toggleは水色
+    toggleBtn.classList.add("active-toggle"); 
   }
 
   handleReverseCalculation();
@@ -639,17 +593,25 @@ function handleReverseCalculation() {
   const resultElement = document.getElementById("reverseResult");
   resultElement.innerHTML = "";
 
-  const days    = Number(document.getElementById("errorDays").value || 0);
-  const hours   = Number(document.getElementById("errorHours").value || 0);
-  const minutes = Number(document.getElementById("errorMinutes").value || 0);
+  const days = Number(document.getElementById("errorDays").value || 0);
+  const errorTimeVal = document.getElementById("errorTime").value;
   const seconds = Number(document.getElementById("errorSeconds").value || 0);
   const direction = document.getElementById("errorDirection").value;
 
-  const timeInput = document.getElementById("reverseDisplayTime").value;
-  const timeSec   = document.getElementById("reverseDisplaySeconds").value;
+  let hours = 0;
+  let minutes = 0;
+  if (errorTimeVal) {
+    const parts = errorTimeVal.split(":");
+    hours = Number(parts[0]);
+    minutes = Number(parts[1]);
+  }
 
-  const hasError = (days + hours + minutes + seconds) > 0;
-  const hasTime = timeInput && timeSec !== "" && timeSec !== "秒" && timeSec !== "--";
+  const timeDateVal = document.getElementById("reverseDisplayDate").value;
+  const timeTimeVal = document.getElementById("reverseDisplayTime").value;
+  const timeSec = document.getElementById("reverseDisplaySeconds").value;
+
+  const hasError = (days > 0) || (errorTimeVal !== "") || (seconds > 0);
+  const hasTime = timeDateVal && timeTimeVal && timeSec !== "" && timeSec !== "ss" && timeSec !== "--";
 
   document.getElementById("addToListButton").style.display = hasTime && hasError ? "inline-block" : "none";
 
@@ -658,10 +620,20 @@ function handleReverseCalculation() {
     return;
   }
 
+  // 時間入力項目が一部不足している場合に親切なエラーを表示
   if (!hasTime && hasError) {
-    resultElement.innerText = reverseMode === "toDisplay"
-      ? "探している時刻を入力してください"
-      : "表示時刻を入力してください";
+    const missing = [];
+    if (!timeDateVal) missing.push("年月日");
+    if (!timeTimeVal) missing.push("時分");
+    if (timeSec === "" || timeSec === "ss" || timeSec === "--") missing.push("秒");
+    
+    if (missing.length === 3) {
+      resultElement.innerText = reverseMode === "toDisplay"
+        ? "探している時刻を入力してください"
+        : "表示時刻を入力してください";
+    } else {
+      resultElement.innerText = `${reverseMode === "toDisplay" ? "探している時刻" : "表示時刻"}: ${missing.join(", ")}が不足`;
+    }
     return;
   }
 
@@ -670,30 +642,22 @@ function handleReverseCalculation() {
     return;
   }
 
-  const baseTime = new Date(timeInput);
-  baseTime.setSeconds(Number(timeSec));
+  const baseTimeStr = `${timeDateVal}T${timeTimeVal}:${String(timeSec).padStart(2, '0')}`;
+  const baseTime = new Date(baseTimeStr);
 
   const totalMs = ((days * 86400) + (hours * 3600) + (minutes * 60) + seconds) * 1000;
-  
-  // direction: late = 表示時刻が進んでいる / early = 表示時刻が遅れている
   const isDisplayFast = direction === "late";
 
   let resultTimeMs;
   if (reverseMode === "toStandard") {
-    // 表示時刻 → 補正時刻（標準時刻）を求める
-    // 表示時刻が進んでいれば（late）、標準時刻は遅れているのでマイナス補正
-    // 表示時刻が遅れていれば（early）、標準時刻は進んでいるのでプラス補正
     resultTimeMs = baseTime.getTime() + (isDisplayFast ? -totalMs : totalMs);
   } else {
-    // 探している時刻（標準時刻） → 表示時刻を求める
-    // 表示時刻が進んでいれば（late）、標準時刻よりプラス補正
-    // 表示時刻が遅れていれば（early）、標準時刻よりマイナス補正
     resultTimeMs = baseTime.getTime() + (isDisplayFast ? totalMs : -totalMs);
   }
 
   const resultTime = new Date(resultTimeMs);
 
-gtag('event', 'calculate_correction'); // Google Analyticsイベント
+  gtag('event', 'calculate_correction'); 
 
   const baseStr = formatDate(baseTime, true);
   const resultStr = formatDate(resultTime, true);
@@ -708,7 +672,7 @@ gtag('event', 'calculate_correction'); // Google Analyticsイベント
 
   resultElement.style.border = `2px solid ${resultBorderColor}`;
   resultElement.style.backgroundColor = resultBgColor;
-  resultElement.style.color = 'var(--text-main)'; // 全体の文字色はメインテキストカラーに
+  resultElement.style.color = 'var(--text-main)'; 
 
   resultElement.innerHTML = `
     <div style="padding: 0 10px;">
@@ -728,7 +692,6 @@ gtag('event', 'calculate_correction'); // Google Analyticsイベント
   document.getElementById("showListLink").style.display = "block";
 
   const result = {
-    // 一意のキー生成のため、ベース時刻も組み込む
     id: Date.now(), 
     error: { days, hours, minutes, seconds, direction },
     mode: reverseMode,
@@ -738,14 +701,13 @@ gtag('event', 'calculate_correction'); // Google Analyticsイベント
   window.latestResult = result;
 }
 
-/**
- * 結果一覧に追加する (修正: 表示時間を1.0秒に)
- */
 function addResultToList() {
   const r = window.latestResult;
   if (!r) return;
 
-  const errorKey = `${r.error.days}-${r.error.hours}-${r.error.minutes}-${r.error.seconds}-${r.error.direction}`;
+  const padH = String(r.error.hours || 0).padStart(2, '0');
+  const padM = String(r.error.minutes || 0).padStart(2, '0');
+  const errorKey = `${r.error.days}-${padH}-${padM}-${r.error.seconds}-${r.error.direction}`;
   
   let group = resultHistory.find(g => g.errorKey === errorKey);
 
@@ -767,28 +729,25 @@ function addResultToList() {
     entry.mode === r.mode
   );
 
-if (isDuplicate) {
-    // ★改修: 「追加しました」と同じアニメーション時間に変更
-    const msg = document.getElementById("recordSuccessMessage");
-    const originalText = msg.innerText;
-    msg.innerText = "既に記録されています";
-    msg.style.display = 'inline-block';
-    msg.classList.remove('fade-out');
-    msg.classList.add('fade-in-out');
-    // 外側のsetTimeoutを1000ms (1.0秒) に維持
-    setTimeout(() => {
-        msg.classList.remove('fade-in-out');
-        msg.classList.add('fade-out');
-        setTimeout(() => {
-            msg.style.display = 'none';
-            msg.classList.remove('fade-out');
-            msg.innerText = originalText; // テキストを元に戻す
-        }, 500); // 0.5秒のフェードアウト時間
-    }, 1000); // 1.0秒後にフェードアウト開始
-    return;
-  }
+  if (isDuplicate) {
+    const msg = document.getElementById("recordSuccessMessage");
+    const originalText = msg.innerText;
+    msg.innerText = "既に記録されています";
+    msg.style.display = 'inline-block';
+    msg.classList.remove('fade-out');
+    msg.classList.add('fade-in-out');
+    setTimeout(() => {
+        msg.classList.remove('fade-in-out');
+        msg.classList.add('fade-out');
+        setTimeout(() => {
+            msg.style.display = 'none';
+            msg.classList.remove('fade-out');
+            msg.innerText = originalText; 
+        }, 500); 
+    }, 1000); 
+    return;
+  }
   
-  // 常に新しいIDを割り当ててユニークにする
   const newEntry = {
     id: Date.now(),
     base: r.base, 
@@ -799,32 +758,30 @@ if (isDuplicate) {
   
   saveResultHistory();
 
-  gtag('event', 'add_to_list'); // Google Analyticsイベント
+  gtag('event', 'add_to_list'); 
 
   renderResultList();
   
-// ★改修: 履歴がある場合、「結果一覧を表示 →」リンクを表示し、テキストを再設定する
-    if (resultHistory.length > 0) {
-        const listLink = document.getElementById("showListLink");
-        listLink.style.display = "block"; // pタグなのでblockで表示
-        listLink.innerText = "結果一覧を表示 →"; 
-    }
+  if (resultHistory.length > 0) {
+      const listLink = document.getElementById("showListLink");
+      listLink.style.display = "block"; 
+      listLink.innerText = "結果一覧を表示 →"; 
+  }
 
-    // 成功メッセージ表示アニメーション
-    const msg = document.getElementById("recordSuccessMessage");
-    msg.innerText = "✔ 追加しました";
-    msg.style.display = 'inline-block';
-    msg.classList.remove('fade-out');
-    msg.classList.add('fade-in-out');
-    // 外側のsetTimeoutを1000ms (1.0秒) に維持
-    setTimeout(() => {
-        msg.classList.remove('fade-in-out');
-        msg.classList.add('fade-out');
-        setTimeout(() => {
-            msg.style.display = 'none';
-            msg.classList.remove('fade-out');
-        }, 500); // 0.5秒のフェードアウト時間
-    }, 1000); // 1.0秒後にフェードアウト開始
+  // 成功メッセージ表示アニメーション
+  const msg = document.getElementById("recordSuccessMessage");
+  msg.innerText = "✔ 追加しました";
+  msg.style.display = 'inline-block';
+  msg.classList.remove('fade-out');
+  msg.classList.add('fade-in-out');
+  setTimeout(() => {
+      msg.classList.remove('fade-in-out');
+      msg.classList.add('fade-out');
+      setTimeout(() => {
+          msg.style.display = 'none';
+          msg.classList.remove('fade-out');
+      }, 500); 
+  }, 1000); 
 }
 
 function showResultList() {
@@ -833,9 +790,6 @@ function showResultList() {
     renderResultList();
 }
 
-/**
- * 結果一覧を誤差と計算モードの小グループに分けて表示する
- */
 function renderResultList() {
   const container = document.getElementById("resultListContainer");
   container.innerHTML = "";
@@ -846,12 +800,10 @@ function renderResultList() {
     return;
   }
 
-  // 大グループ（誤差ごと）の処理
   resultHistory.forEach(group => {
     const { days, hours, minutes, seconds, direction } = group.error;
     const errorText = `${days || 0}日${hours || 0}時間${minutes || 0}分${seconds || 0}秒（${direction === "late" ? "進み" : "遅れ" }）`;
     
-    // エントリを toStandard と toDisplay に分類
     const entriesByMode = group.entries.reduce((acc, entry) => {
       if (!acc[entry.mode]) {
         acc[entry.mode] = [];
@@ -860,12 +812,10 @@ function renderResultList() {
       return acc;
     }, {});
     
-    // 各モード内で時刻の昇順（早いもの順）にソート
     Object.keys(entriesByMode).forEach(mode => {
       entriesByMode[mode].sort((a, b) => a.base.getTime() - b.base.getTime());
     });
 
-    // 大枠のコンテナ（誤差グループ）
     const outerBox = document.createElement("div");
     outerBox.className = "result-list-group-outer";
     outerBox.style.padding = "16px";
@@ -875,7 +825,6 @@ function renderResultList() {
     outerBox.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
     outerBox.style.boxShadow = "0 0 10px rgba(0,0,0,0.3)";
 
-    // 誤差のタイトル
     const title = document.createElement("h3");
     title.innerHTML = `<strong>補正に使った誤差：</strong>${errorText}`;
     title.style.color = 'var(--accent)';
@@ -884,7 +833,6 @@ function renderResultList() {
     title.style.paddingBottom = "10px";
     outerBox.appendChild(title);
 
-    // 小グループ（計算モードごと）の処理
     ['toStandard', 'toDisplay'].forEach(mode => {
       const modeEntries = entriesByMode[mode];
       if (!modeEntries || modeEntries.length === 0) return;
@@ -896,7 +844,6 @@ function renderResultList() {
       const borderColor = isToStandard ? "var(--accent)" : "var(--toggle-bg)"; 
       const bgColor = isToStandard ? "rgba(0, 255, 224, 0.05)" : "rgba(255, 0, 170, 0.05)";
 
-
       const innerBox = document.createElement("div");
       innerBox.className = "result-list-group-inner";
       innerBox.style.border = `1px solid ${borderColor}`;
@@ -906,14 +853,12 @@ function renderResultList() {
       innerBox.style.marginBottom = "12px";
       innerBox.style.textAlign = "left";
 
-      // モードのヘッダー
       const modeHeader = document.createElement("div");
       modeHeader.innerHTML = `<strong style="color: ${borderColor};">${baseLabel} → ${resultLabel} の計算</strong>`;
       modeHeader.style.marginBottom = "8px";
       modeHeader.style.paddingBottom = "4px";
       innerBox.appendChild(modeHeader);
 
-      // 各エントリの行
       modeEntries.forEach(entry => {
         const line = document.createElement("div");
         line.style.marginBottom = "6px";
@@ -951,7 +896,6 @@ function renderResultList() {
 function deleteResultById(idToDelete) {
   let isDeleted = false;
   
-  // 履歴をループして、一致するIDを持つエントリを削除
   resultHistory = resultHistory.map(group => {
     const initialLength = group.entries.length;
     group.entries = group.entries.filter(entry => entry.id !== idToDelete);
@@ -959,7 +903,7 @@ function deleteResultById(idToDelete) {
       isDeleted = true;
     }
     return group;
-  }).filter(group => group.entries.length > 0); // エントリが空になったグループは削除
+  }).filter(group => group.entries.length > 0); 
 
   if (isDeleted) {
     saveResultHistory();
@@ -989,11 +933,10 @@ function showInformationPage() {
 
 function backToLockScreen() {
   document.getElementById("informationPage").style.display = "none";
-  document.getElementById("qrCodePage").style.display = "none"; // QRコード画面も閉じる
+  document.getElementById("qrCodePage").style.display = "none"; 
   document.getElementById("lockScreen").style.display = "block";
 }
 
-// QRコード表示機能
 function showQRCodePage() {
   document.getElementById("informationPage").style.display = "none";
   document.getElementById("qrCodePage").style.display = "block";
@@ -1018,15 +961,12 @@ if ('serviceWorker' in navigator) {
             .then(reg => {
                 console.log('Service Worker 登録成功:', reg.scope);
 
-                // 新しいService Workerがインストールされたことを監視する
                 reg.addEventListener('updatefound', () => {
                     newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
-                        // 新しいService Workerがインストールされ、待機状態になった場合
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            // ★アクティブなService Workerが存在し、新しいSWがインストールされた = 更新あり
                             console.log('New content available, show update prompt');
-                            updateNotification.style.display = 'block'; // 通知を表示
+                            updateNotification.style.display = 'block'; 
                         }
                     });
                 });
@@ -1036,19 +976,15 @@ if ('serviceWorker' in navigator) {
             });
     });
 
-    // ユーザーが通知ボタンを押した時の処理
     if (updateButton) {
         updateButton.addEventListener('click', () => {
             if (newWorker) {
-                // Service Workerにスキップメッセージを送信し、強制的にアクティベートさせる
                 newWorker.postMessage({ action: 'skipWaiting' });
             }
         });
     }
 
-    // skipWaitingによってService Workerがアクティベートされた後、ページをリロードする
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-        // 現在のService Workerが切り替わったら（＝更新が適用されたら）ページをリロード
         window.location.reload();
     });
 }

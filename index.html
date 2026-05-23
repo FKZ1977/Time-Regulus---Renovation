@@ -103,15 +103,11 @@
     <div id="errorModeDisplayInputGroup" class="input-group">
       <label>表示時刻：</label>
       <div class="datetime-row">
-        <input type="date" id="displayDate" placeholder="yyyy/mm/dd" required>
-        <input type="time" id="displayTime" placeholder="hh:mm" required>
-        <select id="displaySeconds" class="seconds-select" style="display: none;">
+        <input type="date" id="displayDate" placeholder="yyyy/mm/dd">
+        <input type="time" id="displayTime" placeholder="hh:mm">
+        <select id="displaySeconds" class="seconds-select">
           <option value="">ss</option>
         </select>
-        <div class="loop-seconds-picker" id="displaySecondsPicker" data-target="displaySeconds">
-          <div class="picker-focus-line"></div>
-          <div class="picker-wheel"></div>
-        </div>
       </div>
     </div>
 
@@ -123,15 +119,11 @@
       <label>標準時刻：</label>
       <button class="action-btn" id="standardNowButton" onclick="setNowToStandard()" style="margin-left: 8px;">NOW🔄</button>
       <div class="datetime-row">
-        <input type="date" id="standardDate" placeholder="yyyy/mm/dd" required>
-        <input type="time" id="standardTime" placeholder="hh:mm" required>
-        <select id="standardSeconds" class="seconds-select" style="display: none;">
+        <input type="date" id="standardDate" placeholder="yyyy/mm/dd">
+        <input type="time" id="standardTime" placeholder="hh:mm">
+        <select id="standardSeconds" class="seconds-select">
           <option value="">ss</option>
         </select>
-        <div class="loop-seconds-picker" id="standardSecondsPicker" data-target="standardSeconds">
-          <div class="picker-focus-line"></div>
-          <div class="picker-wheel"></div>
-        </div>
       </div>
     </div>
 
@@ -152,24 +144,16 @@
     <label>補正に使う誤差：</label>
     <div class="flex-wrap">
       <div class="unit-input">
-        <input type="number" id="errorDays" min="0" step="1" tabindex="13">
+        <input type="number" id="errorDays" min="0" step="1" placeholder="d" tabindex="13">
         <span class="unit-label">日</span>
       </div>
-      <div class="unit-input">
-        <select id="errorHours" tabindex="14">
-          <option value="">--</option>
-        </select>
-        <span class="unit-label">時</span>
+      <div class="unit-input" style="flex: 1.8;">
+        <input type="time" id="errorTime" placeholder="hh:mm" tabindex="14">
+        <span class="unit-label">時分</span>
       </div>
       <div class="unit-input">
-        <select id="errorMinutes" tabindex="15">
-          <option value="">--</option>
-        </select>
-        <span class="unit-label">分</span>
-      </div>
-      <div class="unit-input">
-        <select id="errorSeconds" tabindex="16">
-          <option value="">--</option>
+        <select id="errorSeconds" tabindex="15">
+          <option value="">ss</option>
         </select>
         <span class="unit-label">秒</span>
       </div>
@@ -190,15 +174,11 @@
     <div id="reverseTimeBlock" class="input-group">
       <label id="reverseTimeLabel" for="reverseDisplayTime">表示時刻:</label>
       <div class="datetime-row">
-        <input type="date" id="reverseDisplayDate" placeholder="yyyy/mm/dd" tabindex="18" required>
-        <input type="time" id="reverseDisplayTime" placeholder="hh:mm" tabindex="19" required>
-        <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20" style="display: none;">
+        <input type="date" id="reverseDisplayDate" placeholder="yyyy/mm/dd" tabindex="18">
+        <input type="time" id="reverseDisplayTime" placeholder="hh:mm" step="60" tabindex="19">
+        <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
           <option value="">ss</option>
         </select>
-        <div class="loop-seconds-picker" id="reverseDisplaySecondsPicker" data-target="reverseDisplaySeconds">
-          <div class="picker-focus-line"></div>
-          <div class="picker-wheel"></div>
-        </div>
       </div>
     </div>
 
@@ -213,9 +193,7 @@
   </div>
 
   <div id="resultListPage" style="display:none; text-align:center; padding: 40px 16px;"><br><br>
-    <div style="text-align: left; max-width: 393px; margin: 0 auto; width: 100%;">
-      <button class="back-btn" onclick="backToCorrectionMode()">← 補正時刻の計算に戻る</button>
-    </div>
+    <button class="back-btn" onclick="backToCorrectionMode()">← 補正時刻の計算に戻る</button>
     <h1 class="fkz" style="margin-top: 40px;">結果一覧</h1>
     <div id="resultListContainer" style="margin-top: 30px;"></div>
   </div>
