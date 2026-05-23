@@ -8,6 +8,56 @@ let isStandardOnTop = false; // 標準時刻が上に配置されているかを
 const QR_CODE_URL_BASE = "https://fkz1977.github.io/Time-Regulus/";
 
 let inputHelperEnabled = false;
+let omitDateEnabled = false;
+
+function toggleOmitDate(enabled) {
+  omitDateEnabled = enabled;
+  const omitToggle = document.getElementById("omitDateToggle");
+  if (omitToggle) omitToggle.checked = enabled;
+
+  const rowDisplayDirect = document.querySelector("#errorModeDisplayInputGroup .datetime-direct-row");
+  const rowDisplayOn = document.querySelector("#errorModeDisplayInputGroup .datetime-row");
+  const rowStandardDirect = document.querySelector("#errorModeStandardInputGroup .datetime-direct-row");
+  const rowStandardOn = document.querySelector("#errorModeStandardInputGroup .datetime-row");
+
+  if (enabled) {
+    if (rowDisplayDirect) rowDisplayDirect.classList.add("omit-date-active");
+    if (rowDisplayOn) rowDisplayOn.classList.add("omit-date-active");
+    if (rowStandardDirect) rowStandardDirect.classList.add("omit-date-active");
+    if (rowStandardOn) rowStandardOn.classList.add("omit-date-active");
+  } else {
+    if (rowDisplayDirect) rowDisplayDirect.classList.remove("omit-date-active");
+    if (rowDisplayOn) rowDisplayOn.classList.remove("omit-date-active");
+    if (rowStandardDirect) rowStandardDirect.classList.remove("omit-date-active");
+    if (rowStandardOn) rowStandardOn.classList.remove("omit-date-active");
+  }
+
+  // 年月日要素（カレンダー等および手入力用）の個別の非表示化
+  const dateIds = [
+    "displayDate", "standardDate",
+    "displayYear_direct", "displayMonth_direct", "displayDay_direct",
+    "standardYear_direct", "standardMonth_direct", "standardDay_direct"
+  ];
+  
+  dateIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.display = enabled ? "none" : "";
+    }
+  });
+
+  // デリミタとスペースの非表示化
+  const elementsToHide = document.querySelectorAll(
+    "#errorModeDisplayInputGroup .delimiter, #errorModeDisplayInputGroup .direct-space, " +
+    "#errorModeStandardInputGroup .delimiter, #errorModeStandardInputGroup .direct-space"
+  );
+  elementsToHide.forEach(el => {
+    el.style.display = enabled ? "none" : "";
+  });
+
+  // 再計算
+  calculateError();
+}
 
 // 補助パース/フォーマット関数
 function parseDateString(dateStr) {
@@ -312,22 +362,45 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // iOS Safari等での余白タップ検知（✓ボタン押下と余白タップでのフォーカスアウトを区別するフラグ）
+  let skipJumpOnBlur = false;
+  window.addEventListener("touchstart", function(e) {
+    if (e.target && !e.target.classList.contains("direct-year") && !e.target.classList.contains("direct-two") && !e.target.id.includes("direct") && !e.target.className.includes("direct")) {
+      skipJumpOnBlur = true;
+      setTimeout(() => { skipJumpOnBlur = false; }, 250);
+    }
+  }, { passive: true });
+  window.addEventListener("mousedown", function(e) {
+    if (e.target && !e.target.classList.contains("direct-year") && !e.target.classList.contains("direct-two") && !e.target.id.includes("direct") && !e.target.className.includes("direct")) {
+      skipJumpOnBlur = true;
+      setTimeout(() => { skipJumpOnBlur = false; }, 250);
+    }
+  });
+
   // 自動フォーカスジャンプと入力制御の設定関数
   function setupDirectInputField({ id, nextId, maxVal, customEnterHandler }) {
     const el = document.getElementById(id);
     if (!el) return;
 
-    // ⑤ タップ時に一度中身を自動的に空にする
+    // ③ タップ時はクリアせず、入力開始時までクリアを待つためのフラグ
     el.addEventListener("focus", function() {
-      el.value = "";
+      el.dataset.freshFocus = "true";
     });
 
-    // ④ 最大値インテリジェント制御
+    // ④ 最大値インテリジェント制御 ＆ 入力開始時クリア
     el.addEventListener("input", function() {
       let val = el.value.replace(/[^0-9]/g, "");
       if (val === "") {
         el.value = "";
         return;
+      }
+
+      // 新しい入力が開始された最初の1文字目に古い値をクリアする
+      if (el.dataset.freshFocus === "true") {
+        el.dataset.freshFocus = "false";
+        const lastChar = val.charAt(val.length - 1);
+        el.value = lastChar;
+        val = lastChar;
       }
 
       if (maxVal !== undefined) {
@@ -344,21 +417,39 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
+    // ジャンプ処理の共通化
+    function triggerNextJump() {
+      if (customEnterHandler) {
+        customEnterHandler();
+      } else if (nextId) {
+        const nextEl = document.getElementById(nextId);
+        if (nextEl) {
+          setTimeout(() => {
+            nextEl.focus();
+            if (nextEl.select) nextEl.select();
+          }, 60); // iOSのキーボード昇降アニメーションに合わせるためのわずかなディレイ
+        }
+      } else {
+        el.blur(); // 最後の要素ならキーボードを閉じる
+      }
+    }
+
     // ③ & ⑥ テンキーの「Enter/完了（✓）」キー連動型フォーカスジャンプ
     el.addEventListener("keydown", function(e) {
       if (e.key === "Enter") {
         e.preventDefault();
-        if (customEnterHandler) {
-          customEnterHandler(e);
-        } else if (nextId) {
-          const nextEl = document.getElementById(nextId);
-          if (nextEl) {
-            nextEl.focus();
-            if (nextEl.select) nextEl.select();
-          }
-        } else {
-          el.blur(); // 最後の要素ならキーボードを閉じる
-        }
+        triggerNextJump();
+      }
+    });
+
+    // ② iOSのテンキー右上「✓ (Done)」でのフォーカスアウト時の自動ジャンプ
+    el.addEventListener("blur", function() {
+      if (skipJumpOnBlur) {
+        // 余白タップによるフォーカスアウトなので、次の枠へはジャンプせず選択解除
+        return;
+      }
+      if (el.value !== "") {
+        triggerNextJump();
       }
     });
   }
@@ -373,9 +464,11 @@ document.addEventListener("DOMContentLoaded", function () {
   setupDirectInputField({
     id: "displaySec_direct",
     maxVal: 59,
-    customEnterHandler: function(e) {
+    customEnterHandler: function() {
       if (!isStandardOnTop) {
-        const nextEl = document.getElementById("standardYear_direct");
+        // 表示が上の時、次のジャンプ先（標準の年、または年月日省略時は標準の時）を決定
+        const nextId = omitDateEnabled ? "standardHour_direct" : "standardYear_direct";
+        const nextEl = document.getElementById(nextId);
         if (nextEl) {
           nextEl.focus();
           if (nextEl.select) nextEl.select();
@@ -394,9 +487,11 @@ document.addEventListener("DOMContentLoaded", function () {
   setupDirectInputField({
     id: "standardMin_direct",
     maxVal: 59,
-    customEnterHandler: function(e) {
+    customEnterHandler: function() {
       if (isStandardOnTop) {
-        const nextEl = document.getElementById("displayYear_direct");
+        // 標準が上の時、次のジャンプ先（表示の年、または年月日省略時は表示の時）を決定
+        const nextId = omitDateEnabled ? "displayHour_direct" : "displayYear_direct";
+        const nextEl = document.getElementById(nextId);
         if (nextEl) {
           nextEl.focus();
           if (nextEl.select) nextEl.select();
@@ -413,7 +508,7 @@ document.addEventListener("DOMContentLoaded", function () {
   setupDirectInputField({
     id: "standardSec_direct",
     maxVal: 59,
-    customEnterHandler: function(e) {
+    customEnterHandler: function() {
       if (!isStandardOnTop) {
         document.getElementById("standardSec_direct").blur();
       }
@@ -532,7 +627,12 @@ function showErrorMode() {
   // 初期状態でテンキーを起動する自動フォーカス処理
   if (!inputHelperEnabled) {
     setTimeout(() => {
-      const target = isStandardOnTop ? document.getElementById("standardYear_direct") : document.getElementById("displayYear_direct");
+      let target;
+      if (omitDateEnabled) {
+        target = isStandardOnTop ? document.getElementById("standardHour_direct") : document.getElementById("displayHour_direct");
+      } else {
+        target = isStandardOnTop ? document.getElementById("standardYear_direct") : document.getElementById("displayYear_direct");
+      }
       if (target) {
         target.focus();
         if (target.select) target.select();
@@ -637,6 +737,7 @@ function resetApp(onlyInputs = false) {
   }
   
   toggleReverseMode(false);
+  toggleOmitDate(false);
 
   if (onlyInputs) { 
      resultHistory = [];
@@ -813,23 +914,28 @@ function calculateError() {
   const resultElement = document.getElementById("result");
   const toReverseButton = document.getElementById("toReverseButton");
   
+  // --- システム当日の日付を取得（年月日未入力時の補完用） ---
+  const today = new Date();
+  const todayY = today.getFullYear();
+  const todayM = String(today.getMonth() + 1).padStart(2, '0');
+  const todayD = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${todayY}-${todayM}-${todayD}`;
+
+  // 年月日が空なら当日の日付で補完する
+  const finalStandardDate = standardDateVal || todayStr;
+  const finalDisplayDate = displayDateVal || todayStr;
+
   // --- 入力チェック ---
   
   const missingStandardInputs = [];
   const missingDisplayInputs = [];
   
-  // 1. 標準時刻の入力欄チェック
-  if (!standardDateVal) {
-    missingStandardInputs.push("年月日");
-  }
+  // 1. 標準時刻の入力欄チェック（年月日のチェックは廃止）
   if (!standardTimeVal) {
     missingStandardInputs.push("時分");
   }
   
-  // 2. 表示時刻の入力欄チェック
-  if (!displayDateVal) {
-    missingDisplayInputs.push("年月日");
-  }
+  // 2. 表示時刻の入力欄チェック（年月日のチェックは廃止）
   if (!displayTimeVal) {
     missingDisplayInputs.push("時分");
   }
@@ -852,10 +958,10 @@ function calculateError() {
   // すべての入力が揃っていない場合
   if (missingStandardInputs.length > 0 || missingDisplayInputs.length > 0) {
     
-    // 標準時刻と表示時刻の両方で「年月日」「時分」「秒」が不足しているかチェック
+    // 標準時刻と表示時刻の両方で「時分」「秒」が不足しているかチェック
     const isTotallyEmpty = (isStandardOnTop ?
-        (!standardDateVal && !standardTimeVal && !displayDateVal && !displayTimeVal && !isDisplaySecValid) :
-        (!standardDateVal && !standardTimeVal && !displayDateVal && !displayTimeVal && !isStandardSecValid && !isDisplaySecValid)
+        (!standardTimeVal && !displayTimeVal && !isDisplaySecValid) :
+        (!standardTimeVal && !displayTimeVal && !isStandardSecValid && !isDisplaySecValid)
     );
     
     let messageContent;
@@ -866,7 +972,7 @@ function calculateError() {
         messageContent = `
             ${firstLine}<br>
             <span style="font-size: 14px; color: var(--text-sub); font-weight: normal; line-height: 1.5;">
-                年月日、時分、秒を入力してください
+                時分、秒を入力してください
             </span>
         `;
         messageStyle = `font-size: 16px; color: var(--accent); font-weight: bold; line-height: 1.5; text-decoration: none;`; 
@@ -912,8 +1018,8 @@ function calculateError() {
   const displaySec = Number(displaySecValue);
 
   // iOS/Androidでの互換性を高めるため、ISO 8601形式の文字列（T区切り）を生成してパース
-  const standardDateStr = `${standardDateVal}T${standardTimeVal}:${String(standardSec).padStart(2, '0')}`;
-  const displayDateStr = `${displayDateVal}T${displayTimeVal}:${String(displaySec).padStart(2, '0')}`;
+  const standardDateStr = `${finalStandardDate}T${standardTimeVal}:${String(standardSec).padStart(2, '0')}`;
+  const displayDateStr = `${finalDisplayDate}T${displayTimeVal}:${String(displaySec).padStart(2, '0')}`;
 
   const standard = new Date(standardDateStr);
   const display = new Date(displayDateStr);
@@ -1288,7 +1394,24 @@ function renderResultList() {
 
   resultHistory.forEach(group => {
     const { days, hours, minutes, seconds, direction } = group.error;
-    const errorText = `${days || 0}日${hours || 0}時間${minutes || 0}分${seconds || 0}秒（${direction === "late" ? "進み" : "遅れ" }）`;
+    
+    // (1) 頭の0の時間を表示しないインテリジェント表示ロジック
+    let errorText = "";
+    const d = days || 0;
+    const h = hours || 0;
+    const m = minutes || 0;
+    const s = seconds || 0;
+
+    if (d > 0) {
+      errorText = `${d}日${h}時間${m}分${s}秒`;
+    } else if (h > 0) {
+      errorText = `${h}時間${m}分${s}秒`;
+    } else if (m > 0) {
+      errorText = `${m}分${s}秒`;
+    } else {
+      errorText = `${s}秒`;
+    }
+    errorText += `（${direction === "late" ? "進み" : "遅れ" }）`;
     
     const entriesByMode = group.entries.reduce((acc, entry) => {
       if (!acc[entry.mode]) {
@@ -1302,21 +1425,23 @@ function renderResultList() {
       entriesByMode[mode].sort((a, b) => a.base.getTime() - b.base.getTime());
     });
 
+    // 縦つぶしレイアウト圧縮の適用
     const outerBox = document.createElement("div");
     outerBox.className = "result-list-group-outer";
-    outerBox.style.padding = "16px";
-    outerBox.style.marginBottom = "24px";
+    outerBox.style.padding = "8px 10px";
+    outerBox.style.marginBottom = "12px";
     outerBox.style.border = '2px solid var(--text-sub)';
-    outerBox.style.borderRadius = "12px";
+    outerBox.style.borderRadius = "8px";
     outerBox.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
     outerBox.style.boxShadow = "0 0 10px rgba(0,0,0,0.3)";
 
     const title = document.createElement("h3");
     title.innerHTML = `<strong>補正に使った誤差：</strong>${errorText}`;
     title.style.color = 'var(--accent)';
-    title.style.marginBottom = "16px";
+    title.style.marginTop = "2px";
+    title.style.marginBottom = "8px";
     title.style.borderBottom = "1px dashed var(--text-sub)";
-    title.style.paddingBottom = "10px";
+    title.style.paddingBottom = "4px";
     outerBox.appendChild(title);
 
     ['toStandard', 'toDisplay'].forEach(mode => {
@@ -1334,20 +1459,20 @@ function renderResultList() {
       innerBox.className = "result-list-group-inner";
       innerBox.style.border = `1px solid ${borderColor}`;
       innerBox.style.backgroundColor = bgColor;
-      innerBox.style.borderRadius = "8px";
-      innerBox.style.padding = "12px";
-      innerBox.style.marginBottom = "12px";
+      innerBox.style.borderRadius = "6px";
+      innerBox.style.padding = "6px 8px";
+      innerBox.style.marginBottom = "6px";
       innerBox.style.textAlign = "left";
 
       const modeHeader = document.createElement("div");
-      modeHeader.innerHTML = `<strong style="color: ${borderColor};">${baseLabel} → ${resultLabel} の計算</strong>`;
-      modeHeader.style.marginBottom = "8px";
-      modeHeader.style.paddingBottom = "4px";
+      modeHeader.innerHTML = `<strong style="color: ${borderColor}; font-size: 13px;">${baseLabel} → ${resultLabel} の計算</strong>`;
+      modeHeader.style.marginBottom = "4px";
+      modeHeader.style.paddingBottom = "2px";
       innerBox.appendChild(modeHeader);
 
       modeEntries.forEach(entry => {
         const line = document.createElement("div");
-        line.style.marginBottom = "6px";
+        line.style.marginBottom = "3px";
         line.style.display = "flex";
         line.style.justifyContent = "space-between";
         line.style.alignItems = "center";
@@ -1357,9 +1482,9 @@ function renderResultList() {
 
         const textSpan = document.createElement("span");
         textSpan.innerHTML = `
-          <span style="font-size: 15px; color: var(--text-sub);">${baseStr}</span>
-          <span style="font-size: 14px; color: var(--text-sub);">→</span>
-          <span style="font-size: 16px; font-weight: bold; color: ${resultColor};">${resultStr}</span>
+          <span style="font-size: 13px; color: var(--text-sub);">${baseStr}</span>
+          <span style="font-size: 12px; color: var(--text-sub);">→</span>
+          <span style="font-size: 14px; font-weight: bold; color: ${resultColor};">${resultStr}</span>
         `;
         line.appendChild(textSpan);
         

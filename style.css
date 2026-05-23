@@ -892,3 +892,61 @@ input:checked + .switch-slider:before {
   padding: 6px 12px !important;
   font-size: 13px !important;
 }
+
+/* ==========================================
+   年月日省略時のフレックス中央寄せスタイル
+   ========================================== */
+.datetime-direct-row.omit-date-active,
+.datetime-row.omit-date-active {
+  justify-content: center !important;
+}
+
+/* ==========================================
+   結果一覧画面のさらなる縦圧縮
+   ========================================== */
+#resultListPage {
+  padding: 15px 16px !important;
+  margin-top: 10px !important;
+}
+#resultListPage h1.fkz {
+  margin-top: 8px !important;
+  font-size: 28px !important;
+  margin-bottom: 12px !important;
+}
+#resultListPage .back-btn {
+  margin-bottom: 8px !important;
+  font-size: 14px !important;
+}
+#resultListContainer {
+  margin-top: 10px !important;
+}
+.result-list-group-outer {
+  padding: 8px 10px !important;
+  margin-bottom: 12px !important;
+  border-radius: 8px !important;
+}
+.result-list-group-outer h3 {
+  font-size: 14px !important;
+  margin-top: 2px !important;
+  margin-bottom: 8px !important;
+  padding-bottom: 4px !important;
+}
+.result-list-group-inner {
+  padding: 6px 8px !important;
+  margin-bottom: 6px !important;
+  border-radius: 6px !important;
+}
+.result-list-group-inner strong {
+  font-size: 13px !important;
+}
+.result-list-group-inner div {
+  margin-bottom: 4px !important;
+}
+.result-list-group-inner div span {
+  font-size: 13px !important;
+}
+.result-list-group-inner button.delete-btn {
+  padding: 2px 6px !important;
+  font-size: 11px !important;
+  border-radius: 3px !important;
+}
