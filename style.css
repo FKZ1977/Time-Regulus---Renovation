@@ -1219,41 +1219,76 @@ input:checked + .switch-slider:before {
    画面（モード）ごとの入力枠背景色・統一設定（ON/OFF完全調和）
    ========================================== */
 
-/* 誤差の計算モード（親カードのネイビーに調和する暗い紺色 #121622 に完全統一） */
-#errorMode input,
-#errorMode select,
-#errorMode .direct-group,
+/* 1. 誤差の計算モード（テーマ色：暗い紺色 #121622 に完全統一） */
 #errorMode .datetime-row input[type="date"],
 #errorMode .datetime-row input[type="time"],
-#errorMode .datetime-row .seconds-select {
+#errorMode .datetime-row .seconds-select,
+#errorMode .direct-group {
   background-color: #121622 !important;
 }
 
-/* 補正時刻の計算モード（親カードの深緑に調和する暗い深緑色 #0b2c1d に完全統一） */
-#correctionMode input,
-#correctionMode select,
-#correctionMode .direct-group,
-#correctionMode .direct-group-error-time,
+/* 直接入力（手入力）の中のインプットは枠全体と一体化させるため【背景は完全に透明】に維持！ */
+#errorMode .datetime-direct-row input,
+#errorMode .direct-group input {
+  background-color: transparent !important;
+}
+
+/* 2. 補正時刻の計算モード（テーマ色：暗い深緑色 #0b2c1d に完全統一） */
 #correctionMode .datetime-row input[type="date"],
 #correctionMode .datetime-row input[type="time"],
 #correctionMode .datetime-row .seconds-select,
+#correctionMode .direct-group,
+#correctionMode .direct-group-error-time,
 #correctionMode .unit-input input,
 #correctionMode .unit-input select {
   background-color: #0b2c1d !important;
 }
 
+/* 直接入力・補正誤差手入力の中のインプットは枠全体と一体化させるため【背景は完全に透明】に維持！ */
+#correctionMode .datetime-direct-row input,
+#correctionMode .direct-group input,
+#correctionMode .direct-group-error-time input {
+  background-color: transparent !important;
+}
+
 /* ==========================================
-   入力枠内テキスト・プレースホルダーの極美中央寄せ＆純白表示
+   全画面共通：入力枠内の文字色・プレースホルダーの統一設計（ON/OFF調和）
    ========================================== */
 
-/* 値が入力されている（.has-value）またはフォーカス時の文字色は「純白色」でくっきり表示 */
+/* 値が入力されている、またはアクティブな入力文字はすべて「純白色」で統一してくっきり表示 */
+input, 
+select,
 input[type="date"].has-value,
 input[type="date"]:focus,
 input[type="time"].has-value,
-input[type="time"]:focus {
+input[type="time"]:focus,
+select:not(.placeholder-active) {
   color: #ffffff !important;
   opacity: 1 !important;
 }
+
+/* 直接入力（手入力）の placeholder は美しい灰色に */
+input::placeholder {
+  color: var(--text-sub) !important;
+  opacity: 0.6 !important;
+}
+
+/* 入力補助ON（カレンダー・時計）の日付・時刻入力欄のデフォルト（未入力ガイド表示）は灰色に */
+input[type="date"],
+input[type="time"] {
+  color: var(--text-sub) !important;
+  opacity: 0.6 !important;
+}
+
+/* セレクトボックス（秒）の未選択プレースホルダー（ss）は灰色に */
+select.placeholder-active {
+  color: var(--text-sub) !important;
+  opacity: 0.6 !important;
+}
+
+/* ==========================================
+   入力枠内テキスト・プレースホルダーの極美中央寄せ
+   ========================================== */
 
 /* セレクトボックスのテキストを iOS / Android / PC 全環境で完璧に中央寄せ */
 select {
