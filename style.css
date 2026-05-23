@@ -783,3 +783,112 @@ input:checked + .switch-slider:before {
 .flex-wrap.input-helper-off input {
   text-align: center;
 }
+
+/* ==========================================
+   補正時刻計算画面の縦圧縮レイアウト
+   ========================================== */
+#correctionMode {
+  padding: 10px 12px 14px 12px !important;
+  margin-top: 10px !important;
+}
+#correctionMode h2 {
+  margin-top: 4px !important;
+  margin-bottom: 6px !important;
+  font-size: 18px !important;
+}
+#correctionMode .back-btn {
+  margin-bottom: 8px !important;
+  font-size: 14px !important;
+}
+#correctionMode .helper-toggle-wrapper {
+  margin-top: 2px !important;
+  margin-bottom: 8px !important;
+  gap: 8px !important;
+}
+#correctionMode .helper-toggle-label {
+  font-size: 14px !important;
+}
+#correctionMode .switch-container {
+  width: 44px !important;
+  height: 24px !important;
+}
+#correctionMode .switch-slider:before {
+  height: 18px !important;
+  width: 18px !important;
+  left: 2px !important;
+  bottom: 2px !important;
+}
+#correctionMode input:checked + .switch-slider:before {
+  transform: translateX(20px) !important;
+}
+#correctionMode label {
+  font-size: 14px !important;
+}
+#correctionMode .flex-wrap {
+  margin-bottom: 6px !important;
+  gap: 4px !important;
+}
+#correctionMode .unit-input {
+  gap: 1px !important;
+}
+#correctionMode .unit-input input,
+#correctionMode .unit-input select {
+  padding: 6px 2px !important;
+  font-size: 14px !important;
+  border-radius: 6px !important;
+}
+#correctionMode .unit-label {
+  font-size: 12px !important;
+}
+#correctionMode .input-group-direction {
+  gap: 4px !important;
+  margin-top: 6px !important;
+  margin-bottom: 8px !important;
+}
+#correctionMode .segmented-control {
+  margin-top: 4px !important;
+  padding: 2px !important;
+}
+#correctionMode .segment-btn {
+  padding: 6px !important;
+  font-size: 14px !important;
+}
+#correctionMode #reverseTimeBlock {
+  margin-top: 6px !important;
+  margin-bottom: 8px !important;
+}
+#correctionMode .datetime-direct-row,
+#correctionMode .datetime-row {
+  margin-top: 4px !important;
+}
+#correctionMode .datetime-direct-row input,
+#correctionMode .datetime-row input {
+  padding: 6px 2px !important;
+  font-size: 14px !important;
+}
+#correctionMode #reverseResult {
+  margin: 6px 0 !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+}
+#correctionMode #reverseResult p {
+  margin: 2px 0 !important;
+  font-size: 13px !important;
+}
+#correctionMode #reverseResult strong {
+  font-size: 14px !important;
+}
+#correctionMode #reverseResult div {
+  padding: 2px 4px !important;
+}
+#correctionMode #addToListButton {
+  margin-top: 4px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+}
+#correctionMode #reverseModeToggleBtn {
+  margin-top: 2px !important;
+  margin-bottom: 2px !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+}

@@ -7,7 +7,7 @@ let resultHistory = [];
 let isStandardOnTop = false; // 標準時刻が上に配置されているかを示す状態変数
 const QR_CODE_URL_BASE = "https://fkz1977.github.io/Time-Regulus/";
 
-let inputHelperEnabled = true;
+let inputHelperEnabled = false;
 
 // 補助パース/フォーマット関数
 function parseDateString(dateStr) {
@@ -80,7 +80,10 @@ function syncInputValues(toON) {
     
     document.getElementById("displayDate").value = buildDateString(dY, dM, dD);
     document.getElementById("displayTime").value = buildTimeString(dH, dMin);
-    document.getElementById("displaySeconds").value = dS;
+    
+    // 型不一致（文字列型 '05' と数値型 5）の同期バグを解消
+    const dSVal = parseInt(dS, 10);
+    document.getElementById("displaySeconds").value = isNaN(dSVal) ? "" : dSVal;
 
     // --- 誤差の計算: 標準時刻 ---
     const sY = document.getElementById("standardYear_direct").value;
@@ -95,7 +98,8 @@ function syncInputValues(toON) {
     if (isStandardOnTop) {
       document.getElementById("standardSeconds").value = "0";
     } else {
-      document.getElementById("standardSeconds").value = sS;
+      const sSVal = parseInt(sS, 10);
+      document.getElementById("standardSeconds").value = isNaN(sSVal) ? "" : sSVal;
     }
 
     // --- 補正に使う誤差 ---
@@ -106,7 +110,9 @@ function syncInputValues(toON) {
     
     document.getElementById("errorDays").value = errD;
     document.getElementById("errorTime").value = buildTimeString(errH, errM);
-    document.getElementById("errorSeconds").value = errS;
+    
+    const errSVal = parseInt(errS, 10);
+    document.getElementById("errorSeconds").value = isNaN(errSVal) ? "" : errSVal;
 
     // --- 補正時刻: 表示/対象時刻 ---
     const rY = document.getElementById("reverseDisplayYear_direct").value;
@@ -118,7 +124,9 @@ function syncInputValues(toON) {
     
     document.getElementById("reverseDisplayDate").value = buildDateString(rY, rM, rD);
     document.getElementById("reverseDisplayTime").value = buildTimeString(rH, rMin);
-    document.getElementById("reverseDisplaySeconds").value = rS;
+    
+    const rSVal = parseInt(rS, 10);
+    document.getElementById("reverseDisplaySeconds").value = isNaN(rSVal) ? "" : rSVal;
 
   } else {
     // ON -> OFF への同期
@@ -132,7 +140,7 @@ function syncInputValues(toON) {
     document.getElementById("displayDay_direct").value = dispD.d;
     document.getElementById("displayHour_direct").value = dispT.h;
     document.getElementById("displayMin_direct").value = dispT.m;
-    document.getElementById("displaySec_direct").value = dispS;
+    document.getElementById("displaySec_direct").value = dispS !== "" ? String(dispS).padStart(2, '0') : "";
 
     // --- 誤差の計算: 標準時刻 ---
     const stdD = parseDateString(document.getElementById("standardDate").value);
@@ -170,7 +178,7 @@ function syncInputValues(toON) {
     document.getElementById("reverseDisplayDay_direct").value = revD.d;
     document.getElementById("reverseDisplayHour_direct").value = revT.h;
     document.getElementById("reverseDisplayMin_direct").value = revT.m;
-    document.getElementById("reverseDisplaySec_direct").value = revS;
+    document.getElementById("reverseDisplaySec_direct").value = revS !== "" ? String(revS).padStart(2, '0') : "";
   }
 }
 
@@ -304,106 +312,127 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // 自動フォーカスジャンプの設定関数
-  function setupDirectInputJump(currentId, nextId, maxLength) {
-    const currentEl = document.getElementById(currentId);
-    if (!currentEl) return;
-    currentEl.addEventListener("input", function() {
-      // 半角数字以外の入力を排除
-      currentEl.value = currentEl.value.replace(/[^0-9]/g, "");
-      if (currentEl.value.length >= maxLength) {
-        const nextEl = document.getElementById(nextId);
-        if (nextEl) {
-          nextEl.focus();
-          if (nextEl.select) nextEl.select();
+  // 自動フォーカスジャンプと入力制御の設定関数
+  function setupDirectInputField({ id, nextId, maxVal, customEnterHandler }) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // ⑤ タップ時に一度中身を自動的に空にする
+    el.addEventListener("focus", function() {
+      el.value = "";
+    });
+
+    // ④ 最大値インテリジェント制御
+    el.addEventListener("input", function() {
+      let val = el.value.replace(/[^0-9]/g, "");
+      if (val === "") {
+        el.value = "";
+        return;
+      }
+
+      if (maxVal !== undefined) {
+        let num = parseInt(val, 10);
+        if (num > maxVal) {
+          // 最大値を超える場合は最後の1文字（新しく入力した数字）だけにする
+          const lastChar = val.charAt(val.length - 1);
+          el.value = lastChar;
+        } else {
+          el.value = val;
         }
+      } else {
+        el.value = val;
       }
     });
-  }
 
-  // 自動フォーカスジャンプ設定の実行
-  // 表示時刻
-  setupDirectInputJump("displayYear_direct", "displayMonth_direct", 4);
-  setupDirectInputJump("displayMonth_direct", "displayDay_direct", 2);
-  setupDirectInputJump("displayDay_direct", "displayHour_direct", 2);
-  setupDirectInputJump("displayHour_direct", "displayMin_direct", 2);
-  setupDirectInputJump("displayMin_direct", "displaySec_direct", 2);
-  
-  const dispSecDir = document.getElementById("displaySec_direct");
-  if (dispSecDir) {
-    dispSecDir.addEventListener("input", function() {
-      dispSecDir.value = dispSecDir.value.replace(/[^0-9]/g, "");
-      if (dispSecDir.value.length >= 2) {
-        dispSecDir.blur();
-      }
-    });
-  }
-
-  // 標準時刻
-  setupDirectInputJump("standardYear_direct", "standardMonth_direct", 4);
-  setupDirectInputJump("standardMonth_direct", "standardDay_direct", 2);
-  setupDirectInputJump("standardDay_direct", "standardHour_direct", 2);
-  setupDirectInputJump("standardHour_direct", "standardMin_direct", 2);
-  setupDirectInputJump("standardMin_direct", "standardSec_direct", 2);
-  
-  const stdSecDir = document.getElementById("standardSec_direct");
-  if (stdSecDir) {
-    stdSecDir.addEventListener("input", function() {
-      stdSecDir.value = stdSecDir.value.replace(/[^0-9]/g, "");
-      if (stdSecDir.value.length >= 2) {
-        stdSecDir.blur();
-      }
-    });
-  }
-
-  // 補正対象（表示/対象時刻）
-  setupDirectInputJump("reverseDisplayYear_direct", "reverseDisplayMonth_direct", 4);
-  setupDirectInputJump("reverseDisplayMonth_direct", "reverseDisplayDay_direct", 2);
-  setupDirectInputJump("reverseDisplayDay_direct", "reverseDisplayHour_direct", 2);
-  setupDirectInputJump("reverseDisplayHour_direct", "reverseDisplayMin_direct", 2);
-  setupDirectInputJump("reverseDisplayMin_direct", "reverseDisplaySec_direct", 2);
-  
-  const revDispSecDir = document.getElementById("reverseDisplaySec_direct");
-  if (revDispSecDir) {
-    revDispSecDir.addEventListener("input", function() {
-      revDispSecDir.value = revDispSecDir.value.replace(/[^0-9]/g, "");
-      if (revDispSecDir.value.length >= 2) {
-        revDispSecDir.blur();
-      }
-    });
-  }
-
-  // 補正誤差
-  setupDirectInputJump("errorHours_direct", "errorMinutes_direct", 2);
-  setupDirectInputJump("errorMinutes_direct", "errorSeconds_direct", 2);
-  
-  const errSecDir = document.getElementById("errorSeconds_direct");
-  if (errSecDir) {
-    errSecDir.addEventListener("input", function() {
-      errSecDir.value = errSecDir.value.replace(/[^0-9]/g, "");
-      if (errSecDir.value.length >= 2) {
-        errSecDir.blur();
-      }
-    });
-  }
-
-  // 補正誤差の日は桁数制限なし、Enterキーで時にジャンプ
-  const errorDaysDirect = document.getElementById("errorDays_direct");
-  if (errorDaysDirect) {
-    errorDaysDirect.addEventListener("input", function() {
-      errorDaysDirect.value = errorDaysDirect.value.replace(/[^0-9]/g, "");
-    });
-    errorDaysDirect.addEventListener("keydown", function(e) {
+    // ③ & ⑥ テンキーの「Enter/完了（✓）」キー連動型フォーカスジャンプ
+    el.addEventListener("keydown", function(e) {
       if (e.key === "Enter") {
         e.preventDefault();
-        const nextEl = document.getElementById("errorHours_direct");
+        if (customEnterHandler) {
+          customEnterHandler(e);
+        } else if (nextId) {
+          const nextEl = document.getElementById(nextId);
+          if (nextEl) {
+            nextEl.focus();
+            if (nextEl.select) nextEl.select();
+          }
+        } else {
+          el.blur(); // 最後の要素ならキーボードを閉じる
+        }
+      }
+    });
+  }
+
+  // 各入力欄のセットアップ実行
+  // --- 誤差計算: 表示時刻 ---
+  setupDirectInputField({ id: "displayYear_direct", nextId: "displayMonth_direct" });
+  setupDirectInputField({ id: "displayMonth_direct", nextId: "displayDay_direct", maxVal: 12 });
+  setupDirectInputField({ id: "displayDay_direct", nextId: "displayHour_direct", maxVal: 31 });
+  setupDirectInputField({ id: "displayHour_direct", nextId: "displayMin_direct", maxVal: 23 });
+  setupDirectInputField({ id: "displayMin_direct", nextId: "displaySec_direct", maxVal: 59 });
+  setupDirectInputField({
+    id: "displaySec_direct",
+    maxVal: 59,
+    customEnterHandler: function(e) {
+      if (!isStandardOnTop) {
+        const nextEl = document.getElementById("standardYear_direct");
+        if (nextEl) {
+          nextEl.focus();
+          if (nextEl.select) nextEl.select();
+        }
+      } else {
+        document.getElementById("displaySec_direct").blur();
+      }
+    }
+  });
+
+  // --- 誤差計算: 標準時刻 ---
+  setupDirectInputField({ id: "standardYear_direct", nextId: "standardMonth_direct" });
+  setupDirectInputField({ id: "standardMonth_direct", nextId: "standardDay_direct", maxVal: 12 });
+  setupDirectInputField({ id: "standardDay_direct", nextId: "standardHour_direct", maxVal: 31 });
+  setupDirectInputField({ id: "standardHour_direct", nextId: "standardMin_direct", maxVal: 23 });
+  setupDirectInputField({
+    id: "standardMin_direct",
+    maxVal: 59,
+    customEnterHandler: function(e) {
+      if (isStandardOnTop) {
+        const nextEl = document.getElementById("displayYear_direct");
+        if (nextEl) {
+          nextEl.focus();
+          if (nextEl.select) nextEl.select();
+        }
+      } else {
+        const nextEl = document.getElementById("standardSec_direct");
         if (nextEl) {
           nextEl.focus();
           if (nextEl.select) nextEl.select();
         }
       }
-    });
-  }
+    }
+  });
+  setupDirectInputField({
+    id: "standardSec_direct",
+    maxVal: 59,
+    customEnterHandler: function(e) {
+      if (!isStandardOnTop) {
+        document.getElementById("standardSec_direct").blur();
+      }
+    }
+  });
+
+  // --- 補正誤差 ---
+  setupDirectInputField({ id: "errorDays_direct", nextId: "errorHours_direct" });
+  setupDirectInputField({ id: "errorHours_direct", nextId: "errorMinutes_direct", maxVal: 23 });
+  setupDirectInputField({ id: "errorMinutes_direct", nextId: "errorSeconds_direct", maxVal: 59 });
+  setupDirectInputField({ id: "errorSeconds_direct", nextId: "reverseDisplayYear_direct", maxVal: 59 });
+
+  // --- 補正対象（表示/対象時刻） ---
+  setupDirectInputField({ id: "reverseDisplayYear_direct", nextId: "reverseDisplayMonth_direct" });
+  setupDirectInputField({ id: "reverseDisplayMonth_direct", nextId: "reverseDisplayDay_direct", maxVal: 12 });
+  setupDirectInputField({ id: "reverseDisplayDay_direct", nextId: "reverseDisplayHour_direct", maxVal: 31 });
+  setupDirectInputField({ id: "reverseDisplayHour_direct", nextId: "reverseDisplayMin_direct", maxVal: 23 });
+  setupDirectInputField({ id: "reverseDisplayMin_direct", nextId: "reverseDisplaySec_direct", maxVal: 59 });
+  setupDirectInputField({ id: "reverseDisplaySec_direct", maxVal: 59 });
 });
 
 /**
@@ -499,6 +528,17 @@ function setNowToStandard() {
 function showErrorMode() {
   document.getElementById("modeSelect").style.display = "none";
   document.getElementById("errorMode").style.display = "block";
+  
+  // 初期状態でテンキーを起動する自動フォーカス処理
+  if (!inputHelperEnabled) {
+    setTimeout(() => {
+      const target = isStandardOnTop ? document.getElementById("standardYear_direct") : document.getElementById("displayYear_direct");
+      if (target) {
+        target.focus();
+        if (target.select) target.select();
+      }
+    }, 100);
+  }
 }
 
 function showCorrectionMode() { 
@@ -509,6 +549,17 @@ function showCorrectionMode() {
   }
   reverseMode = "toStandard";
   toggleReverseMode(false);
+
+  // 初期状態でテンキーを起動する自動フォーカス処理
+  if (!inputHelperEnabled) {
+    setTimeout(() => {
+      const target = document.getElementById("errorDays_direct");
+      if (target) {
+        target.focus();
+        if (target.select) target.select();
+      }
+    }, 100);
+  }
 }
 
 function backToModeSelect() {
@@ -1134,32 +1185,6 @@ function handleReverseCalculation() {
     result: resultTime
   };
   window.latestResult = result;
-
-  // 計算結果出力時および数値変更時の画面自動押し上げ（iOS対応・ブレのない固定スクロール）
-  setTimeout(() => {
-    const listLink = document.getElementById("showListLink");
-    const addBtn = document.getElementById("addToListButton");
-
-    // 対象となる要素を選択（「結果一覧を表示」リンクがあればそこまで、無ければ「記録する」ボタン）
-    const targetEl = (listLink && listLink.style.display !== "none") ? listLink : addBtn;
-
-    if (targetEl && targetEl.style.display !== "none") {
-      // 1. 標準スクロール（PC・Android用）
-      targetEl.scrollIntoView({ behavior: "smooth", block: "end" });
-
-      // 2. 【スマートフォーカス】二重フォーカスを回避しつつ、iOSの画面押し上げを安全に強制発動
-      if (document.activeElement !== targetEl) {
-        targetEl.focus();
-      }
-
-      // 3. 【ブレ防止】ドキュメント絶対最下部（scrollHeight）への物理固定スクロール
-      // 座標計算のズレを物理的に無くすため、コンテンツの最下部へスッとスクロールさせます
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: "smooth"
-      });
-    }
-  }, 120);
 }
 
 function addResultToList() {
