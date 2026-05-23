@@ -103,10 +103,15 @@
     <div id="errorModeDisplayInputGroup" class="input-group">
       <label>表示時刻：</label>
       <div class="datetime-row">
-        <input type="datetime-local" id="displayTime">
-        <select id="displaySeconds" class="seconds-select">
-          <option value="">秒</option>
+        <input type="date" id="displayDate" placeholder="yyyy/mm/dd" required>
+        <input type="time" id="displayTime" placeholder="hh:mm" required>
+        <select id="displaySeconds" class="seconds-select" style="display: none;">
+          <option value="">ss</option>
         </select>
+        <div class="loop-seconds-picker" id="displaySecondsPicker" data-target="displaySeconds">
+          <div class="picker-focus-line"></div>
+          <div class="picker-wheel"></div>
+        </div>
       </div>
     </div>
 
@@ -118,10 +123,15 @@
       <label>標準時刻：</label>
       <button class="action-btn" id="standardNowButton" onclick="setNowToStandard()" style="margin-left: 8px;">NOW🔄</button>
       <div class="datetime-row">
-        <input type="datetime-local" id="standardTime">
-        <select id="standardSeconds" class="seconds-select">
-          <option value="">秒</option>
+        <input type="date" id="standardDate" placeholder="yyyy/mm/dd" required>
+        <input type="time" id="standardTime" placeholder="hh:mm" required>
+        <select id="standardSeconds" class="seconds-select" style="display: none;">
+          <option value="">ss</option>
         </select>
+        <div class="loop-seconds-picker" id="standardSecondsPicker" data-target="standardSeconds">
+          <div class="picker-focus-line"></div>
+          <div class="picker-wheel"></div>
+        </div>
       </div>
     </div>
 
@@ -180,10 +190,15 @@
     <div id="reverseTimeBlock" class="input-group">
       <label id="reverseTimeLabel" for="reverseDisplayTime">表示時刻:</label>
       <div class="datetime-row">
-        <input type="datetime-local" id="reverseDisplayTime" step="60" tabindex="19">
-        <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
-          <option value="">--</option>
+        <input type="date" id="reverseDisplayDate" placeholder="yyyy/mm/dd" tabindex="18" required>
+        <input type="time" id="reverseDisplayTime" placeholder="hh:mm" tabindex="19" required>
+        <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20" style="display: none;">
+          <option value="">ss</option>
         </select>
+        <div class="loop-seconds-picker" id="reverseDisplaySecondsPicker" data-target="reverseDisplaySeconds">
+          <div class="picker-focus-line"></div>
+          <div class="picker-wheel"></div>
+        </div>
       </div>
     </div>
 

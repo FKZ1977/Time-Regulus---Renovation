@@ -541,7 +541,22 @@ input, select {
     text-decoration: underline; /* ホバー時に下線を表示 */
 }
 
-/* スマホ向けの新しい入力レイアウト（日時入力と秒選択の伸縮横並び） */
+/* プレースホルダーの文字色（薄いグレー） */
+input::placeholder {
+  color: #777 !important;
+  opacity: 1; /* Firefox対策 */
+}
+
+/* 秒セレクトボックスの未選択時の薄い文字スタイル */
+select.placeholder-active {
+  color: #777 !important;
+}
+
+select.placeholder-active option {
+  color: var(--text-main); /* ドロップダウン内の選択肢は通常の色にする */
+}
+
+/* スマホ向けの新しい入力レイアウト（日付・時間・秒選択の伸縮横並び） */
 .datetime-row {
   display: flex;
   gap: 8px;
@@ -549,14 +564,20 @@ input, select {
   margin-top: 6px;
 }
 
-.datetime-row input[type="datetime-local"] {
-  flex: 1; /* 残りの横幅をすべて埋める */
+.datetime-row input[type="date"] {
+  flex: 1.6; /* 日付は幅を広めに確保 */
+  min-width: 0; /* フレックスコンテナ内での縮小を許可 */
+  width: auto; /* 固定幅を解除 */
+}
+
+.datetime-row input[type="time"] {
+  flex: 1.1; /* 時間は日付よりコンパクトに */
   min-width: 0; /* フレックスコンテナ内での縮小を許可 */
   width: auto; /* 固定幅を解除 */
 }
 
 .datetime-row .seconds-select {
-  width: 75px; /* 秒セレクトボックスはコンパクトな固定幅に */
+  width: 65px; /* 秒セレクトボックスはコンパクトな固定幅に */
   margin-top: 0; /* マージンをクリア */
 }
 
@@ -583,4 +604,125 @@ input, select {
   padding: 6px 12px;
   font-size: 13px;
   vertical-align: middle;
+}
+
+/* ==========================================================================
+   無限（∞）ドラムロールピッカーのスタイル定義
+   ========================================================================== */
+
+/* ピッカーの外枠コンテナ */
+.loop-seconds-picker {
+  position: relative;
+  width: 65px;
+  height: 40px; /* 入力欄と同じ高さに合わせる */
+  background-color: #1f1f2f;
+  border-radius: 8px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, opacity 0.3s ease;
+  user-select: none;
+  cursor: grab;
+}
+
+.loop-seconds-picker:active {
+  cursor: grabbing;
+}
+
+/* 親要素のフォーカス時と同期する擬似フォーカス枠線 */
+.loop-seconds-picker.active-focus {
+  border: 1px solid var(--accent) !important;
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* 中央のフォーカスライン（時計アプリのような目印ライン） */
+.picker-focus-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 24px; /* アイテム1個分の高さにフィット */
+  transform: translateY(-50%);
+  border-top: 1px solid rgba(0, 255, 224, 0.25);
+  border-bottom: 1px solid rgba(0, 255, 224, 0.25);
+  pointer-events: none; /* 下層のスクロールイベントを阻害しない */
+  z-index: 2;
+}
+
+/* スクロールホイール部分 */
+.picker-wheel {
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none; /* Firefoxスクロールバー非表示 */
+  -ms-overflow-style: none; /* IEスクロールバー非表示 */
+  /* iOSでの弾性スクロールと滑らかさを強制 */
+  -webkit-overflow-scrolling: touch;
+}
+
+.picker-wheel::-webkit-scrollbar {
+  display: none; /* Chrome/Safariスクロールバー非表示 */
+}
+
+/* ドラムロール内の各数値アイテム（高さ40px） */
+.picker-item {
+  height: 40px;
+  line-height: 40px;
+  text-align: center;
+  font-size: 16px;
+  color: #555; /* 通常時は沈んだグレー（プレースホルダーに近い） */
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  transition: color 0.15s ease, font-weight 0.15s ease, transform 0.15s ease, font-size 0.15s ease;
+}
+
+/* ドロップダウンのように少し周辺を立体的に見せるエフェクト（上下に小さく見せる） */
+.picker-item.near-item {
+  color: #777;
+  font-size: 15px;
+  transform: scale(0.9);
+}
+
+.picker-item.far-item {
+  color: #444;
+  font-size: 13px;
+  transform: scale(0.8);
+}
+
+/* 中央に位置したアクティブな数値のハイライト */
+.picker-item.active-item {
+  color: var(--accent) !important; /* メインの水色で光らせる */
+  font-weight: bold !important;
+  font-size: 18px !important;
+  transform: scale(1.1);
+  text-shadow: 0 0 8px rgba(0, 255, 224, 0.4);
+}
+
+/* 初期状態の「ss」プレースホルダー用の特別なスタイル */
+.picker-item.placeholder-item {
+  color: #777; /* ssプレースホルダーの薄いグレー */
+}
+
+.picker-item.placeholder-item.active-item {
+  color: #777 !important; /* ss選択中は水色ではなくプレースホルダー色（薄いグレー）をキープ */
+  font-weight: bold !important;
+  text-shadow: none;
+}
+
+/* 無効化（スワップ時に標準時刻が上になったときなど）のビジュアル表示 */
+.loop-seconds-picker.picker-disabled {
+  opacity: 0.5;
+  pointer-events: none; /* スワイプさせない */
+  cursor: not-allowed;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.loop-seconds-picker.picker-disabled .picker-item.active-item {
+  color: var(--error-late-color) !important; /* 00秒に固定され赤文字で強調 */
+  text-shadow: none;
+}
+.loop-seconds-picker.picker-disabled .picker-focus-line {
+  border-top: 1px solid rgba(255, 77, 77, 0.3);
+  border-bottom: 1px solid rgba(255, 77, 77, 0.3);
 }
