@@ -894,11 +894,27 @@ input:checked + .switch-slider:before {
 }
 
 /* ==========================================
-   年月日省略時のフレックス中央寄せスタイル
+   年月日省略（トグルOFF）時のフレックス中央寄せ＆サイズ固定スタイル
    ========================================== */
 .datetime-direct-row.omit-date-active,
 .datetime-row.omit-date-active {
   justify-content: center !important;
+}
+
+/* 直接入力用の時分秒枠（.direct-two）を、年月日が表示されている時と同じ45pxに固定 */
+.datetime-direct-row.omit-date-active input.direct-two {
+  flex: none !important;
+  width: 45px !important;
+}
+
+/* 入力補助ON（カレンダー・ドラムロールなど）側の時分秒枠も広がりを防止して中央寄せ */
+.datetime-row.omit-date-active input,
+.datetime-row.omit-date-active select {
+  flex: none !important;
+  width: 75px !important;
+}
+.datetime-row.omit-date-active select.seconds-select {
+  width: 45px !important;
 }
 
 /* ==========================================

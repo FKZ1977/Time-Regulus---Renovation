@@ -8,19 +8,21 @@ let isStandardOnTop = false; // 標準時刻が上に配置されているかを
 const QR_CODE_URL_BASE = "https://fkz1977.github.io/Time-Regulus/";
 
 let inputHelperEnabled = false;
-let omitDateEnabled = false;
+let includeDateEnabled = false;
 
-function toggleOmitDate(enabled) {
-  omitDateEnabled = enabled;
-  const omitToggle = document.getElementById("omitDateToggle");
-  if (omitToggle) omitToggle.checked = enabled;
+function toggleIncludeDate(enabled) {
+  includeDateEnabled = enabled;
+  const includeToggle = document.getElementById("includeDateToggle");
+  if (includeToggle) includeToggle.checked = enabled;
 
   const rowDisplayDirect = document.querySelector("#errorModeDisplayInputGroup .datetime-direct-row");
   const rowDisplayOn = document.querySelector("#errorModeDisplayInputGroup .datetime-row");
   const rowStandardDirect = document.querySelector("#errorModeStandardInputGroup .datetime-direct-row");
   const rowStandardOn = document.querySelector("#errorModeStandardInputGroup .datetime-row");
 
-  if (enabled) {
+  const isOmit = !enabled;
+
+  if (isOmit) {
     if (rowDisplayDirect) rowDisplayDirect.classList.add("omit-date-active");
     if (rowDisplayOn) rowDisplayOn.classList.add("omit-date-active");
     if (rowStandardDirect) rowStandardDirect.classList.add("omit-date-active");
@@ -42,7 +44,7 @@ function toggleOmitDate(enabled) {
   dateIds.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
-      el.style.display = enabled ? "none" : "";
+      el.style.display = isOmit ? "none" : "";
     }
   });
 
@@ -52,7 +54,7 @@ function toggleOmitDate(enabled) {
     "#errorModeStandardInputGroup .delimiter, #errorModeStandardInputGroup .direct-space"
   );
   elementsToHide.forEach(el => {
-    el.style.display = enabled ? "none" : "";
+    el.style.display = isOmit ? "none" : "";
   });
 
   // 再計算
@@ -387,7 +389,7 @@ document.addEventListener("DOMContentLoaded", function () {
       el.dataset.freshFocus = "true";
     });
 
-    // ④ 最大値インテリジェント制御 ＆ 入力開始時クリア
+    // ④ 最大値インテリジェント制御 ＆ 入力開始時クリア ＆ 最大桁数自動ジャンプ
     el.addEventListener("input", function() {
       let val = el.value.replace(/[^0-9]/g, "");
       if (val === "") {
@@ -409,11 +411,17 @@ document.addEventListener("DOMContentLoaded", function () {
           // 最大値を超える場合は最後の1文字（新しく入力した数字）だけにする
           const lastChar = val.charAt(val.length - 1);
           el.value = lastChar;
+          val = lastChar;
         } else {
           el.value = val;
         }
       } else {
         el.value = val;
+      }
+
+      // 最大入力桁数に達した時の自動フォーカスジャンプ
+      if (el.maxLength > 0 && val.length >= el.maxLength) {
+        triggerNextJump();
       }
     });
 
@@ -466,8 +474,8 @@ document.addEventListener("DOMContentLoaded", function () {
     maxVal: 59,
     customEnterHandler: function() {
       if (!isStandardOnTop) {
-        // 表示が上の時、次のジャンプ先（標準の年、または年月日省略時は標準の時）を決定
-        const nextId = omitDateEnabled ? "standardHour_direct" : "standardYear_direct";
+        // 表示が上の時、次のジャンプ先（標準の年、または年月日も計算トグルがOFFの時は標準の時）を決定
+        const nextId = !includeDateEnabled ? "standardHour_direct" : "standardYear_direct";
         const nextEl = document.getElementById(nextId);
         if (nextEl) {
           nextEl.focus();
@@ -489,8 +497,8 @@ document.addEventListener("DOMContentLoaded", function () {
     maxVal: 59,
     customEnterHandler: function() {
       if (isStandardOnTop) {
-        // 標準が上の時、次のジャンプ先（表示の年、または年月日省略時は表示の時）を決定
-        const nextId = omitDateEnabled ? "displayHour_direct" : "displayYear_direct";
+        // 標準が上の時、次のジャンプ先（表示の年、または年月日も計算トグルがOFFの時は表示の時）を決定
+        const nextId = !includeDateEnabled ? "displayHour_direct" : "displayYear_direct";
         const nextEl = document.getElementById(nextId);
         if (nextEl) {
           nextEl.focus();
@@ -628,7 +636,7 @@ function showErrorMode() {
   if (!inputHelperEnabled) {
     setTimeout(() => {
       let target;
-      if (omitDateEnabled) {
+      if (!includeDateEnabled) {
         target = isStandardOnTop ? document.getElementById("standardHour_direct") : document.getElementById("displayHour_direct");
       } else {
         target = isStandardOnTop ? document.getElementById("standardYear_direct") : document.getElementById("displayYear_direct");
@@ -737,7 +745,7 @@ function resetApp(onlyInputs = false) {
   }
   
   toggleReverseMode(false);
-  toggleOmitDate(false);
+  toggleIncludeDate(false);
 
   if (onlyInputs) { 
      resultHistory = [];
