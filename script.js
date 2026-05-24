@@ -48,6 +48,17 @@ function toggleIncludeDate(enabled) {
   const includeToggle = document.getElementById("includeDateToggle");
   if (includeToggle) includeToggle.checked = enabled;
 
+  const displayGroup = document.getElementById("errorModeDisplayInputGroup");
+  const standardGroup = document.getElementById("errorModeStandardInputGroup");
+
+  if (enabled) {
+    if (displayGroup) displayGroup.classList.remove("date-omitted");
+    if (standardGroup) standardGroup.classList.remove("date-omitted");
+  } else {
+    if (displayGroup) displayGroup.classList.add("date-omitted");
+    if (standardGroup) standardGroup.classList.add("date-omitted");
+  }
+
   const rowDisplayDirect = document.querySelector("#errorModeDisplayInputGroup .datetime-direct-row");
   const rowDisplayOn = document.querySelector("#errorModeDisplayInputGroup .datetime-row");
   const rowStandardDirect = document.querySelector("#errorModeStandardInputGroup .datetime-direct-row");
@@ -1348,9 +1359,15 @@ function swapErrorModeInputs() {
   displayGroup.className = "input-group";
   standardGroup.className = "input-group";
 
+  // 年月日も計算がOFFの場合、date-omittedクラスを維持する
+  if (!includeDateEnabled) {
+    displayGroup.classList.add("date-omitted");
+    standardGroup.classList.add("date-omitted");
+  }
+
   const isMovingStandardUp = !isStandardOnTop;
 
-  // 1. アニメーションクラスの適用（OUT）
+  // 1. アニメーションクラスの適用（OUT）- 150ms高速化
   if (isMovingStandardUp) {
     displayGroup.classList.add("animate-down-out");
     standardGroup.classList.add("animate-up-out");
@@ -1359,7 +1376,7 @@ function swapErrorModeInputs() {
     standardGroup.classList.add("animate-down-out");
   }
 
-  // 2. DOM操作と機能変更をsetTimeout内で実行
+  // 2. DOM操作と機能変更をsetTimeout内で実行 - 150ms高速化
   setTimeout(() => {
     
     if (isMovingStandardUp) {
@@ -1418,14 +1435,14 @@ function swapErrorModeInputs() {
       displayGroup.classList.add("animate-up-in");
     }
     
-    // アニメーション終了後にクラスをクリア
+    // アニメーション終了後にクラスをクリア - 150ms高速化
     setTimeout(() => {
       displayGroup.classList.remove("animate-up-in", "animate-down-in");
       standardGroup.classList.remove("animate-up-in", "animate-down-in");
       calculateError(); // 入れ替え後にも計算を試める
-    }, 300);
+    }, 150);
 
-  }, 300); // 0.3秒のアニメーション後にDOM操作
+  }, 150); // 0.15秒のアニメーション後にDOM操作
 }
 
 

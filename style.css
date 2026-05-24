@@ -70,10 +70,10 @@
   from { transform: translateY(-100%); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
-.animate-up-out { animation: slideUpOut 0.3s ease-in forwards; }
-.animate-down-out { animation: slideDownOut 0.3s ease-in forwards; }
-.animate-up-in { animation: slideUpIn 0.3s ease-out forwards; }
-.animate-down-in { animation: slideDownIn 0.3s ease-out forwards; }
+.animate-up-out { animation: slideUpOut 0.15s ease-in forwards; }
+.animate-down-out { animation: slideDownOut 0.15s ease-in forwards; }
+.animate-up-in { animation: slideUpIn 0.15s ease-out forwards; }
+.animate-down-in { animation: slideDownIn 0.15s ease-out forwards; }
 
 /* 記録成功メッセージのアニメーション */
 @keyframes fadeOut {
@@ -1166,35 +1166,7 @@ input:checked + .switch-slider:before {
   box-sizing: border-box !important;
 }
 
-/* ==========================================
-   年月日省略（トグルOFF）時のフレックス中央寄せ＆サイズ固定スタイル
-   ========================================== */
-.datetime-direct-row.omit-date-active,
-#correctionMode .datetime-direct-row.omit-date-active {
-  max-width: 180px !important; /* 横幅をギュッと縮めて、ON側の時分幅に極限まで近づける */
-  justify-content: center !important;
-}
-.datetime-row.omit-date-active,
-#correctionMode .datetime-row.omit-date-active {
-  max-width: 180px !important; /* ON側も横幅を縮めて手入力側と揃える */
-  justify-content: center !important;
-}
-
-/* 直接入力用の時分秒枠（.direct-two）を、年月日が表示されている時と同じ45pxに固定 */
-.datetime-direct-row.omit-date-active input.direct-two {
-  flex: none !important;
-  width: 45px !important;
-}
-
-/* 入力補助ON（カレンダー・ドラムロールなど）側の時分秒枠も広がりを防止して中央寄せ */
-.datetime-row.omit-date-active input,
-.datetime-row.omit-date-active select {
-  flex: none !important;
-  width: 75px !important;
-}
-.datetime-row.omit-date-active select.seconds-select {
-  width: 45px !important;
-}
+/* 年月日省略（トグルOFF）時の古いフレックス中央寄せ定義は削除されました */
 
 /* ==========================================
    結果一覧画面のさらなる縦圧縮
@@ -1631,8 +1603,207 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   background: rgba(255, 77, 77, 0.08) !important;
 }
 
-/* 標準時刻が上のときの「00秒」固定時の赤色文字を強制適用 (一律白上書きに勝つ優先度) */
+/* 標準時刻が上のときの「00秒」固定時の赤色文字を強制適用 (一律白上書きやiOSのdisabledグレー化に勝つ優先度) */
 input.seconds-fixed-00,
-select.seconds-fixed-00 {
+select.seconds-fixed-00,
+.datetime-direct-row input.seconds-fixed-00,
+.direct-group input.seconds-fixed-00,
+#errorModeStandardInputGroup input.seconds-fixed-00,
+#errorModeStandardInputGroup select.seconds-fixed-00 {
   color: var(--error-late-color) !important;
-}
+  -webkit-text-fill-color: var(--error-late-color) !important; /* iOS Safari用 */
+  opacity: 1 !important;
+  font-weight: bold !important;
+}
+
+/* ==========================================================================
+   表示時刻・標準時刻：極上ディレイ＆時分秒サイズ維持・完全スライド不動アニメーション
+   ========================================================================== */
+
+/* 親コンテナの基本設定（トグルON/OFFで全体の高さが変化するのを防ぐため、余白・高さを完全に固定） */
+#errorModeDisplayInputGroup {
+  position: relative;
+  padding-top: 26px; /* ラベルが上に置かれるための余白（常に26pxで完全固定！） */
+  box-sizing: border-box;
+}
+
+#errorModeStandardInputGroup {
+  position: relative;
+  padding-top: 26px;
+  margin-top: 0 !important; /* 個別のマージンは廃止し、中間の swap-button-wrapper のマージンで一括管理！ */
+  box-sizing: border-box;
+}
+
+/* 🔃 ボタンの親コンテナ（表示と標準の間のマージンを一括固定！上下入れ替わっても絶対にズレない） */
+#swap-button-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 310px !important; /* 入力枠の幅に完全同期 */
+  height: 0 !important; /* 高さをゼロにすることで、レイアウトの縦空間を圧迫しない */
+  margin: 38px auto !important; /* 上下に38px（合計76px）の超ゆったりマージンで上下枠を完全に引き離す！ */
+  box-sizing: border-box !important;
+}
+
+/* 🔃 ボタンの絶対配置 (上の入力枠のすぐ右外側に完全固定し、下の入力枠やNOWボタンと絶対に重ならないプレミアム設計) */
+#swapButton {
+  position: absolute !important;
+  top: -24px !important; /* 1行分（約24px）上に引き上げ、下の枠やNOWボタンとの重なりを100%完全排除！ */
+  transform: translateY(-50%) !important; /* 上の入力枠の縦中央にぴったり整列 */
+  right: -12px !important; /* 入力枠（幅310px）の右側外端に配置 */
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: auto !important;
+  font-size: 28px !important;
+  cursor: pointer !important;
+  z-index: 10 !important;
+  outline: none !important;
+  transition: transform 0.1s ease !important; /* タップフィードバック用のスムーズな縮小 */
+}
+
+/* タップされたときに僅かに縮小する極上フィードバック効果 */
+#swapButton:active {
+  background-color: transparent !important;
+  transform: translateY(-50%) scale(0.85) !important;
+}
+
+/* ラベルの基本設定 (左端に完全固定し、まっすぐ上下にスライド) */
+#errorModeDisplayInputGroup label,
+#errorModeStandardInputGroup label {
+  position: absolute;
+  top: 0;
+  left: 12px !important; /* 左端に完全固定！ */
+  height: 26px;
+  line-height: 26px;
+  font-size: 15px;
+  font-weight: bold;
+  color: var(--text-main);
+  transform: translateY(0);
+  margin: 0 !important;
+  pointer-events: none; /* 入力の邪魔をしない */
+  
+  /* 通常（ONのとき、上に戻る）：即座に上にスライド移動する */
+  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  transition-delay: 0s;
+  z-index: 4;
+}
+
+/* 年月日省略時 (.date-omitted / 下がるとき) のラベルスライド（スッと下にスライド移動） */
+#errorModeDisplayInputGroup.date-omitted label,
+#errorModeStandardInputGroup.date-omitted label {
+  top: 26px; /* padding-top(26px) の位置から、入力枠の高さ(38px)の縦中央へと下ろす */
+  height: 38px;
+  line-height: 38px;
+  
+  /* OFFのとき（下がるとき）：ディレイなしで即座にスッとスライドさせて入力枠の動きと完全に同期 */
+  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  transition-delay: 0s;
+}
+
+/* NOWボタンの絶対配置 (標準時刻ラベルのすぐ右隣・入力枠の真上に完全固定！サイズアップ＆隙間マージン確保) */
+#standardNowButton {
+  position: absolute;
+  top: -10px; /* 下枠と絶対に接しないようにさらに上に引き上げる（美しい隙間を確保！） */
+  left: 96px !important; /* 「標準時刻：」ラベルのすぐ右隣に完全固定！トグルON/OFFで一切動きません */
+  margin-top: 0 !important;
+  padding: 0 !important; /* 高さと文字を中央で一致させるため */
+  font-size: 14px !important; /* トグルスイッチより一回り大きい、見やすく押しやすい極上サイズ */
+  font-weight: bold !important;
+  z-index: 5;
+  width: 72px !important; /* 押しやすい幅広サイズ */
+  height: 32px !important; /* トグルスイッチ(28px)より十分に大きい32px */
+  line-height: 32px !important; /* 縦中央揃え */
+  border-radius: 6px !important;
+  box-shadow: 0 4px 10px rgba(0, 255, 224, 0.35) !important;
+}
+
+/* 入力枠の基本設定（トグルON/OFF時にサイズを維持したまま、滑らかにスライド移動させる transition） */
+#errorModeDisplayInputGroup .datetime-row,
+#errorModeDisplayInputGroup .datetime-direct-row,
+#errorModeStandardInputGroup .datetime-row,
+#errorModeStandardInputGroup .datetime-direct-row {
+  margin: 0 auto !important; /* 常に中央寄せで完全固定 */
+  width: 100%;
+  max-width: 310px; /* デフォルト（ON時）は310px幅 */
+  transition: max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              margin-left 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  /* ONのとき（右に戻るとき）：即座に移動 */
+  transition-delay: 0s;
+  box-sizing: border-box;
+}
+
+/* 年月日省略時 (.date-omitted / 下がるとき) の入力枠スライド（サイズ維持のまま左にスライド！） */
+#errorModeDisplayInputGroup.date-omitted .datetime-row,
+#errorModeDisplayInputGroup.date-omitted .datetime-direct-row,
+#errorModeStandardInputGroup.date-omitted .datetime-row,
+#errorModeStandardInputGroup.date-omitted .datetime-direct-row {
+  max-width: 170px !important; /* 時分秒それぞれのサイズを一切縮めず、余分な年月日枠分だけを完全に詰める！ */
+  margin-left: 96px !important; /* 左側にラベルが入るスペースを空けて、完璧にスッと左へスライド配置！ */
+  
+  /* OFFのとき（下がるとき）：ディレイなし（0s）で即座にサイズ縮小と左スライドを行い、一瞬の広がりを完全排除！ */
+  transition-delay: 0s;
+}
+
+/* ★超プレミアム幅スライドアニメーション：年月日入力枠の「幅収縮・即時消去」制御★ */
+/* 通常時（ONのとき）の年月日枠 */
+#errorModeDisplayInputGroup input[type="date"],
+#errorModeStandardInputGroup input[type="date"],
+#errorModeDisplayInputGroup .direct-group-date,
+#errorModeStandardInputGroup .direct-group-date {
+  flex: 1.6 !important;
+  max-width: 140px;
+  opacity: 1;
+  visibility: visible;
+  margin-right: 6px;
+  
+  /* ONのとき（現れる）：ラベルが上に移動完了したあと（0.22s後）にスッと幅を広げてフェードイン */
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.22s ease,
+              visibility 0.22s ease,
+              margin-right 0.25s ease,
+              padding 0.25s ease;
+  transition-delay: 0.22s;
+}
+
+/* 年月日省略時 (.date-omitted / 消えるとき)：年月日枠の幅を滑らかに0にし、時分秒を元の形のままスッと左に寄せる */
+#errorModeDisplayInputGroup.date-omitted input[type="date"],
+#errorModeStandardInputGroup.date-omitted #standardDate {
+  flex: 0 !important;
+  max-width: 0 !important;
+  opacity: 0 !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  visibility: hidden;
+  
+  /* 消去時は即座に幅を縮めて左に詰める */
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.22s ease,
+              visibility 0.22s ease,
+              margin-right 0.25s ease,
+              padding 0.25s ease;
+  transition-delay: 0s;
+}
+
+#errorModeDisplayInputGroup.date-omitted #displayDateGroup_direct,
+#errorModeStandardInputGroup.date-omitted #standardDateGroup_direct {
+  flex: 0 !important;
+  max-width: 0 !important;
+  opacity: 0 !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  visibility: hidden;
+  
+  /* 消去時は即座に幅を縮めて左に詰める */
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.22s ease,
+              visibility 0.22s ease,
+              margin-right 0.25s ease,
+              padding 0.25s ease;
+  transition-delay: 0s;
+}
