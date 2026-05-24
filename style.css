@@ -1868,21 +1868,58 @@ select.seconds-fixed-00,
   -webkit-user-select: none !important;
 }
 
-.swap-text-left,
-.swap-text-right {
-  font-size: 14px !important;
-  font-weight: bold !important;
-  color: inherit !important;
-  transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease !important;
+.swap-text-left {
+  font-size: 14.5px !important; /* 主役は大きめの 14.5px */
+  font-weight: 800 !important; /* 超太字で強調 */
+  opacity: 1 !important;
+  transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease, font-size 0.25s ease, font-weight 0.25s ease !important;
   display: inline-block !important;
 }
 
+/* ネオンブルー（水色）背景の時：白文字の周りに、濃いネオンブルー（#00403a）で四方に1pxのクッキリした縁取りを施す！さらにネオンシャドウで浮かび上がらせる！ */
+#reverseModeToggleBtn.active-toggle .swap-text-left {
+  color: #ffffff !important; /* 純白にして視認性を限界突破！ */
+  text-shadow: -1px -1px 0 #00403a, 1px -1px 0 #00403a, -1px 1px 0 #00403a, 1px 1px 0 #00403a, 0 0 5px rgba(0, 255, 240, 0.9) !important;
+}
+
+/* ネオンピンク背景の時：白文字の周りに、濃いネオンピンク（#4a0031）で四方に1px의 クッキリした縁取りを施す！ */
+#reverseModeToggleBtn.active-toggle-pink .swap-text-left {
+  color: #ffffff !important; /* 純白にして視認性を限界突破！ */
+  text-shadow: -1px -1px 0 #4a0031, 1px -1px 0 #4a0031, -1px 1px 0 #4a0031, 1px 1px 0 #4a0031, 0 0 5px rgba(255, 0, 170, 0.9) !important;
+}
+
+.swap-text-right {
+  font-size: 12px !important; /* サブは二回り小さい 12px */
+  font-weight: 400 !important; /* 細字（Regular）で控えめに */
+  text-shadow: none !important;
+  transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease, font-size 0.25s ease, font-weight 0.25s ease !important;
+  display: inline-block !important;
+}
+
+/* 水色背景の時のサブ文字：文字がしっかり読めるように、ネオンブルーに対してコントラストのあるダークネイビーを半透明で適用 */
+#reverseModeToggleBtn.active-toggle .swap-text-right {
+  color: rgba(14, 15, 17, 0.6) !important;
+  font-weight: 500 !important; /* 少しだけ太めにして可読性を確保 */
+}
+
+/* ピンク背景の時のサブ文字：半透明白で自然に馴染ませる */
+#reverseModeToggleBtn.active-toggle-pink .swap-text-right {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
 .swap-arrow {
-  font-size: 16px !important;
-  font-weight: bold !important;
-  color: inherit !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
   transition: transform 0.25s ease !important;
   display: inline-block !important;
+}
+
+/* 矢印も背景色に応じて自動的に可読カラーへ切り替え */
+#reverseModeToggleBtn.active-toggle .swap-arrow {
+  color: rgba(14, 15, 17, 0.7) !important;
+}
+#reverseModeToggleBtn.active-toggle-pink .swap-arrow {
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* 左のテキストが右へスライドしながらスッと消える */
@@ -1900,7 +1937,7 @@ select.seconds-fixed-00,
 /* 補正モード画面の「年月日も計算」トグルをスワップボタンの下で綺麗に左寄せ配置 */
 .correction-date-toggle-wrapper {
   max-width: 310px !important;
-  margin: 14px auto 8px auto !important; /* 入力枠幅に揃えて中央寄せしつつ、中身を左寄せ！ */
+  margin: 28px auto 8px auto !important; /* 上マージンを 14px -> 28px へ倍増させ、スワップボタンとの間にゆったりとした綺麗な隙間を完全確保！ */
   display: flex !important;
   justify-content: flex-start !important; /* 左寄せ！ */
   align-items: center !important;
