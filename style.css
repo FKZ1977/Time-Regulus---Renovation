@@ -2051,13 +2051,30 @@ select.seconds-fixed-00,
   font-size: 13.5px !important;
 }
 
-/* 直接入力のプレースホルダー・テキストもスリム幅に合わせて微調整 */
-#correctionMode #reverseTimeBlock .datetime-direct-row input {
-  font-size: 13.5px !important;
-}
-
-#correctionMode #reverseTimeBlock .direct-group {
-  padding: 0 1px !important; /* パディングを極限まで詰める */
+/* --- 3. 新設された「仕切りコロン」の極美デザイン --- */
+.helper-colon,
+.direct-colon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 12px !important;
+  height: 38px !important;
+  background-color: #1f1f2f !important; /* 入力枠と同じディープネイビー */
+  color: rgba(255, 255, 255, 0.4) !important; /* 半透明の白 */
+  font-size: 16px !important;
+  font-weight: bold !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  
+  /* スライドアニメーション時の滑らかな追従 transition アシスト */
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              min-width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              margin 0.25s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
 /* 補正モード（#reverseTimeBlock）の時間枠・秒枠・グループに対する極上スライドアニメーションの transition 設定 */
@@ -2338,4 +2355,157 @@ body.scroll-locked #regulusTimePicker * {
 body.scroll-locked .picker-wheel-container.sec-locked,
 body.scroll-locked .picker-wheel-container.sec-locked * {
   touch-action: none !important;
+}
+
+/* ==========================================================================
+   時分秒入力枠の「極美ドッキング」＆「1ミリもガタつかない完全同一座標整列」
+   ========================================================================== */
+
+/* --- 1. 全体レイアウトの gap を 0 にし、必要な隙間は日付の右側に集約 --- */
+.datetime-row,
+.datetime-direct-row,
+#correctionMode .datetime-direct-row,
+#correctionMode .datetime-row {
+  gap: 0 !important; /* 隙間をゼロにしてぴったりと密着結合させる */
+}
+
+/* 年月日ONの時のみ、日付枠の右側に正確に6pxの隙間を確保する */
+.date-input-wrapper,
+.direct-group-date {
+  margin-right: 6px !important;
+}
+
+/* --- 2. 時分枠と秒枠を結合するための角丸・枠線の「ドッキング調整」 --- */
+
+/* 入力補助 ON (ドラムピッカー起動側) */
+.time-input-wrapper {
+  flex: 1.1 !important; /* 幅の比率 */
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+.time-input-wrapper input[type="time"] {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important; /* 右側の境界線を消去 */
+}
+
+.seconds-select {
+  flex: 0.7 !important; /* 幅の比率 */
+  min-width: 62px !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: none !important; /* 左側の境界線を消去してコロンと結合 */
+}
+
+/* 直接入力 (テンキー手入力側) */
+.direct-group-time {
+  flex: 1.1 !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important; /* 右側の境界線を消去 */
+}
+
+.direct-group-sec {
+  flex: 0.7 !important;
+  min-width: 62px !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: none !important; /* 左側の境界線を消去 */
+}
+
+/* 補正誤差 (error) の直接入力における時分と秒のドッキング */
+#correctionMode .flex-wrap.input-helper-on,
+#correctionMode .flex-wrap.input-helper-off {
+  gap: 0 !important; /* 隙間をゼロに */
+}
+
+/* 補正誤差の「日」枠の右側に6pxの隙間を確保 */
+#correctionMode .unit-input:first-child {
+  margin-right: 6px !important;
+}
+
+/* 誤差「時分」と「秒」のドッキング */
+#correctionMode .unit-input:nth-child(2) {
+  flex: 1.8 !important;
+  margin-right: 0 !important;
+}
+#correctionMode .unit-input:nth-child(2) .time-input-wrapper {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+#correctionMode .unit-input:nth-child(2) .time-input-wrapper input[type="time"] {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important;
+}
+
+#correctionMode .unit-input:nth-child(3) {
+  flex: 1.0 !important;
+  margin-left: 0 !important;
+}
+#correctionMode .unit-input:nth-child(3) select,
+#correctionMode .unit-input:nth-child(3) input {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: none !important;
+}
+
+/* 補正誤差の手入力 (direct) のドッキング */
+#correctionMode .unit-input:nth-child(2) .direct-group-error-time {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important;
+}
+#correctionMode .unit-input:nth-child(3) .direct-error-val {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: none !important;
+}
+
+/* --- 3. 新設された「仕切りコロン」の極美デザイン --- */
+.helper-colon,
+.direct-colon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 12px !important;
+  height: 38px !important;
+  background-color: #1f1f2f !important; /* 入力枠と同じディープネイビー */
+  color: rgba(255, 255, 255, 0.4) !important; /* 半透明の白 */
+  font-size: 16px !important;
+  font-weight: bold !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+/* --- 4. フォーカス（入力中・選択中）時の連動発光エフェクト --- */
+.time-input-wrapper:focus-within + .helper-colon {
+  border-top-color: var(--accent) !important;
+  border-bottom-color: var(--accent) !important;
+}
+.direct-group-time:focus-within + .direct-colon {
+  border-top-color: var(--accent) !important;
+  border-bottom-color: var(--accent) !important;
+}
+#correctionMode .unit-input:nth-child(2):focus-within .helper-colon {
+  border-top-color: var(--accent) !important;
+  border-bottom-color: var(--accent) !important;
+}
+#correctionMode .unit-input:nth-child(2):focus-within .direct-colon {
+  border-top-color: var(--accent) !important;
+  border-bottom-color: var(--accent) !important;
+}
+
+/* 秒側がフォーカスされたときのコロン連動発光 */
+.datetime-row:focus-within .helper-colon {
+  border-top-color: var(--accent) !important;
+  border-bottom-color: var(--accent) !important;
+}
+.datetime-direct-row:focus-within .direct-colon {
+  border-top-color: var(--accent) !important;
+  border-bottom-color: var(--accent) !important;
 }
