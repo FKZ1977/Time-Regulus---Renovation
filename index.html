@@ -118,8 +118,10 @@
       <!-- 入力補助 ON 時の入力欄 -->
       <div class="datetime-row input-helper-on" style="display: none;">
         <input type="date" id="displayDate" placeholder="yyyy/mm/dd" style="display: none;">
-        <input type="time" id="displayTime" placeholder="hh:mm">
-        <span class="time-placeholder-guide">hh:mm</span>
+        <div class="time-input-wrapper">
+          <input type="time" id="displayTime" placeholder="hh:mm">
+          <span class="time-placeholder-guide">hh  :  mm</span>
+        </div>
         <select id="displaySeconds" class="seconds-select">
           <option value="">ss</option>
         </select>
@@ -156,8 +158,10 @@
       <!-- 入力補助 ON 時の入力欄 -->
       <div class="datetime-row input-helper-on" style="display: none;">
         <input type="date" id="standardDate" placeholder="yyyy/mm/dd" style="display: none;">
-        <input type="time" id="standardTime" placeholder="hh:mm">
-        <span class="time-placeholder-guide">hh:mm</span>
+        <div class="time-input-wrapper">
+          <input type="time" id="standardTime" placeholder="hh:mm">
+          <span class="time-placeholder-guide">hh  :  mm</span>
+        </div>
         <select id="standardSeconds" class="seconds-select">
           <option value="">ss</option>
         </select>
@@ -213,8 +217,10 @@
         <span class="unit-label">日</span>
       </div>
       <div class="unit-input" style="flex: 1.8;">
-        <input type="time" id="errorTime" placeholder="hh:mm" tabindex="14">
-        <span class="time-placeholder-guide">hh:mm</span>
+        <div class="time-input-wrapper">
+          <input type="time" id="errorTime" placeholder="hh:mm" tabindex="14">
+          <span class="time-placeholder-guide">hh  :  mm</span>
+        </div>
         <span class="unit-label">時分</span>
       </div>
       <div class="unit-input">
@@ -285,8 +291,10 @@
       <!-- 入力補助 ON 時の入力欄 -->
       <div class="datetime-row input-helper-on" style="display: none;">
         <input type="date" id="reverseDisplayDate" placeholder="yyyy/mm/dd" tabindex="18" style="display: none;">
-        <input type="time" id="reverseDisplayTime" placeholder="hh:mm" step="60" tabindex="19">
-        <span class="time-placeholder-guide">hh:mm</span>
+        <div class="time-input-wrapper">
+          <input type="time" id="reverseDisplayTime" placeholder="hh:mm" step="60" tabindex="19">
+          <span class="time-placeholder-guide">hh  :  mm</span>
+        </div>
         <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
           <option value="">ss</option>
         </select>

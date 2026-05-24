@@ -1726,9 +1726,10 @@ select.seconds-fixed-00,
   margin-top: 0 !important;
   padding: 0 !important; /* 高さと文字を中央で一致させるため */
   font-size: 14px !important; /* トグルスイッチより一回り大きい、見やすく押しやすい極上サイズ */
-  font-weight: 900 !important; /* 極太の太字 */
-  color: #ffffff !important; /* 太字の白抜きの文字（純白） */
-  text-shadow: -1px -1px 0 #00403a, 1px -1px 0 #00403a, -1px 1px 0 #00403a, 1px 1px 0 #00403a, 0 0 4px rgba(0, 255, 240, 0.9) !important; /* クッキリと美しい水色アウトライン袋文字縁取り */
+  font-weight: normal !important; /* 太字を完全に排除し、極めてスッキリした通常の太さ（400）へ */
+  color: #ffffff !important; /* 白抜きの文字（純白） */
+  -webkit-text-stroke: 1px #00403a !important; /* iOS等のウェブキット環境で最もシャープで美しく描画される1pxのアウトライン */
+  text-shadow: 0 0 4px rgba(0, 255, 240, 0.5) !important; /* 太らせないよう四方影を廃止し、外側の極薄ネオン発光のみを適用！ */
   z-index: 5;
   width: 72px !important; /* 押しやすい幅広サイズ */
   height: 32px !important; /* トグルスイッチ(28px)より十分に大きい32px */
@@ -2054,30 +2055,71 @@ select.seconds-fixed-00,
    iPhone（iOS）用：input[type="time"] の極上プレースホルダーガイド制御
    ========================================================================== */
 
-/* 親コンテナに position: relative を強制し、ガイドを正確に中央配置する */
-.datetime-row,
-.unit-input {
+/* 
+   インプットを包むラッパーを完璧なフレックスアイテムとして振る舞わせる！
+   HTML構造で input[type="time"] を包んだため、親 .datetime-row の直下はラッパーになります。
+   そのため、元の input[type="time"] に適用されていたフレックスルールをこちらに継承します。
+*/
+.time-input-wrapper {
   position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  height: 38px !important;
+  
+  /* 誤差計算モード（#errorMode）等でのデフォルト比率 */
+  flex: 1.1 !important;
+  min-width: 0 !important;
+  width: auto !important;
 }
 
+/* 誤差入力部分（#correctionMode 内の補正に使う誤差：flex: 1.8） */
+.flex-wrap.input-helper-on .time-input-wrapper {
+  flex: 1.8 !important;
+}
+
+/* 補正モード画面（#reverseTimeBlock 内の年月日計算あり：flex: 0.75, max-width: 64px） */
+#correctionMode #reverseTimeBlock .time-input-wrapper {
+  flex: 0.75 !important;
+  max-width: 64px !important;
+  min-width: 0 !important;
+}
+
+/* 補正モード画面で年月日が非表示（トグルOFF）の時のたっぷりしたサイズ（flex: 1.1, max-width: 145px） */
+#correctionMode #reverseTimeBlock .datetime-row.omit-date-active .time-input-wrapper {
+  flex: 1.1 !important;
+  max-width: 145px !important;
+}
+
+/* ラッパーの中にある input[type="time"] 自体は、ラッパー一杯に完全にフィットさせる！ */
+.time-input-wrapper input[type="time"] {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* ガイド文字はラッパーの完全にど真ん中（inputの中心）に絶対配置！ */
 .time-placeholder-guide {
   position: absolute !important;
   left: 50% !important;
   top: 50% !important;
   transform: translate(-50%, -50%) !important;
   color: rgba(255, 255, 255, 0.4) !important; /* 美しい半透明のプレースホルダー色 */
-  font-size: 14px !important;
+  font-size: 13.5px !important; /* 14px -> 13.5px に微調整し、通常枠での収まりを極上に */
   font-weight: normal !important;
-  pointer-events: none !important; /* タップを完全にスルーして背後のインプットに届かせる */
+  pointer-events: none !important; /* タップを完全にスルー */
   transition: opacity 0.15s ease, visibility 0.15s ease !important;
   display: block !important;
   white-space: nowrap !important;
   z-index: 5 !important;
+  letter-spacing: normal !important;
 }
 
-/* 補正モードの入力補助ONの時の、よりスリムな時分枠に合わせたフォント微調整 */
+/* 補正モード（#reverseTimeBlock）側の非常に狭い入力枠（幅64px）用 */
 #correctionMode #reverseTimeBlock .time-placeholder-guide {
-  font-size: 13px !important;
+  font-size: 11px !important; /* フォントサイズを極限までコンパクトにし、64px幅でも1ミリもはみ出させない！ */
 }
 
 /* デフォルトでは非表示（透明）にしておく */
