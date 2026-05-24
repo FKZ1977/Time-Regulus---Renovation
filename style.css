@@ -2047,3 +2047,40 @@ select.seconds-fixed-00,
   max-width: 80px !important; /* OFFの時は秒を元のたっぷりした幅（80px）に戻す */
   min-width: 75px !important;
 }
+
+/* ==========================================================================
+   iPhone（iOS）用：input[type="time"] の極上プレースホルダーガイド制御
+   ========================================================================== */
+
+/* 親コンテナに position: relative を強制し、ガイドを正確に中央配置する */
+.datetime-row,
+.unit-input {
+  position: relative !important;
+}
+
+.time-placeholder-guide {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: rgba(255, 255, 255, 0.4) !important; /* 美しい半透明のプレースホルダー色 */
+  font-size: 14px !important;
+  font-weight: normal !important;
+  pointer-events: none !important; /* タップを完全にスルーして背後のインプットに届かせる */
+  transition: opacity 0.15s ease, visibility 0.15s ease !important;
+  display: block !important;
+  white-space: nowrap !important;
+  z-index: 5 !important;
+}
+
+/* 補正モードの入力補助ONの時の、よりスリムな時分枠に合わせたフォント微調整 */
+#correctionMode #reverseTimeBlock .time-placeholder-guide {
+  font-size: 13px !important;
+}
+
+/* インプットにフォーカスが当たる、または値が入った（プレースホルダーが非表示の）時、ガイドを美しく消し去る */
+input[type="time"]:focus + .time-placeholder-guide,
+input[type="time"]:not(:placeholder-shown) + .time-placeholder-guide {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
