@@ -1223,7 +1223,7 @@ function backToCorrectionMode() {
  * アプリをリセットする
  */
 function resetApp(onlyInputs = false) {
-  closeSecPicker();
+  closeTimePicker();
   
   // 入力内容のリセット処理
   document.getElementById("displayDate").value = "";
