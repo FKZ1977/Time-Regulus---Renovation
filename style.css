@@ -2068,7 +2068,9 @@ select.seconds-fixed-00,
   box-sizing: border-box !important;
   user-select: none !important;
   pointer-events: none !important;
-  z-index: 2 !important;
+  z-index: 3 !important; /* z-indexを3に引き上げ、重ね合わせを上にする */
+  margin: 0 -2px !important; /* 左右の重ね合わせを-2pxに拡張して切れ目を完全抹殺！ */
+  padding: 0 !important;
   
   /* スライドアニメーション時の滑らかな追従 transition アシスト */
   transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
@@ -2437,56 +2439,136 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
   box-sizing: border-box !important;
   height: 32px !important; /* 誤差スロット高さ32pxに完全同期 */
   flex: 3.0 !important; /* 日枠の1.0に対して3.0を確保 */
+  background-color: #1f1f2f !important;
+  border-radius: 6px !important; /* 親カプセル自体に角丸を適用して左端の尖りを完全解消！ */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important; /* 親カプセル自体に1枚のボーダーを適用 */
+  overflow: hidden !important; /* 子要素の角丸はみ出しをシャットアウト */
 }
 
 /* カプセル内の時分枠（ON/OFF） */
 .unit-capsule-wrapper .time-input-wrapper {
-  flex: 1.8 !important;
-  height: 32px !important;
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
+  flex: 2.0 !important; /* 時・分を包むので2.0を確保し、秒1.0と合わせて完璧な三等分（1:1:1）に！ */
+  height: 100% !important;
+  box-sizing: border-box !important;
 }
 .unit-capsule-wrapper .time-input-wrapper input[type="time"] {
-  height: 32px !important;
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  border-right: none !important; /* 右境界線カット */
+  height: 100% !important;
+  background-color: transparent !important; /* 背景透明化 */
+  border: none !important; /* 中身のボーダーを消去して親カプセルと合体！ */
+  box-sizing: border-box !important;
 }
 
 /* カプセル内の手入力の時分枠 */
 .unit-capsule-wrapper .direct-group-error-time {
-  flex: 1.8 !important;
-  height: 32px !important;
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  border-right: none !important; /* 右境界線カット */
+  flex: 2.0 !important; /* 時・分を包むので2.0を確保し、秒1.0と合わせて完璧な三等分（1:1:1）に！ */
+  height: 100% !important;
+  background-color: transparent !important; /* 背景透明化 */
+  border: none !important; /* 中身のボーダーを消去して一体化！ */
+  box-sizing: border-box !important;
+  border-radius: 0 !important;
+  padding: 0 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+}
+
+/* 手入力の時・分インプットが重なるバグを完全解決！flex: 1で均等に広げる */
+.unit-capsule-wrapper .direct-group-error-time input {
+  flex: 1 !important;
+  min-width: 0 !important;
+  text-align: center !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 /* カプセル内のコロン（ON/OFF） */
 .unit-capsule-wrapper .helper-colon,
 .unit-capsule-wrapper .direct-colon {
-  height: 32px !important; /* コロンの高さも32pxに完全同期！ */
+  height: 100% !important;
+  background-color: transparent !important;
+  border: none !important; /* コロンの上下ボーダーも消去して融合！ */
+  margin: 0 !important;
+  width: 10px !important; /* コロンの幅をスリム化 */
 }
 
-/* カプセル内の秒枠（ON: select / OFF: input） */
+/* カプセル内の秒枠（ON: select / OFF: input）（指示③＆④の薄っぺらさ・文字下がり対策） */
 .unit-capsule-wrapper select,
 .unit-capsule-wrapper .error-sec-direct {
-  flex: 1.0 !important;
+  flex: 1.0 !important; /* 秒は1.0にして完璧な三等分！ */
+  height: 100% !important;
+  box-sizing: border-box !important;
+  background-color: transparent !important; /* 背景透明化 */
+  border: none !important; /* 中身のボーダーを消去して一体化！ */
+  border-radius: 0 !important;
+  color: var(--text-main) !important;
+  font-size: 14px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* 秒セレクトボックスのiOS Safari文字下がり・アピアランスの完全リセット */
+.unit-capsule-wrapper select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  text-align: center !important;
+  text-align-last: center !important;
+  line-height: 30px !important; /* 縦方向の中央寄せを確実に強制 */
+  padding: 0 !important; /* 内側余白リセット */
   height: 32px !important;
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-  border-left: none !important; /* 左境界線カット */
-  padding-right: 2px !important; /* selectの矢印被りを防ぐスマートな右パディング */
+}
+
+/* 直接入力の秒枠プレースホルダーとテキストの中央寄せ */
+.unit-capsule-wrapper .error-sec-direct {
+  text-align: center !important;
+  line-height: 30px !important;
 }
 
 /* カプセル右端にピッタリ寄り添う「時分秒」の不動文字ラベルの美麗配置 */
-.unit-capsule-wrapper .unit-label {
+#correctionMode .unit-label {
   margin-left: 6px !important; /* 秒枠の右隣に上品な隙間を空けて並べる */
   font-size: 13.5px !important; /* 読みやすくプレミアムな13.5px */
   font-weight: bold !important;
   color: var(--text-main) !important;
   white-space: nowrap !important;
   display: inline-block !important;
+  align-self: center !important;
+}
+
+/* --- 6. 時分枠・秒枠の「角丸 ＆ ボーダー」超強固リセット（指示①＆②のへこみ・切れ目対策） --- */
+
+/* 入力補助 ON 側の時分枠の右側の角丸と右ボーダーを完全に消去 */
+.datetime-row input[type="time"],
+#correctionMode .datetime-row input[type="time"],
+.datetime-row .time-input-wrapper input[type="time"],
+#correctionMode .datetime-row .time-input-wrapper input[type="time"] {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important;
+}
+
+/* 入力補助 ON 側の秒枠の左側の角丸と左ボーダーを完全に消去 */
+.datetime-row .seconds-select,
+#correctionMode .datetime-row .seconds-select {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: none !important;
+}
+
+/* 直接入力 (手入力) 側の時分枠の右側の角丸・右ボーダーを完全に消去 */
+.datetime-direct-row .direct-group-time,
+#correctionMode .datetime-direct-row .direct-group-time {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important;
+}
+
+/* 直接入力 (手入力) 側の秒枠の左側の角丸・左ボーダーを完全に消去（縦の切れ目線を完全消滅！） */
+.datetime-direct-row .direct-group-sec,
+#correctionMode .datetime-direct-row .direct-group-sec {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: none !important;
 }
 
 /* --- 4. フォーカス（入力中・選択中）時の「時分秒」一体発光エフェクト（指示①） --- */
@@ -2528,38 +2610,9 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
   box-shadow: 3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
 }
 
-/* 補正誤差 (error) の一体発光：フォーカスまたはドラムロール起動中の一体発光！ */
-#correctionMode .unit-capsule-wrapper:focus-within .time-input-wrapper,
-#correctionMode .unit-capsule-wrapper.picker-focused .time-input-wrapper {
+/* 補正誤差 (error) の一体発光：親カプセル全体を美しく水色（ネオンブルー）に一体発光！ */
+#correctionMode .unit-capsule-wrapper:focus-within,
+#correctionMode .unit-capsule-wrapper.picker-focused {
   border-color: var(--accent) !important;
-  border-right-color: transparent !important;
-  box-shadow: -3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
-}
-#correctionMode .unit-capsule-wrapper:focus-within .helper-colon,
-#correctionMode .unit-capsule-wrapper.picker-focused .helper-colon {
-  border-top-color: var(--accent) !important;
-  border-bottom-color: var(--accent) !important;
-  box-shadow: 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
-}
-#correctionMode .unit-capsule-wrapper:focus-within select,
-#correctionMode .unit-capsule-wrapper.picker-focused select {
-  border-color: var(--accent) !important;
-  border-left-color: transparent !important;
-  box-shadow: 3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
-}
-
-#correctionMode .unit-capsule-wrapper:focus-within .direct-group-error-time {
-  border-color: var(--accent) !important;
-  border-right-color: transparent !important;
-  box-shadow: -3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
-}
-#correctionMode .unit-capsule-wrapper:focus-within .direct-colon {
-  border-top-color: var(--accent) !important;
-  border-bottom-color: var(--accent) !important;
-  box-shadow: 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
-}
-#correctionMode .unit-capsule-wrapper:focus-within .error-sec-direct {
-  border-color: var(--accent) !important;
-  border-left-color: transparent !important;
-  box-shadow: 3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 240, 0.5) !important;
 }
