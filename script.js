@@ -411,7 +411,8 @@ class TimeRegulusDrum {
   updateActiveItem() {
     if (!this.wheel) return;
 
-    const wheelCenter = this.wheel.scrollTop + (this.wheel.clientHeight / 2);
+    const viewportHeight = this.wheel.clientHeight || 252;
+    const wheelCenter = this.wheel.scrollTop + (viewportHeight / 2);
     const activeIdx = Math.floor(wheelCenter / this.ITEM_HEIGHT);
 
     const items = this.wheel.getElementsByClassName("picker-item");
@@ -431,8 +432,10 @@ class TimeRegulusDrum {
     if (this.isWarping || !this.wheel) return;
 
     const top = this.wheel.scrollTop;
-    const nearestIdx = Math.round(top / this.ITEM_HEIGHT);
-    const targetScrollTop = nearestIdx * this.ITEM_HEIGHT;
+    const viewportHeight = this.wheel.clientHeight || 252;
+    // 7項目表示用に拡張されたコンテナの中心に吸着する正確なスナップ位置を算出
+    const nearestIdx = Math.round((top + viewportHeight / 2 - this.ITEM_HEIGHT / 2) / this.ITEM_HEIGHT);
+    const targetScrollTop = nearestIdx * this.ITEM_HEIGHT - viewportHeight / 2 + this.ITEM_HEIGHT / 2;
 
     if (Math.abs(this.wheel.scrollTop - targetScrollTop) > 1) {
       this.isWarping = true;
@@ -452,20 +455,14 @@ class TimeRegulusDrum {
   scrollToIndex(index, smooth = false) {
     if (!this.wheel) return;
 
-    // index を中央のセット（totalItemsCount 〜 2*totalItemsCount-1）の範囲内に補正
-    let targetIdx = index;
-    const baseCount = this.totalItemsCount;
-    while (targetIdx < baseCount) {
-      targetIdx += baseCount;
-    }
-    while (targetIdx >= baseCount * 2) {
-      targetIdx -= baseCount;
-    }
+    const viewportHeight = this.wheel.clientHeight || 252;
+    // ターゲットアイテムが完璧にコンテナの中央に配置されるscrollTopを計算
+    const targetScrollTop = index * this.ITEM_HEIGHT - viewportHeight / 2 + this.ITEM_HEIGHT / 2;
 
     this.isWarping = true;
     if (smooth) {
       this.wheel.scrollTo({
-        top: targetIdx * this.ITEM_HEIGHT,
+        top: targetScrollTop,
         behavior: "smooth"
       });
       setTimeout(() => {
@@ -473,7 +470,7 @@ class TimeRegulusDrum {
         this.updateActiveItem();
       }, 150);
     } else {
-      this.wheel.scrollTop = targetIdx * this.ITEM_HEIGHT;
+      this.wheel.scrollTop = targetScrollTop;
       setTimeout(() => {
         this.isWarping = false;
         this.updateActiveItem();
@@ -493,7 +490,18 @@ class TimeRegulusDrum {
     } else {
       index = 0; // 空の場合は一番上の項目 (時分は00、秒は"ss")
     }
-    this.scrollToIndex(index, false);
+
+    // ドラム初期展開時の初期位置設定（setValue）のタイミングでのみ、無限ループの「真ん中のセット」へインデックスを強制補正する
+    let targetIdx = index;
+    const baseCount = this.totalItemsCount;
+    while (targetIdx < baseCount) {
+      targetIdx += baseCount;
+    }
+    while (targetIdx >= baseCount * 2) {
+      targetIdx -= baseCount;
+    }
+
+    this.scrollToIndex(targetIdx, false);
   }
 }
 
@@ -1317,7 +1325,6 @@ function resetAppAndReturnToLock() {
   document.getElementById("lockScreen").style.display = "block";
   
   document.getElementById("passcode").value = "";
-  document.getElementById("passcode").focus();
 
   document.getElementById("resetConfirmContainer").style.display = "none"; 
 
