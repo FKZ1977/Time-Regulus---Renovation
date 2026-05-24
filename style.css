@@ -880,18 +880,20 @@ input:checked + .switch-slider:before {
 
 /* 年月日グループ */
 .direct-group-date {
-  flex: 1.6; /* 補助ONの日付幅に完全同期させて1.6に拡張 */
+  flex: 1.6 !important; /* 補助ONの日付幅に完全同期させて1.6に拡張 */
+  max-width: 140px !important; /* 補助ON側のラッパー幅制限に完全同期し、ズレをゼロにする！ */
 }
 
 /* 時分グループ */
 .direct-group-time {
-  flex: 1.1;
+  flex: 1.1 !important;
 }
 
 /* 秒グループ */
 .direct-group-sec {
-  flex: 0.7;
-  justify-content: center;
+  flex: 0.7 !important;
+  min-width: 62px !important; /* 補助ON側の最小幅に完全同期し、ズレをゼロにする！ */
+  justify-content: center !important;
 }
 
 /* いずれかの入力枠がフォーカスされた際、カード全体が水色に美しく発光 */
@@ -2215,4 +2217,46 @@ input[type="date"] + .date-placeholder-guide {
 input[type="date"].date-empty + .date-placeholder-guide {
   opacity: 1 !important;
   visibility: visible !important;
+}
+
+/* ==========================================================================
+   PC・モダンブラウザ用：カレンダー・時間入力枠のネイティブプレースホルダー透明化
+   ========================================================================== */
+
+/* 
+   PCのChrome/Safari/Edge等で、空値の時に自動表示される邪魔な「年/月/日」や「--:--」
+   といったネイティブプレースホルダーテキストを完全に透明化（-webkit-text-fill-color）！
+   これにより、私たちが新設した美しい灰色ガイド（yyyy / mm / dd 等）だけが100%重ならずに表示されます！
+*/
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-year-field,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="time"]::-webkit-datetime-edit-text,
+input[type="time"]::-webkit-datetime-edit-hour-field,
+input[type="time"]::-webkit-datetime-edit-minute-field {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important; /* iOS / Safari / PC Safari用強制透明化 */
+}
+
+/* 
+   値が入力された時（has-valueクラスがある時）、またはフォーカスされた時だけ、
+   入力されている数字（本物の年月日や時分）を純白色（#ffffff）でクッキリと表示！
+*/
+input[type="date"].has-value::-webkit-datetime-edit-text,
+input[type="date"].has-value::-webkit-datetime-edit-year-field,
+input[type="date"].has-value::-webkit-datetime-edit-month-field,
+input[type="date"].has-value::-webkit-datetime-edit-day-field,
+input[type="date"]:focus::-webkit-datetime-edit-text,
+input[type="date"]:focus::-webkit-datetime-edit-year-field,
+input[type="date"]:focus::-webkit-datetime-edit-month-field,
+input[type="date"]:focus::-webkit-datetime-edit-day-field,
+input[type="time"].has-value::-webkit-datetime-edit-text,
+input[type="time"].has-value::-webkit-datetime-edit-hour-field,
+input[type="time"].has-value::-webkit-datetime-edit-minute-field,
+input[type="time"]:focus::-webkit-datetime-edit-text,
+input[type="time"]:focus::-webkit-datetime-edit-hour-field,
+input[type="time"]:focus::-webkit-datetime-edit-minute-field {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
