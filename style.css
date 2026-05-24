@@ -1917,24 +1917,27 @@ select.seconds-fixed-00,
   flex-direction: row !important; /* 横並び（1列配置） */
   align-items: center !important; /* 縦中央揃え */
   justify-content: flex-start !important;
-  gap: 8px !important;
+  gap: 4px !important; /* gapを4pxに微調整 */
   width: 100% !important;
-  max-width: 310px !important; /* 全体幅を310pxに完全固定 */
-  margin: 14px auto !important; /* 画面中央寄せ */
+  max-width: 346px !important; /* ★310px -> 346px に大幅拡張！左右のデッドスペースを完全に無くし、両サイドを限界まで枠の淵に密着！ */
+  margin: 24px auto 14px auto !important; /* ★margin-top: 14px -> 24px に広げて、年月日も計算トグルとの間の隙間を完璧に確保！ */
+  padding-left: 0 !important;  /* 左右パディングを完全0にして両サイドを限界まで密着！ */
+  padding-right: 0 !important;
   box-sizing: border-box !important;
 }
 
-/* ラベルを左側に完全固定 */
+/* ラベルを左側に固定し、コロンを右に寄せて文字を左へ伸ばす極上設計 */
 #correctionMode #reverseTimeLabel {
-  width: 70px !important; /* 78px -> 70px に極限まで縮めて左ギリギリまで詰める */
-  min-width: 70px !important;
-  text-align: left !important;
-  font-size: 10.5px !important; /* 11.5px -> 10.5px に超微調整し、絶対に文字切れを防止 */
-  letter-spacing: -0.6px !important; /* 文字間隔を極限まで詰めて美しい表示をキープ */
+  width: 108px !important; /* 90px -> 108px に拡張し、フォントサイズ大幅アップに完璧対応 */
+  min-width: 108px !important;
+  text-align: right !important; /* 文字を右寄せにして、コロン（：）を入力枠のすぐ左側にピタッと密着させる！ */
+  font-size: 14.5px !important; /* 13.5px -> 14.5px にさらにフォントサイズアップ！劇的にくっきり大きく読みやすく！ */
+  letter-spacing: -0.2px !important; /* 自然な文字間隔 */
   font-weight: bold;
   white-space: nowrap !important;
   margin: 0 !important;
   display: block !important;
+  padding-right: 6px !important; /* 入力枠との間にわずかな綺麗な隙間を作る */
 }
 
 /* 入力枠コンテナを flex 内で余った領域に綺麗にフィットさせる（ID 2個の最強セレクタで上部の310px競合を完全撃破！） */
@@ -1942,12 +1945,12 @@ select.seconds-fixed-00,
 #correctionMode #reverseTimeBlock .datetime-direct-row {
   flex: 1 !important;
   width: auto !important;
-  max-width: 236px !important; /* 上部競合の max-width: 310px !important を完全に撃破して 236px を強制適用！ */
+  max-width: 234px !important; /* 346px - 108px - 4px = 234px に拡張して右スペースを最適化！ */
   margin: 0 !important;
   height: 38px !important;
   display: flex; /* !important を排除し、JSによるON/OFFの display 制御を正しく機能させる */
   align-items: center !important;
-  gap: 4px !important; /* 間隔を少し狭めて詰めやすくする */
+  gap: 3px !important; /* 入力枠同士のgapを3pxに詰めて無駄な余白をカット */
   box-sizing: border-box !important;
 }
 
@@ -1955,34 +1958,34 @@ select.seconds-fixed-00,
 #correctionMode #reverseTimeBlock input[type="date"],
 #correctionMode #reverseTimeBlock #reverseDisplayDateGroup_direct {
   flex: 1.35 !important;
-  max-width: 116px !important; /* 108px -> 116px に限界拡張し、年月日の数字やプレースホルダーが隠れるのを完全防止！ */
+  max-width: 120px !important; /* 110px -> 120px に超特大拡張！年月日数値やカレンダーマークが1ミリも隠れない！ */
   min-width: 0 !important;
 }
 
 #correctionMode #reverseTimeBlock input[type="time"],
 #correctionMode #reverseTimeBlock .direct-group-time {
   flex: 0.75 !important;
-  max-width: 66px !important; /* 68px -> 66px に微調整 */
+  max-width: 64px !important; /* 62px -> 64px に微調整してスリムに格納 */
   min-width: 0 !important;
 }
 
 #correctionMode #reverseTimeBlock .seconds-select,
 #correctionMode #reverseTimeBlock .direct-group-sec {
   flex: 0.52 !important;
-  max-width: 46px !important; /* 48px -> 46px に極限まで右端に詰めてコンパクト化 */
-  min-width: 42px !important; /* 文字被りが発生しない限界最小幅 */
+  max-width: 44px !important; /* 秒の入力枠の右端をギリギリまで右端（淵）に寄せる！ */
+  min-width: 40px !important;
 }
 
-/* 秒セレクトボックス of パディングをスリム化してはみ出し・矢印被りを完全防止 */
+/* 秒セレクトボックスのパディングをスリム化してはみ出し・矢印被りを完全防止 */
 #correctionMode #reverseTimeBlock .seconds-select {
   padding-left: 2px !important;
-  padding-right: 10px !important; /* 矢印スペースをさらにスリム化 */
-  font-size: 13px !important; /* 13.5px -> 13px に微調整 */
+  padding-right: 8px !important; /* 矢印スペースを極限までカット */
+  font-size: 13.5px !important;
 }
 
 /* 直接入力のプレースホルダー・テキストもスリム幅に合わせて微調整 */
 #correctionMode #reverseTimeBlock .datetime-direct-row input {
-  font-size: 13px !important; /* 13.5px -> 13px にスリム化してはみ出し防止 */
+  font-size: 13.5px !important;
 }
 
 #correctionMode #reverseTimeBlock .direct-group {
@@ -1998,12 +2001,12 @@ select.seconds-fixed-00,
 #correctionMode #reverseTimeBlock .datetime-row.omit-date-active input[type="time"],
 #correctionMode #reverseTimeBlock .datetime-direct-row.omit-date-active .direct-group-time {
   flex: 1.1 !important;
-  max-width: 105px !important; /* OFFの時は時分を元のたっぷりした幅に戻す */
+  max-width: 145px !important; /* OFFの時は時分を元のたっぷりした幅（145px）に戻す */
 }
 
 #correctionMode #reverseTimeBlock .datetime-row.omit-date-active .seconds-select,
 #correctionMode #reverseTimeBlock .datetime-direct-row.omit-date-active .direct-group-sec {
   flex: 0.7 !important;
-  max-width: 65px !important;
-  min-width: 62px !important; /* OFFの時は元の幅広に戻す */
+  max-width: 80px !important; /* OFFの時は秒を元のたっぷりした幅（80px）に戻す */
+  min-width: 75px !important;
 }
