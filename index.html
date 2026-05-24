@@ -222,23 +222,20 @@
     <label>補正に使う誤差：</label>
     <!-- 入力補助 ON 時の入力欄 -->
     <div class="flex-wrap input-helper-on" style="display: none;">
-      <div class="unit-input">
-        <input type="number" id="errorDays" min="0" step="1" placeholder="d" tabindex="13">
+      <div class="unit-input" style="flex: 1.0;">
+        <input type="number" id="errorDays" min="0" step="1" placeholder="d" tabindex="13" inputmode="numeric" pattern="[0-9]*">
         <span class="unit-label">日</span>
       </div>
-      <div class="unit-input" style="flex: 1.8;">
+      <div class="unit-capsule-wrapper" style="flex: 3.0;">
         <div class="time-input-wrapper">
           <input type="time" id="errorTime" placeholder="hh:mm" tabindex="14">
           <span class="time-placeholder-guide">hh  :  mm</span>
         </div>
         <span class="helper-colon">:</span>
-        <span class="unit-label">時分</span>
-      </div>
-      <div class="unit-input">
         <select id="errorSeconds" tabindex="15">
           <option value="">ss</option>
         </select>
-        <span class="unit-label">秒</span>
+        <span class="unit-label">時分秒</span>
       </div>
     </div>
 
@@ -248,18 +245,15 @@
         <input type="tel" id="errorDays_direct" placeholder="d" tabindex="13" inputmode="numeric" pattern="[0-9]*" class="direct-error-val">
         <span class="unit-label">日</span>
       </div>
-      <div class="unit-input" style="flex: 2.0; gap: 0 !important;">
+      <div class="unit-capsule-wrapper" style="flex: 3.0;">
         <div class="direct-group-error-time" id="errorTimeGroup_direct">
           <input type="tel" id="errorHours_direct" placeholder="hh" maxlength="2" tabindex="14">
           <span class="delimiter">:</span>
           <input type="tel" id="errorMinutes_direct" placeholder="mm" maxlength="2" tabindex="15">
         </div>
         <span class="direct-colon">:</span>
-        <span class="unit-label">時分</span>
-      </div>
-      <div class="unit-input" style="flex: 1.0;">
-        <input type="tel" id="errorSeconds_direct" placeholder="ss" maxlength="2" tabindex="16" class="direct-error-val">
-        <span class="unit-label">秒</span>
+        <input type="tel" id="errorSeconds_direct" placeholder="ss" maxlength="2" tabindex="16" class="direct-error-val error-sec-direct">
+        <span class="unit-label">時分秒</span>
       </div>
     </div>
 

@@ -2382,6 +2382,7 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
   flex: 1.1 !important; /* 幅の比率 */
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
+  margin-right: 0 !important;
 }
 .time-input-wrapper input[type="time"] {
   border-top-right-radius: 0 !important;
@@ -2390,8 +2391,10 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
 }
 
 .seconds-select {
-  flex: 0.7 !important; /* 幅の比率 */
+  flex: 0.7 !important; /* 幅 of 比率 */
   min-width: 62px !important;
+  margin-left: -1px !important; /* コロンと完全に密着（隙間ゼロ） */
+  margin-right: 0 !important;
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
   border-left: none !important; /* 左側の境界線を消去してコロンと結合 */
@@ -2408,12 +2411,13 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
 .direct-group-sec {
   flex: 0.7 !important;
   min-width: 62px !important;
+  margin-left: -1px !important; /* 隙間ゼロ */
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
   border-left: none !important; /* 左側の境界線を消去 */
 }
 
-/* 補正誤差 (error) の直接入力における時分と秒のドッキング */
+/* 補正誤差 (error) の時分と秒のドッキング（隙間完全埋め立て ＆ label時分秒右寄せ）（指示③） */
 #correctionMode .flex-wrap.input-helper-on,
 #correctionMode .flex-wrap.input-helper-off {
   gap: 0 !important; /* 隙間をゼロに */
@@ -2424,88 +2428,138 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
   margin-right: 6px !important;
 }
 
-/* 誤差「時分」と「秒」のドッキング */
-#correctionMode .unit-input:nth-child(2) {
-  flex: 1.8 !important;
-  margin-right: 0 !important;
-}
-#correctionMode .unit-input:nth-child(2) .time-input-wrapper {
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-}
-#correctionMode .unit-input:nth-child(2) .time-input-wrapper input[type="time"] {
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  border-right: none !important;
-}
-
-#correctionMode .unit-input:nth-child(3) {
-  flex: 1.0 !important;
-  margin-left: 0 !important;
-}
-#correctionMode .unit-input:nth-child(3) select,
-#correctionMode .unit-input:nth-child(3) input {
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-  border-left: none !important;
-}
-
-/* 補正誤差の手入力 (direct) のドッキング */
-#correctionMode .unit-input:nth-child(2) .direct-group-error-time {
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  border-right: none !important;
-}
-#correctionMode .unit-input:nth-child(3) .direct-error-val {
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-  border-left: none !important;
-}
-
-/* --- 3. 新設された「仕切りコロン」の極美デザイン --- */
-.helper-colon,
-.direct-colon {
+/* --- 5. 補正誤差 (error) の「時分秒」新設極美ドッキングカプセル --- */
+.unit-capsule-wrapper {
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  width: 12px !important;
-  height: 38px !important;
-  background-color: #1f1f2f !important; /* 入力枠と同じディープネイビー */
-  color: rgba(255, 255, 255, 0.4) !important; /* 半透明の白 */
-  font-size: 16px !important;
-  font-weight: bold !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  gap: 0 !important; /* 内部の隙間ゼロ */
+  position: relative !important;
   box-sizing: border-box !important;
-  user-select: none !important;
-  pointer-events: none !important;
-  z-index: 2 !important;
+  height: 32px !important; /* 誤差スロット高さ32pxに完全同期 */
+  flex: 3.0 !important; /* 日枠の1.0に対して3.0を確保 */
 }
 
-/* --- 4. フォーカス（入力中・選択中）時の連動発光エフェクト --- */
-.time-input-wrapper:focus-within + .helper-colon {
-  border-top-color: var(--accent) !important;
-  border-bottom-color: var(--accent) !important;
+/* カプセル内の時分枠（ON/OFF） */
+.unit-capsule-wrapper .time-input-wrapper {
+  flex: 1.8 !important;
+  height: 32px !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
 }
-.direct-group-time:focus-within + .direct-colon {
-  border-top-color: var(--accent) !important;
-  border-bottom-color: var(--accent) !important;
-}
-#correctionMode .unit-input:nth-child(2):focus-within .helper-colon {
-  border-top-color: var(--accent) !important;
-  border-bottom-color: var(--accent) !important;
-}
-#correctionMode .unit-input:nth-child(2):focus-within .direct-colon {
-  border-top-color: var(--accent) !important;
-  border-bottom-color: var(--accent) !important;
+.unit-capsule-wrapper .time-input-wrapper input[type="time"] {
+  height: 32px !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important; /* 右境界線カット */
 }
 
-/* 秒側がフォーカスされたときのコロン連動発光 */
-.datetime-row:focus-within .helper-colon {
+/* カプセル内の手入力の時分枠 */
+.unit-capsule-wrapper .direct-group-error-time {
+  flex: 1.8 !important;
+  height: 32px !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important; /* 右境界線カット */
+}
+
+/* カプセル内のコロン（ON/OFF） */
+.unit-capsule-wrapper .helper-colon,
+.unit-capsule-wrapper .direct-colon {
+  height: 32px !important; /* コロンの高さも32pxに完全同期！ */
+}
+
+/* カプセル内の秒枠（ON: select / OFF: input） */
+.unit-capsule-wrapper select,
+.unit-capsule-wrapper .error-sec-direct {
+  flex: 1.0 !important;
+  height: 32px !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: none !important; /* 左境界線カット */
+  padding-right: 2px !important; /* selectの矢印被りを防ぐスマートな右パディング */
+}
+
+/* カプセル右端にピッタリ寄り添う「時分秒」の不動文字ラベルの美麗配置 */
+.unit-capsule-wrapper .unit-label {
+  margin-left: 6px !important; /* 秒枠の右隣に上品な隙間を空けて並べる */
+  font-size: 13.5px !important; /* 読みやすくプレミアムな13.5px */
+  font-weight: bold !important;
+  color: var(--text-main) !important;
+  white-space: nowrap !important;
+  display: inline-block !important;
+}
+
+/* --- 4. フォーカス（入力中・選択中）時の「時分秒」一体発光エフェクト（指示①） --- */
+
+/* 入力補助 ON 側：時分または秒のいずれかにフォーカスまたはドラムロール起動されたら、ドッキング枠全体を水色発光！ */
+.datetime-row:focus-within .time-input-wrapper,
+.datetime-row.picker-focused .time-input-wrapper {
+  border-color: var(--accent) !important;
+  border-right-color: transparent !important;
+  box-shadow: -3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+}
+.datetime-row:focus-within .helper-colon,
+.datetime-row.picker-focused .helper-colon {
   border-top-color: var(--accent) !important;
   border-bottom-color: var(--accent) !important;
+  box-shadow: 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+}
+.datetime-row:focus-within .seconds-select,
+.datetime-row.picker-focused .seconds-select {
+  border-color: var(--accent) !important;
+  border-left-color: transparent !important;
+  box-shadow: 3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+}
+
+/* 入力補助 OFF（直接入力）側：時分または秒のいずれかにフォーカスされたら全体発光！ */
+.datetime-direct-row:focus-within .direct-group-time {
+  border-color: var(--accent) !important;
+  border-right-color: transparent !important;
+  box-shadow: -3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
 }
 .datetime-direct-row:focus-within .direct-colon {
   border-top-color: var(--accent) !important;
   border-bottom-color: var(--accent) !important;
+  box-shadow: 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+}
+.datetime-direct-row:focus-within .direct-group-sec {
+  border-color: var(--accent) !important;
+  border-left-color: transparent !important;
+  box-shadow: 3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+}
+
+/* 補正誤差 (error) の一体発光：フォーカスまたはドラムロール起動中の一体発光！ */
+#correctionMode .unit-capsule-wrapper:focus-within .time-input-wrapper,
+#correctionMode .unit-capsule-wrapper.picker-focused .time-input-wrapper {
+  border-color: var(--accent) !important;
+  border-right-color: transparent !important;
+  box-shadow: -3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+}
+#correctionMode .unit-capsule-wrapper:focus-within .helper-colon,
+#correctionMode .unit-capsule-wrapper.picker-focused .helper-colon {
+  border-top-color: var(--accent) !important;
+  border-bottom-color: var(--accent) !important;
+  box-shadow: 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+}
+#correctionMode .unit-capsule-wrapper:focus-within select,
+#correctionMode .unit-capsule-wrapper.picker-focused select {
+  border-color: var(--accent) !important;
+  border-left-color: transparent !important;
+  box-shadow: 3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+}
+
+#correctionMode .unit-capsule-wrapper:focus-within .direct-group-error-time {
+  border-color: var(--accent) !important;
+  border-right-color: transparent !important;
+  box-shadow: -3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+}
+#correctionMode .unit-capsule-wrapper:focus-within .direct-colon {
+  border-top-color: var(--accent) !important;
+  border-bottom-color: var(--accent) !important;
+  box-shadow: 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+}
+#correctionMode .unit-capsule-wrapper:focus-within .error-sec-direct {
+  border-color: var(--accent) !important;
+  border-left-color: transparent !important;
+  box-shadow: 3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
 }

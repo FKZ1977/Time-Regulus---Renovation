@@ -585,6 +585,24 @@ function onDrumValueChange() {
 function openTimePicker(group) {
   activeTimePickerGroup = group;
 
+  // 既存の picker-focused をクリア
+  document.querySelectorAll(".picker-focused").forEach(el => el.classList.remove("picker-focused"));
+
+  // 対象の要素に picker-focused クラスを付与して一体発光を維持（指示①）
+  if (group === "display") {
+    const row = document.querySelector("#errorModeDisplayInputGroup .datetime-row");
+    if (row) row.classList.add("picker-focused");
+  } else if (group === "standard") {
+    const row = document.querySelector("#errorModeStandardInputGroup .datetime-row");
+    if (row) row.classList.add("picker-focused");
+  } else if (group === "reverseDisplay") {
+    const row = document.querySelector("#reverseTimeBlock .datetime-row");
+    if (row) row.classList.add("picker-focused");
+  } else if (group === "error") {
+    const row = document.querySelector("#correctionMode .flex-wrap.input-helper-on .unit-capsule-wrapper");
+    if (row) row.classList.add("picker-focused");
+  }
+
   const overlay = document.getElementById("pickerOverlay");
   const sheet = document.getElementById("regulusTimePicker");
   const titleEl = document.getElementById("pickerTitle");
@@ -663,6 +681,10 @@ function closeTimePicker() {
   if (overlay) overlay.classList.remove("show");
   if (sheet) sheet.classList.remove("show");
   document.body.classList.remove("scroll-locked"); // 裏画面スクロールロック解除！
+
+  // picker-focused をクリア（指示①）
+  document.querySelectorAll(".picker-focused").forEach(el => el.classList.remove("picker-focused"));
+
   activeTimePickerGroup = null;
 }
 
