@@ -863,9 +863,7 @@ input:checked + .switch-slider:before {
 }
 
 /* 各スロットグループ（繋がりカードデザイン） */
-.direct-group,
-.direct-group-time-sec,
-.direct-group-error-time-sec {
+.direct-group {
   display: flex;
   align-items: center;
   gap: 0; /* グループ内は隙間ゼロで一体化 */
@@ -895,15 +893,8 @@ input:checked + .switch-slider:before {
   justify-content: center;
 }
 
-/* 時分秒グループ（完全一体化） */
-.direct-group-time-sec {
-  flex: 1.8;
-}
-
 /* いずれかの入力枠がフォーカスされた際、カード全体が水色に美しく発光 */
-.direct-group:focus-within,
-.direct-group-time-sec:focus-within,
-.direct-group-error-time-sec:focus-within {
+.direct-group:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 6px var(--accent);
 }
@@ -1255,46 +1246,10 @@ input:checked + .switch-slider:before {
 }
 
 /* 補正誤差のhh, mm個別インプットのフォーカス時発光を排除し、外側のグループ全体だけが光るようにする設定 */
-#correctionMode .direct-group-error-time input:focus,
-#correctionMode .direct-group-error-time-sec input:focus {
+#correctionMode .direct-group-error-time input:focus {
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
-}
-
-/* ON側の「時：分：秒」一体化入力枠の極美スタイル */
-input.time-whole-input {
-  box-sizing: border-box !important;
-  width: 100% !important;
-  max-width: 290px !important;
-  height: 38px !important; /* 38pxに完全同期 */
-  padding: 0 8px !important;
-  font-size: 16px !important;
-  background-color: #1f1f2f !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 8px !important;
-  color: #777788 !important; /* 初期プレースホルダー色 */
-  text-align: center !important;
-  caret-color: transparent !important; /* カーソルを非表示にしてreadonly感向上 */
-  cursor: pointer !important;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  line-height: 36px !important;
-}
-input.time-whole-input:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 6px var(--accent) !important;
-  outline: none !important;
-}
-/* 値が設定されている時は純白色へ */
-input.time-whole-input.has-value,
-input.time-whole-input:focus {
-  color: #ffffff !important;
-}
-/* 補正誤差のON側一体化時間枠は高さ32px */
-#correctionMode input.time-whole-input {
-  height: 32px !important;
-  line-height: 30px !important;
-  border-radius: 6px !important;
 }
 
 /* ==========================================
@@ -1308,18 +1263,14 @@ select,
 .datetime-row input[type="time"],
 .datetime-row .seconds-select,
 .direct-group,
-.direct-group-time-sec,
 .direct-group-error-time,
-.direct-group-error-time-sec,
 .unit-input input,
 .unit-input select,
 #correctionMode .datetime-row input[type="date"],
 #correctionMode .datetime-row input[type="time"],
 #correctionMode .datetime-row .seconds-select,
 #correctionMode .direct-group,
-#correctionMode .direct-group-time-sec,
 #correctionMode .direct-group-error-time,
-#correctionMode .direct-group-error-time-sec,
 #correctionMode .unit-input input,
 #correctionMode .unit-input select {
   background-color: #1f1f2f !important;
@@ -1328,9 +1279,7 @@ select,
 /* 直接入力（手入力）の枠内にある input 自体は、枠全体（.direct-group）と一体化させるために【完全に背景透明】のまま維持！ */
 .datetime-direct-row input,
 .direct-group input,
-.direct-group-time-sec input,
-.direct-group-error-time input,
-.direct-group-error-time-sec input {
+.direct-group-error-time input {
   background-color: transparent !important;
 }
 
@@ -1456,7 +1405,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ==========================================================================
-   時：分：秒 三連極上カスタム無限ドラムロールピッカー（Time Regulus TimePicker）スタイル
+   秒専用 極上カスタム無限ドラムロールピッカー（Time Regulus Picker）スタイル
    ========================================================================== */
 
 /* 1. オーバーレイ（背景フェード） */
@@ -1486,7 +1435,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   left: 50%;
   width: 100%;
   max-width: 393px; /* iPhoneの代表的横幅に上限を固定して浮遊カードに見せる */
-  height: 280px;
+  height: 350px;
   background: rgba(21, 28, 39, 0.85); /* アッシュネイビー */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -1544,38 +1493,44 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* 4. コンテンツ・ドラムロール部 */
 .picker-content {
-  height: 220px;
+  height: 290px; /* 350px - ヘッダー約60px に対し、290pxの十分な領域を確保 */
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px; /* 各ドラム間の隙間 */
   position: relative;
-  box-sizing: border-box;
-  padding: 0 16px;
-}
-
-/* 各ドラム（時・分・秒）のコンテナ */
-.picker-wheel-container {
-  position: relative;
-  width: 72px; /* 3連ドラムが綺麗に横並びする完璧な横幅 */
-  height: 180px !important; /* 36px * 5個表示のため 180px に完全固定 */
-  overflow: hidden;
   box-sizing: border-box;
 }
 
-/* コロンセパレータ */
+/* 3連結ホイールを横並びにするラッパー */
+.picker-wheels-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px; /* ホイール間の余白 */
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* ドラム全体の仕切りコロン (プレミアム感漂うネオンシャドウ) */
 .picker-separator {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: bold;
   color: var(--accent);
-  opacity: 0.6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  padding: 0 2px;
+  text-shadow: 0 0 10px rgba(0, 255, 224, 0.6);
   user-select: none;
   -webkit-user-select: none;
+  margin-bottom: 4px; /* コロンの上下中央の微調整 */
+}
+
+/* ドラム全体を囲むコンテナ (7項目表示用に高さを252pxに拡張) */
+.picker-wheel-container {
+  position: relative;
+  width: 80px; /* 3列綺麗に収まるスリム幅 */
+  height: 252px; /* 36px * 7項目 = 252px */
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* 無限スクロールを行うホイール要素（スクロールバー非表示） */
@@ -1595,17 +1550,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: none; /* Chrome/Safariスクロールバー非表示 */
 }
 
-/* 5. 三連ドラム全体を貫く美しい選択枠 */
+/* 5. 選択枠インディケータ */
 .picker-selection-indicator {
   position: absolute;
   top: 50%;
-  left: 20px;
-  right: 20px;
+  left: 0;
+  width: 100%;
   height: 36px;
   transform: translateY(-50%);
-  border-top: 1px solid rgba(0, 255, 224, 0.25); /* 選択行のアウトライン */
-  border-bottom: 1px solid rgba(0, 255, 224, 0.25);
-  background: rgba(0, 255, 224, 0.04);
+  border-top: 1px solid rgba(0, 255, 224, 0.35); /* 選択行のネオン風アウトライン */
+  border-bottom: 1px solid rgba(0, 255, 224, 0.35);
+  background: rgba(0, 255, 224, 0.06);
   pointer-events: none;
   border-radius: 6px;
   z-index: 3;
@@ -1618,40 +1573,57 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-align: center;
   font-size: 16px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.3); /* 初期状態（周りの文字）は薄暗く */
+  color: rgba(255, 255, 255, 0.25); /* 初期状態（見えている前後項目）は薄暗く */
   scroll-snap-align: center; /* 常に中央にスナップアライン */
-  transition: color 0.15s ease, font-size 0.15s ease, transform 0.15s ease;
+  transition: color 0.15s ease, font-size 0.15s ease, transform 0.15s ease, text-shadow 0.15s ease;
   user-select: none;
   -webkit-user-select: none;
-  cursor: pointer; /* タップ可能であることを示す */
   box-sizing: border-box;
+  cursor: pointer; /* タップできることを示す */
+}
+
+/* ホバー時（PC）またはタッチされた際、見えている数字が美しく発光 */
+.picker-item:hover {
+  color: rgba(0, 255, 224, 0.6);
+  text-shadow: 0 0 5px rgba(0, 255, 224, 0.3);
 }
 
 /* 中央で選択されているアクティブアイテム（JSから動的に付与） */
 .picker-item.active {
   color: #ffffff !important; /* 中央は純白 */
-  font-size: 21px !important; /* 大きく強調 */
+  font-size: 22px !important; /* 大きく強調 */
   font-weight: bold !important;
-  text-shadow: 0 0 8px rgba(0, 255, 224, 0.4);
+  text-shadow: 0 0 10px rgba(0, 255, 224, 0.7);
 }
 
-/* 7. 上下を立体的にフェード消去する美麗3Dグラデーションマスク */
+/* 7. 上下を立体的にフェード消去する美麗3Dグラデーションマスク (高さを108pxに拡張) */
 .picker-mask-top,
 .picker-mask-bottom {
   position: absolute;
   left: 0;
   width: 100%;
-  height: 72px; /* 36px * 2個分をマスク */
+  height: 108px; /* 36px * 3個分をマスク */
   pointer-events: none;
   z-index: 2;
 }
 
 .picker-mask-top {
   top: 0;
-  background: linear-gradient(to bottom, rgba(21, 28, 39, 0.98) 0%, rgba(21, 28, 39, 0.7) 45%, rgba(21, 28, 39, 0) 100%);
+  background: linear-gradient(to bottom, rgba(21, 28, 39, 0.98) 0%, rgba(21, 28, 39, 0.75) 45%, rgba(21, 28, 39, 0) 100%);
 }
 
 .picker-mask-bottom {
   bottom: 0;
-  background: linear-gradient(to top, rgba(21, 28, 39, 0.98) 0%, rgba(21, 28, 39, 0.7) 45%, rgba(21, 28, 39, 0) 100%);
+  background: linear-gradient(to top, rgba(21, 28, 39, 0.98) 0%, rgba(21, 28, 39, 0.75) 45%, rgba(21, 28, 39, 0) 100%);
+}
+
+/* 標準時刻が上配置のときの秒ホイールロック (赤色ネオンアウトラインでプレミアムに表現) */
+.picker-wheel-container.sec-locked {
+  pointer-events: none !important;
+  opacity: 0.35 !important;
+}
+.picker-wheel-container.sec-locked .picker-selection-indicator {
+  border-top-color: var(--error-late-color) !important;
+  border-bottom-color: var(--error-late-color) !important;
+  background: rgba(255, 77, 77, 0.08) !important;
 }
