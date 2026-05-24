@@ -1763,13 +1763,17 @@ select.seconds-fixed-00,
 
 /* 年月日省略時 (.date-omitted / 下がるとき) の入力枠スライド（コロンにピタッと密着＆横幅最大化！） */
 #errorModeDisplayInputGroup.date-omitted .datetime-row,
-#errorModeDisplayInputGroup.date-omitted .datetime-direct-row,
-#errorModeStandardInputGroup.date-omitted .datetime-row,
-#errorModeStandardInputGroup.date-omitted .datetime-direct-row {
+#errorModeStandardInputGroup.date-omitted .datetime-row {
   max-width: 220px !important; /* 時分の横幅をスリム縮小させず、たっぷり220pxまで極大拡張！ */
   margin-left: 80px !important; /* ラベルのコロン（：）のすぐ右隣（80px）まで極限まで左に詰める！ */
-  
-  /* OFFのとき（下がるとき）：ディレイなし（0s）で即座にサイズ縮小と左スライドを行い、一瞬の広がりを完全排除！ */
+  transition-delay: 0s;
+}
+
+/* 入力補助OFF（直接手入力）の時：枠線がコロンに密着しすぎないよう、ほんの少し（5px）離して綺麗な隙間を確保！ */
+#errorModeDisplayInputGroup.date-omitted .datetime-direct-row,
+#errorModeStandardInputGroup.date-omitted .datetime-direct-row {
+  max-width: 215px !important; /* 隙間を空けた分、最大幅を215pxに微調整して右端ラインを完璧に維持 */
+  margin-left: 85px !important; /* コロンから 5px 離して 85px に設定 */
   transition-delay: 0s;
 }
 
@@ -1795,9 +1799,14 @@ select.seconds-fixed-00,
   transition-delay: 0.22s;
 }
 
-/* 年月日省略時 (.date-omitted / 消えるとき)：年月日枠の幅を滑らかに0にし、時分秒を元の形のままスッと左に寄せる */
-#errorModeDisplayInputGroup.date-omitted input[type="date"],
-#errorModeStandardInputGroup.date-omitted #standardDate {
+/* 年月日省略時 (.date-omitted / 消えるとき)：カレンダーラッパーをごともろとも完全に消去！ */
+#errorModeDisplayInputGroup.date-omitted .date-input-wrapper,
+#errorModeStandardInputGroup.date-omitted .date-input-wrapper {
+  display: none !important;
+}
+
+#errorModeDisplayInputGroup.date-omitted .date-input-wrapper input[type="date"],
+#errorModeStandardInputGroup.date-omitted .date-input-wrapper #standardDate {
   flex: 0 !important;
   max-width: 0 !important;
   opacity: 0 !important;
