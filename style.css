@@ -608,14 +608,14 @@ input, select {
   align-items: center;
   gap: 6px;
   width: 100%;
-  max-width: 290px; /* 横幅を290pxに制限して手入力側と揃える！ */
+  max-width: 310px; /* PC・スマホで年月日枠を広げてマークを綺麗に収めるため310pxに拡張 */
   margin: 6px auto 0 auto; /* 画面中央に配置 */
   box-sizing: border-box;
   height: 38px !important; /* コンテナの高さを38pxに完全固定 */
 }
 
 .datetime-row input[type="date"] {
-  flex: 1.4; /* 年月日の幅を一番広く確保 */
+  flex: 1.6; /* 年月日の幅をさらに広く確保 (1.4 -> 1.6) */
   min-width: 0;
   width: auto;
   text-align: center;
@@ -648,6 +648,7 @@ input[type="date"],
 input[type="time"] {
   color: var(--text-sub) !important;
   opacity: 0.6 !important;
+  position: relative !important; /* インジケーター絶対配置の基準にするため追加 */
 }
 input[type="date"].has-value,
 input[type="date"]:focus,
@@ -856,7 +857,7 @@ input:checked + .switch-slider:before {
   align-items: center;
   gap: 6px; /* 各スロットグループ間の切れ目（隙間） */
   width: 100%;
-  max-width: 290px; /* 入力補助ONの年月日に合わせてコンパクト化 */
+  max-width: 310px; /* 入力補助ONに合わせて310pxに拡張 */
   margin: 6px auto 0 auto; /* 画面中央に配置 */
   box-sizing: border-box;
   height: 38px !important; /* コンテナの高さを38pxに完全固定 */
@@ -879,7 +880,7 @@ input:checked + .switch-slider:before {
 
 /* 年月日グループ */
 .direct-group-date {
-  flex: 1.4;
+  flex: 1.6; /* 補助ONの日付幅に完全同期させて1.6に拡張 */
 }
 
 /* 時分グループ */
@@ -1081,7 +1082,7 @@ input:checked + .switch-slider:before {
   padding: 0 !important;
   height: 38px !important; /* コンテナの高さを38pxに完全強制固定 */
   overflow: hidden !important; /* iOSインプット膨らみによる縦伸びを強制遮断 */
-  max-width: 290px !important; /* 横幅を手入力側と完全同期！ */
+  max-width: 310px !important; /* 横幅を310pxに統一！ */
   align-items: center !important; /* 子要素を縦中央に揃える */
   box-sizing: border-box !important;
 }
@@ -1341,10 +1342,11 @@ input[type="date"]::-webkit-datetime-edit {
   padding: 0 !important;
 }
 
-/* カレンダーピッカーマークを右端に絶対配置して中央寄せの邪魔をさせない */
-input[type="date"]::-webkit-calendar-picker-indicator {
+/* カレンダーおよび時計ピッカーマークを右端に絶対配置して中央寄せの邪魔をさせない */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
   position: absolute !important;
-  right: 6px !important;
+  right: 8px !important;
   margin: 0 !important;
 }
 
@@ -1626,4 +1628,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-top-color: var(--error-late-color) !important;
   border-bottom-color: var(--error-late-color) !important;
   background: rgba(255, 77, 77, 0.08) !important;
+}
+
+/* 標準時刻が上のときの「00秒」固定時の赤色文字を強制適用 (一律白上書きに勝つ優先度) */
+input.seconds-fixed-00,
+select.seconds-fixed-00 {
+  color: var(--error-late-color) !important;
 }
