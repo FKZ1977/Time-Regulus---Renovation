@@ -80,7 +80,7 @@ function toggleIncludeDate(enabled) {
 
   // 年月日要素（カレンダー等および手入力用のグループ）の個別の非表示化
   const dateIds = [
-    "displayDate", "standardDate",
+    "displayDateWrapper", "standardDateWrapper",
     "displayDateGroup_direct", "standardDateGroup_direct"
   ];
   
@@ -124,7 +124,7 @@ function toggleIncludeDateCorrection(enabled) {
 
   // 年月日要素（カレンダー等および手入力用のグループ）の個別の非表示化
   const dateIds = [
-    "reverseDisplayDate", "reverseDisplayDateGroup_direct"
+    "reverseDisplayDateWrapper", "reverseDisplayDateGroup_direct"
   ];
   
   dateIds.forEach(id => {
@@ -2274,10 +2274,11 @@ if ('serviceWorker' in navigator) {
 }
 
 // ==========================================================================
-// iPhone（iOS）用：input[type="time"] の .time-empty クラス着脱制御
+// iPhone（iOS）用：input[type="time"]/input[type="date"] の .time-empty / .date-empty クラス着脱制御
 // ==========================================================================
-function initTimePlaceholderGuides() {
+function initPlaceholderGuides() {
   const timeInputs = document.querySelectorAll('input[type="time"]');
+  const dateInputs = document.querySelectorAll('input[type="date"]');
   
   timeInputs.forEach(input => {
     const updateEmptyClass = () => {
@@ -2300,11 +2301,33 @@ function initTimePlaceholderGuides() {
       input.classList.remove("time-empty");
     });
   });
+
+  dateInputs.forEach(input => {
+    const updateEmptyClass = () => {
+      if (!input.value) {
+        input.classList.add("date-empty");
+      } else {
+        input.classList.remove("date-empty");
+      }
+    };
+
+    // 初期化時
+    updateEmptyClass();
+
+    // イベント登録
+    input.addEventListener("input", updateEmptyClass);
+    input.addEventListener("change", updateEmptyClass);
+    input.addEventListener("blur", updateEmptyClass);
+    input.addEventListener("focus", () => {
+      // フォーカス時はプレースホルダーを消してピッカー入力を邪魔しないようにする
+      input.classList.remove("date-empty");
+    });
+  });
 }
 
 // ページロード時およびDOMContentLoaded時に確実に初期化
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initTimePlaceholderGuides);
+  document.addEventListener("DOMContentLoaded", initPlaceholderGuides);
 } else {
-  initTimePlaceholderGuides();
+  initPlaceholderGuides();
 }

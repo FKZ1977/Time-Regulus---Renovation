@@ -1301,9 +1301,17 @@ input[type="time"] {
   opacity: 1 !important; /* 不透明度は常に100%を維持して背景色を透けさせない！ */
 }
 
-/* セレクトボックス（秒）の未選択プレースホルダー（ss）は灰色に */
-select.placeholder-active {
-  color: #777788 !important; /* 透過を使わない美しい薄灰色 */
+/* セレクトボックス（秒）の未選択プレースホルダー（ss）は灰色に（iOS Safari のOSデフォルト白化バグも完全撃破！） */
+select.placeholder-active,
+.seconds-select.placeholder-active,
+#standardSeconds.placeholder-active,
+#displaySeconds.placeholder-active,
+#reverseDisplaySeconds.placeholder-active,
+#errorSeconds.placeholder-active,
+select.placeholder-active option:first-child,
+.seconds-select option[value=""] {
+  color: #777788 !important;
+  -webkit-text-fill-color: #777788 !important; /* iOS Safari強制上書き用 */
   opacity: 1 !important;
 }
 
@@ -2130,6 +2138,78 @@ input[type="time"] + .time-placeholder-guide {
 
 /* インプットが空（JSがtime-emptyクラスを付与）の時だけ、ガイドを美しく浮かび上がらせる（iOS Safari対応！） */
 input[type="time"].time-empty + .time-placeholder-guide {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ==========================================================================
+   iPhone（iOS）用：input[type="date"] の極上プレースホルダーガイド制御
+   ========================================================================== */
+
+/* 
+   インプットを包むラッパーを完璧なフレックスアイテムとして振る舞わせる！
+   親 .datetime-row 内での元の input[type="date"] のフレックスルールをこちらに継承します。
+*/
+.date-input-wrapper {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  height: 38px !important;
+  
+  /* 誤差計算モード（#errorMode）等でのデフォルト比率 */
+  flex: 1.6 !important;
+  max-width: 140px !important;
+  min-width: 0 !important;
+  width: auto !important;
+}
+
+/* 補正モード画面（#reverseTimeBlock 内の年月日計算あり：flex: 1.35, max-width: 120px） */
+#correctionMode #reverseTimeBlock .date-input-wrapper {
+  flex: 1.35 !important;
+  max-width: 120px !important;
+  min-width: 0 !important;
+}
+
+/* ラッパーの中にある input[type="date"] 自体は、ラッパー一杯に完全にフィットさせる！ */
+.date-input-wrapper input[type="date"] {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* ガイド文字はラッパーの完全にど真ん中（inputの中心）に絶対配置！ */
+.date-placeholder-guide {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: rgba(255, 255, 255, 0.4) !important; /* 美しい半透明のプレースホルダー色 */
+  font-size: 13px !important; /* ちょうど良く収まるサイズ */
+  font-weight: normal !important;
+  pointer-events: none !important; /* タップを完全にスルー */
+  transition: opacity 0.15s ease, visibility 0.15s ease !important;
+  display: block !important;
+  white-space: nowrap !important;
+  z-index: 5 !important;
+  letter-spacing: normal !important;
+}
+
+/* 補正モード（#reverseTimeBlock）側の年月日枠用（スリムに調整） */
+#correctionMode #reverseTimeBlock .date-placeholder-guide {
+  font-size: 12.5px !important;
+}
+
+/* デフォルト非表示 */
+input[type="date"] + .date-placeholder-guide {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* 空（JSがdate-emptyクラスを付与）の時だけ表示 */
+input[type="date"].date-empty + .date-placeholder-guide {
   opacity: 1 !important;
   visibility: visible !important;
 }

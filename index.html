@@ -117,7 +117,10 @@
       
       <!-- 入力補助 ON 時の入力欄 -->
       <div class="datetime-row input-helper-on" style="display: none;">
-        <input type="date" id="displayDate" placeholder="yyyy/mm/dd" style="display: none;">
+        <div class="date-input-wrapper" style="display: none;" id="displayDateWrapper">
+          <input type="date" id="displayDate" placeholder="yyyy/mm/dd">
+          <span class="date-placeholder-guide">yyyy  /  mm  /  dd</span>
+        </div>
         <div class="time-input-wrapper">
           <input type="time" id="displayTime" placeholder="hh:mm">
           <span class="time-placeholder-guide">hh  :  mm</span>
@@ -157,7 +160,10 @@
       
       <!-- 入力補助 ON 時の入力欄 -->
       <div class="datetime-row input-helper-on" style="display: none;">
-        <input type="date" id="standardDate" placeholder="yyyy/mm/dd" style="display: none;">
+        <div class="date-input-wrapper" style="display: none;" id="standardDateWrapper">
+          <input type="date" id="standardDate" placeholder="yyyy/mm/dd">
+          <span class="date-placeholder-guide">yyyy  /  mm  /  dd</span>
+        </div>
         <div class="time-input-wrapper">
           <input type="time" id="standardTime" placeholder="hh:mm">
           <span class="time-placeholder-guide">hh  :  mm</span>
@@ -290,7 +296,10 @@
       
       <!-- 入力補助 ON 時の入力欄 -->
       <div class="datetime-row input-helper-on" style="display: none;">
-        <input type="date" id="reverseDisplayDate" placeholder="yyyy/mm/dd" tabindex="18" style="display: none;">
+        <div class="date-input-wrapper" style="display: none;" id="reverseDisplayDateWrapper" tabindex="18">
+          <input type="date" id="reverseDisplayDate" placeholder="yyyy/mm/dd">
+          <span class="date-placeholder-guide">yyyy  /  mm  /  dd</span>
+        </div>
         <div class="time-input-wrapper">
           <input type="time" id="reverseDisplayTime" placeholder="hh:mm" step="60" tabindex="19">
           <span class="time-placeholder-guide">hh  :  mm</span>
