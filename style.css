@@ -1000,6 +1000,7 @@ input:checked + .switch-slider:before {
   font-size: 14px !important;
   border-radius: 6px !important;
   line-height: 30px !important; /* 行の高さを揃えて中央に */
+  text-align: center !important; /* 【新規追加】日数プレースホルダー d や数値を完璧に中央寄せ！ */
 }
 
 /* iOS Safari 固有の誤差時間入力インナー要素リセット */
@@ -2015,7 +2016,7 @@ select.seconds-fixed-00,
   min-width: 0 !important;
 }
 
-#correctionMode #reverseTimeBlock input[type="time"],
+#correctionMode #reverseTimeBlock .time-input-wrapper,
 #correctionMode #reverseTimeBlock .direct-group-time {
   flex: 0.75 !important;
   max-width: 64px !important; /* 62px -> 64px に微調整してスリムに格納 */
@@ -2045,10 +2046,54 @@ select.seconds-fixed-00,
   padding: 0 1px !important; /* パディングを極限まで詰める */
 }
 
-/* 年月日省略（トグルOFF）のとき、時分秒を元のたっぷりしたサイズに戻す（ここも最強セレクタで完全制御！） */
+/* 補正モード（#reverseTimeBlock）の時間枠・秒枠・グループに対する極上スライドアニメーションの transition 設定 */
+#correctionMode #reverseTimeBlock .date-input-wrapper,
+#correctionMode #reverseTimeBlock #reverseDisplayDateGroup_direct {
+  flex: 1.35 !important;
+  max-width: 120px !important;
+  opacity: 1;
+  visibility: visible;
+  margin-right: 3px;
+  
+  /* ONのとき（現れる）：滑らかに幅を広げてフェードイン */
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.22s ease,
+              visibility 0.22s ease,
+              margin-right 0.25s ease,
+              padding 0.25s ease !important;
+  transition-delay: 0s;
+}
+
+#correctionMode #reverseTimeBlock .time-input-wrapper,
+#correctionMode #reverseTimeBlock .direct-group-time,
+#correctionMode #reverseTimeBlock .seconds-select,
+#correctionMode #reverseTimeBlock .direct-group-sec {
+  /* トグル切り替え時に、幅がスッと滑らかに伸縮して左スライド詰めされる transition アシスト */
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              min-width 0.25s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+/* 年月日省略（トグルOFF）のとき、日付枠を滑らかに幅0にしてスッと消去し、時分秒を左寄せスライド！ */
 #correctionMode #reverseTimeBlock .datetime-row.omit-date-active .date-input-wrapper,
 #correctionMode #reverseTimeBlock .datetime-direct-row.omit-date-active #reverseDisplayDateGroup_direct {
-  display: none !important; /* ラッパーごと（ガイド文字もろとも）即座に完全に消す！ */
+  flex: 0 !important;
+  max-width: 0 !important;
+  opacity: 0 !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  visibility: hidden;
+  
+  /* 消去時は即座に幅を0に縮めて左にスライド */
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.22s ease,
+              visibility 0.22s ease,
+              margin-right 0.25s ease,
+              padding 0.25s ease !important;
+  transition-delay: 0s;
 }
 
 #correctionMode #reverseTimeBlock .datetime-row.omit-date-active .time-input-wrapper,
