@@ -2058,18 +2058,17 @@ select.seconds-fixed-00,
   align-items: center !important;
   justify-content: center !important;
   width: 12px !important;
-  height: 38px !important;
-  background-color: #1f1f2f !important; /* 入力枠と同じディープネイビー */
+  height: 100% !important;
+  background-color: transparent !important; /* 背景透明化 */
   color: rgba(255, 255, 255, 0.4) !important; /* 半透明の白 */
   font-size: 16px !important;
   font-weight: bold !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: none !important; /* ボーダーを完全消去して一体化！ */
   box-sizing: border-box !important;
   user-select: none !important;
   pointer-events: none !important;
-  z-index: 3 !important; /* z-indexを3に引き上げ、重ね合わせを上にする */
-  margin: 0 -2px !important; /* 左右の重ね合わせを-2pxに拡張して切れ目を完全抹殺！ */
+  z-index: 3 !important;
+  margin: 0 !important; /* 重ね合わせマージンは不要に */
   padding: 0 !important;
   
   /* スライドアニメーション時の滑らかな追従 transition アシスト */
@@ -2360,7 +2359,7 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
 }
 
 /* ==========================================================================
-   時分秒入力枠の「極美ドッキング」＆「1ミリもガタつかない完全同一座標整列」
+   時分秒入力枠の「カプセルラッパー手法」＆「完璧な三等分（1:1:1）」定義
    ========================================================================== */
 
 /* --- 1. 全体レイアウトの gap を 0 にし、必要な隙間は日付の右側に集約 --- */
@@ -2377,46 +2376,130 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
   margin-right: 6px !important;
 }
 
-/* --- 2. 時分枠と秒枠を結合するための角丸・枠線の「ドッキング調整」 --- */
-
-/* 入力補助 ON (ドラムピッカー起動側) */
-.time-input-wrapper {
-  flex: 1.1 !important; /* 幅の比率 */
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  margin-right: 0 !important;
-}
-.time-input-wrapper input[type="time"] {
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  border-right: none !important; /* 右側の境界線を消去 */
-}
-
-.seconds-select {
-  flex: 0.7 !important; /* 幅 of 比率 */
-  min-width: 62px !important;
-  margin-left: -1px !important; /* コロンと完全に密着（隙間ゼロ） */
-  margin-right: 0 !important;
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-  border-left: none !important; /* 左側の境界線を消去してコロンと結合 */
+/* --- 2. 時分秒を一体包囲する親カプセル（ラッパー）定義 --- */
+.time-capsule-wrapper,
+.direct-capsule-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  height: 38px !important; /* 標準の入力枠高さに完全同期 */
+  flex: 1.8 !important; /* 日付枠（1.6）と並んだときの美しい黄金比率 */
+  background-color: #1f1f2f !important; /* カプセル全体の美麗ディープネイビー背景 */
+  border-radius: 8px !important; /* 親自体に確実な角丸を適用してへこみを完全消滅！ */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important; /* 親カプセル自体に1枚のボーダーを適用 */
+  overflow: hidden !important; /* 子要素の角丸はみ出しをシャットアウト */
+  width: auto !important;
+  min-width: 0 !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
-/* 直接入力 (テンキー手入力側) */
-.direct-group-time {
-  flex: 1.1 !important;
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  border-right: none !important; /* 右側の境界線を消去 */
+/* 年月日省略時 (.date-omitted) のカプセルラッパーのサイズ拡張 (スライド不動性を絶対維持) */
+#errorModeDisplayInputGroup.date-omitted .time-capsule-wrapper,
+#errorModeDisplayInputGroup.date-omitted .direct-capsule-wrapper,
+#errorModeStandardInputGroup.date-omitted .time-capsule-wrapper,
+#errorModeStandardInputGroup.date-omitted .direct-capsule-wrapper {
+  flex: 1.0 !important;
+  width: 100% !important;
 }
 
-.direct-group-sec {
-  flex: 0.7 !important;
-  min-width: 62px !important;
-  margin-left: -1px !important; /* 隙間ゼロ */
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-  border-left: none !important; /* 左側の境界線を消去 */
+/* 補正モードで年月日非表示のときのカプセルサイズ拡張 */
+#correctionMode #reverseTimeBlock .datetime-row.omit-date-active .time-capsule-wrapper,
+#correctionMode #reverseTimeBlock .datetime-direct-row.omit-date-active .direct-capsule-wrapper {
+  flex: 1.0 !important;
+  width: 100% !important;
+}
+
+/* --- 3. 時・分・秒の完璧な三等分フレックス比率 (2.0 : 1.0) --- */
+
+/* カプセル内の時分枠（ON/OFF）: 時と分を包むので 2.0 を確保 */
+.time-capsule-wrapper .time-input-wrapper,
+.direct-capsule-wrapper .direct-group-time {
+  flex: 2.0 !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  background-color: transparent !important;
+  border: none !important; /* 中身のボーダーを完全に消去して親に溶け込ませる */
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+}
+
+/* カプセル内の秒枠（ON/OFF）: 秒は単一要素なので 1.0 にして完璧な三等分に！ */
+.time-capsule-wrapper .seconds-select,
+.direct-capsule-wrapper .direct-group-sec {
+  flex: 1.0 !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  background-color: transparent !important;
+  border: none !important; /* 中身のボーダーを完全に消去 */
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+}
+
+/* 直接入力（手入力）側の時・分・秒インプットを枠一杯に均等に広げる */
+.direct-capsule-wrapper .direct-group-time input,
+.direct-capsule-wrapper .direct-group-sec input {
+  flex: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  text-align: center !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  color: var(--text-main) !important;
+  font-size: 15px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* 手入力コロン（：）の透明化とセンタリング */
+.direct-capsule-wrapper .direct-group-time .delimiter {
+  color: rgba(255, 255, 255, 0.4) !important;
+  background: transparent !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 15px !important;
+}
+
+/* 入力補助 ON 側の input[type="time"] 自体をラッパー一杯に完全にフィットさせる */
+.time-capsule-wrapper .time-input-wrapper input[type="time"] {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* 秒セレクトボックスのボーダー消去・背景透明化 ＆ 中央揃え */
+.time-capsule-wrapper .seconds-select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  text-align: center !important;
+  text-align-last: center !important;
+  line-height: 36px !important;
+  padding: 0 !important;
+  color: var(--text-main) !important;
+  font-size: 15px !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
 }
 
 /* 補正誤差 (error) の時分と秒のドッキング（隙間完全埋め立て ＆ label時分秒右寄せ）（指示③） */
@@ -2430,7 +2513,7 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
   margin-right: 6px !important;
 }
 
-/* --- 5. 補正誤差 (error) の「時分秒」新設極美ドッキングカプセル --- */
+/* --- 5. 補正誤差 (error) の「時分秒」新設極美ドッキングカプセル ＆ 完璧な三等分（1:1:1）超強固定義 --- */
 .unit-capsule-wrapper {
   display: flex !important;
   align-items: center !important;
@@ -2445,40 +2528,28 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
   overflow: hidden !important; /* 子要素の角丸はみ出しをシャットアウト */
 }
 
-/* カプセル内の時分枠（ON/OFF） */
-.unit-capsule-wrapper .time-input-wrapper {
-  flex: 2.0 !important; /* 時・分を包むので2.0を確保し、秒1.0と合わせて完璧な三等分（1:1:1）に！ */
+/* 補正誤差の「時・分・秒」を寸分の狂いもなく 1 : 1 : 1 の三等分に等幅配分する最強詳細度定義 */
+#correctionMode .flex-wrap .unit-capsule-wrapper .time-input-wrapper,
+#correctionMode .flex-wrap .unit-capsule-wrapper .direct-group-error-time {
+  flex: 2.0 !important; /* 時と分を包むので 2.0 を確保 */
+  max-width: none !important;
+  min-width: 0 !important;
+  width: auto !important;
   height: 100% !important;
-  box-sizing: border-box !important;
-}
-.unit-capsule-wrapper .time-input-wrapper input[type="time"] {
-  height: 100% !important;
-  background-color: transparent !important; /* 背景透明化 */
-  border: none !important; /* 中身のボーダーを消去して親カプセルと合体！ */
-  box-sizing: border-box !important;
-}
-
-/* カプセル内の手入力の時分枠 */
-.unit-capsule-wrapper .direct-group-error-time {
-  flex: 2.0 !important; /* 時・分を包むので2.0を確保し、秒1.0と合わせて完璧な三等分（1:1:1）に！ */
-  height: 100% !important;
-  background-color: transparent !important; /* 背景透明化 */
-  border: none !important; /* 中身のボーダーを消去して一体化！ */
-  box-sizing: border-box !important;
-  border-radius: 0 !important;
-  padding: 0 4px !important;
+  margin: 0 !important;
+  padding: 0 !important;
   display: flex !important;
   align-items: center !important;
-  gap: 0 !important;
+  box-sizing: border-box !important;
 }
 
 /* 手入力の時・分インプットが重なるバグを完全解決！flex: 1で均等に広げる */
-.unit-capsule-wrapper .direct-group-error-time input {
+#correctionMode .flex-wrap .unit-capsule-wrapper .direct-group-error-time input {
   flex: 1 !important;
+  width: 100% !important;
   min-width: 0 !important;
   text-align: center !important;
   background: transparent !important;
-  border: none !important;
 }
 
 /* カプセル内のコロン（ON/OFF） */
@@ -2486,19 +2557,23 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
 .unit-capsule-wrapper .direct-colon {
   height: 100% !important;
   background-color: transparent !important;
-  border: none !important; /* コロンの上下ボーダーも消去して融合！ */
   margin: 0 !important;
   width: 10px !important; /* コロンの幅をスリム化 */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-/* カプセル内の秒枠（ON: select / OFF: input）（指示③＆④の薄っぺらさ・文字下がり対策） */
-.unit-capsule-wrapper select,
-.unit-capsule-wrapper .error-sec-direct {
+/* カプセル内の秒枠を強制的に flex: 1.0 に固定して完璧な三等分に！ */
+#correctionMode .flex-wrap .unit-capsule-wrapper select,
+#correctionMode .flex-wrap .unit-capsule-wrapper .error-sec-direct {
   flex: 1.0 !important; /* 秒は1.0にして完璧な三等分！ */
+  max-width: none !important;
+  min-width: 0 !important;
+  width: 100% !important;
   height: 100% !important;
   box-sizing: border-box !important;
   background-color: transparent !important; /* 背景透明化 */
-  border: none !important; /* 中身のボーダーを消去して一体化！ */
   border-radius: 0 !important;
   color: var(--text-main) !important;
   font-size: 14px !important;
@@ -2535,79 +2610,14 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
   align-self: center !important;
 }
 
-/* --- 6. 時分枠・秒枠の「角丸 ＆ ボーダー」超強固リセット（指示①＆②のへこみ・切れ目対策） --- */
+/* --- 4. フォーカス（入力中・選択中）時の「時分秒」親カプセル一体発光エフェクト（指示①） --- */
 
-/* 入力補助 ON 側の時分枠の右側の角丸と右ボーダーを完全に消去 */
-.datetime-row input[type="time"],
-#correctionMode .datetime-row input[type="time"],
-.datetime-row .time-input-wrapper input[type="time"],
-#correctionMode .datetime-row .time-input-wrapper input[type="time"] {
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  border-right: none !important;
-}
-
-/* 入力補助 ON 側の秒枠の左側の角丸と左ボーダーを完全に消去 */
-.datetime-row .seconds-select,
-#correctionMode .datetime-row .seconds-select {
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-  border-left: none !important;
-}
-
-/* 直接入力 (手入力) 側の時分枠の右側の角丸・右ボーダーを完全に消去 */
-.datetime-direct-row .direct-group-time,
-#correctionMode .datetime-direct-row .direct-group-time {
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  border-right: none !important;
-}
-
-/* 直接入力 (手入力) 側の秒枠の左側の角丸・左ボーダーを完全に消去（縦の切れ目線を完全消滅！） */
-.datetime-direct-row .direct-group-sec,
-#correctionMode .datetime-direct-row .direct-group-sec {
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-  border-left: none !important;
-}
-
-/* --- 4. フォーカス（入力中・選択中）時の「時分秒」一体発光エフェクト（指示①） --- */
-
-/* 入力補助 ON 側：時分または秒のいずれかにフォーカスまたはドラムロール起動されたら、ドッキング枠全体を水色発光！ */
-.datetime-row:focus-within .time-input-wrapper,
-.datetime-row.picker-focused .time-input-wrapper {
+/* 入力補助 ON/OFF 共通：時分秒いずれかのインプットにフォーカス、またはドラムロール起動時に親カプセルが美しくネオン発光 */
+.time-capsule-wrapper:focus-within,
+.time-capsule-wrapper.picker-focused,
+.direct-capsule-wrapper:focus-within {
   border-color: var(--accent) !important;
-  border-right-color: transparent !important;
-  box-shadow: -3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
-}
-.datetime-row:focus-within .helper-colon,
-.datetime-row.picker-focused .helper-colon {
-  border-top-color: var(--accent) !important;
-  border-bottom-color: var(--accent) !important;
-  box-shadow: 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
-}
-.datetime-row:focus-within .seconds-select,
-.datetime-row.picker-focused .seconds-select {
-  border-color: var(--accent) !important;
-  border-left-color: transparent !important;
-  box-shadow: 3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
-}
-
-/* 入力補助 OFF（直接入力）側：時分または秒のいずれかにフォーカスされたら全体発光！ */
-.datetime-direct-row:focus-within .direct-group-time {
-  border-color: var(--accent) !important;
-  border-right-color: transparent !important;
-  box-shadow: -3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
-}
-.datetime-direct-row:focus-within .direct-colon {
-  border-top-color: var(--accent) !important;
-  border-bottom-color: var(--accent) !important;
-  box-shadow: 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
-}
-.datetime-direct-row:focus-within .direct-group-sec {
-  border-color: var(--accent) !important;
-  border-left-color: transparent !important;
-  box-shadow: 3px 0 6px -1px rgba(0, 255, 240, 0.4), 0 -3px 6px -1px rgba(0, 255, 240, 0.4), 0 3px 6px -1px rgba(0, 255, 240, 0.4) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 240, 0.5) !important;
 }
 
 /* 補正誤差 (error) の一体発光：親カプセル全体を美しく水色（ネオンブルー）に一体発光！ */
@@ -2615,4 +2625,34 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
 #correctionMode .unit-capsule-wrapper.picker-focused {
   border-color: var(--accent) !important;
   box-shadow: 0 0 10px rgba(0, 255, 240, 0.5) !important;
+}
+
+/* ==========================================================================
+   親カプセル内部要素のボーダー＆影 100% 完全抹殺（差し込む光・縦線の絶対的消滅）
+   ========================================================================== */
+.time-capsule-wrapper .time-input-wrapper,
+.time-capsule-wrapper input,
+.time-capsule-wrapper select,
+.time-capsule-wrapper .helper-colon,
+.direct-capsule-wrapper .direct-group-time,
+.direct-capsule-wrapper .direct-group-sec,
+.direct-capsule-wrapper input,
+.direct-capsule-wrapper .direct-colon,
+.direct-capsule-wrapper .delimiter,
+.unit-capsule-wrapper .time-input-wrapper,
+.unit-capsule-wrapper .direct-group-error-time,
+.unit-capsule-wrapper input,
+.unit-capsule-wrapper select,
+.unit-capsule-wrapper .helper-colon,
+.unit-capsule-wrapper .direct-colon {
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background: transparent !important;
 }

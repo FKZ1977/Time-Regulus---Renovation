@@ -585,18 +585,18 @@ function onDrumValueChange() {
 function openTimePicker(group) {
   activeTimePickerGroup = group;
 
-  // 既存の picker-focused をクリア
+  // 既存 of picker-focused をクリア
   document.querySelectorAll(".picker-focused").forEach(el => el.classList.remove("picker-focused"));
 
   // 対象の要素に picker-focused クラスを付与して一体発光を維持（指示①）
   if (group === "display") {
-    const row = document.querySelector("#errorModeDisplayInputGroup .datetime-row");
+    const row = document.querySelector("#errorModeDisplayInputGroup .time-capsule-wrapper");
     if (row) row.classList.add("picker-focused");
   } else if (group === "standard") {
-    const row = document.querySelector("#errorModeStandardInputGroup .datetime-row");
+    const row = document.querySelector("#errorModeStandardInputGroup .time-capsule-wrapper");
     if (row) row.classList.add("picker-focused");
   } else if (group === "reverseDisplay") {
-    const row = document.querySelector("#reverseTimeBlock .datetime-row");
+    const row = document.querySelector("#reverseTimeBlock .time-capsule-wrapper");
     if (row) row.classList.add("picker-focused");
   } else if (group === "error") {
     const row = document.querySelector("#correctionMode .flex-wrap.input-helper-on .unit-capsule-wrapper");

@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Time Regulus</title>
+  <title>Time Regulus v3.0.0</title>
 
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-R7PW7DY4GF"></script>
@@ -17,7 +17,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=3.0.0">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -53,7 +53,7 @@
 <body class="fade-in">
   <div id="lockScreen">
     <h1 class="fkz anim-title-rise">Time Regulus</h1>
-    <p class="subtitle anim-slow-fade">タイム　レグルス　v2.1.3</p>
+    <p class="subtitle anim-slow-fade">タイム　レグルス　v3.0.0</p>
     <label for="passcode" class="anim-slow-fade">暗証番号を入力：</label><br>
     <input type="password" id="passcode" placeholder="例：12345" tabindex="1" readonly class="anim-slow-fade">
     <button class="action-btn anim-slow-fade" onclick="checkPass()" tabindex="2">開く</button>
@@ -121,14 +121,16 @@
           <input type="date" id="displayDate" placeholder="yyyy/mm/dd">
           <span class="date-placeholder-guide">yyyy  /  mm  /  dd</span>
         </div>
-        <div class="time-input-wrapper">
-          <input type="time" id="displayTime" placeholder="hh:mm">
-          <span class="time-placeholder-guide">hh  :  mm</span>
+        <div class="time-capsule-wrapper">
+          <div class="time-input-wrapper">
+            <input type="time" id="displayTime" placeholder="hh:mm">
+            <span class="time-placeholder-guide">hh  :  mm</span>
+          </div>
+          <span class="helper-colon">:</span>
+          <select id="displaySeconds" class="seconds-select">
+            <option value="">ss</option>
+          </select>
         </div>
-        <span class="helper-colon">:</span>
-        <select id="displaySeconds" class="seconds-select">
-          <option value="">ss</option>
-        </select>
       </div>
 
       <!-- 入力補助 OFF 時の直接入力欄 -->
@@ -140,14 +142,16 @@
           <span class="delimiter">/</span>
           <input type="tel" id="displayDay_direct" placeholder="dd" maxlength="2" class="direct-two">
         </div>
-        <div class="direct-group direct-group-time">
-          <input type="tel" id="displayHour_direct" placeholder="hh" maxlength="2" class="direct-two">
-          <span class="delimiter">:</span>
-          <input type="tel" id="displayMin_direct" placeholder="mm" maxlength="2" class="direct-two">
-        </div>
-        <span class="direct-colon">:</span>
-        <div class="direct-group direct-group-sec">
-          <input type="tel" id="displaySec_direct" placeholder="ss" maxlength="2" class="direct-two">
+        <div class="direct-capsule-wrapper">
+          <div class="direct-group direct-group-time">
+            <input type="tel" id="displayHour_direct" placeholder="hh" maxlength="2" class="direct-two">
+            <span class="delimiter">:</span>
+            <input type="tel" id="displayMin_direct" placeholder="mm" maxlength="2" class="direct-two">
+          </div>
+          <span class="direct-colon">:</span>
+          <div class="direct-group direct-group-sec">
+            <input type="tel" id="displaySec_direct" placeholder="ss" maxlength="2" class="direct-two">
+          </div>
         </div>
       </div>
     </div>
@@ -166,14 +170,16 @@
           <input type="date" id="standardDate" placeholder="yyyy/mm/dd">
           <span class="date-placeholder-guide">yyyy  /  mm  /  dd</span>
         </div>
-        <div class="time-input-wrapper">
-          <input type="time" id="standardTime" placeholder="hh:mm">
-          <span class="time-placeholder-guide">hh  :  mm</span>
+        <div class="time-capsule-wrapper">
+          <div class="time-input-wrapper">
+            <input type="time" id="standardTime" placeholder="hh:mm">
+            <span class="time-placeholder-guide">hh  :  mm</span>
+          </div>
+          <span class="helper-colon">:</span>
+          <select id="standardSeconds" class="seconds-select">
+            <option value="">ss</option>
+          </select>
         </div>
-        <span class="helper-colon">:</span>
-        <select id="standardSeconds" class="seconds-select">
-          <option value="">ss</option>
-        </select>
       </div>
 
       <!-- 入力補助 OFF 時の直接入力欄 -->
@@ -185,14 +191,16 @@
           <span class="delimiter">/</span>
           <input type="tel" id="standardDay_direct" placeholder="dd" maxlength="2" class="direct-two">
         </div>
-        <div class="direct-group direct-group-time">
-          <input type="tel" id="standardHour_direct" placeholder="hh" maxlength="2" class="direct-two">
-          <span class="delimiter">:</span>
-          <input type="tel" id="standardMin_direct" placeholder="mm" maxlength="2" class="direct-two">
-        </div>
-        <span class="direct-colon">:</span>
-        <div class="direct-group direct-group-sec">
-          <input type="tel" id="standardSec_direct" placeholder="ss" maxlength="2" class="direct-two">
+        <div class="direct-capsule-wrapper">
+          <div class="direct-group direct-group-time">
+            <input type="tel" id="standardHour_direct" placeholder="hh" maxlength="2" class="direct-two">
+            <span class="delimiter">:</span>
+            <input type="tel" id="standardMin_direct" placeholder="mm" maxlength="2" class="direct-two">
+          </div>
+          <span class="direct-colon">:</span>
+          <div class="direct-group direct-group-sec">
+            <input type="tel" id="standardSec_direct" placeholder="ss" maxlength="2" class="direct-two">
+          </div>
         </div>
       </div>
     </div>
@@ -300,14 +308,16 @@
           <input type="date" id="reverseDisplayDate" placeholder="yyyy/mm/dd">
           <span class="date-placeholder-guide">yyyy  /  mm  /  dd</span>
         </div>
-        <div class="time-input-wrapper">
-          <input type="time" id="reverseDisplayTime" placeholder="hh:mm" step="60" tabindex="19">
-          <span class="time-placeholder-guide">hh  :  mm</span>
+        <div class="time-capsule-wrapper">
+          <div class="time-input-wrapper">
+            <input type="time" id="reverseDisplayTime" placeholder="hh:mm" step="60" tabindex="19">
+            <span class="time-placeholder-guide">hh  :  mm</span>
+          </div>
+          <span class="helper-colon">:</span>
+          <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
+            <option value="">ss</option>
+          </select>
         </div>
-        <span class="helper-colon">:</span>
-        <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
-          <option value="">ss</option>
-        </select>
       </div>
 
       <!-- 入力補助 OFF 時の直接入力欄 -->
@@ -319,14 +329,16 @@
           <span class="delimiter">/</span>
           <input type="tel" id="reverseDisplayDay_direct" placeholder="dd" maxlength="2" class="direct-two" tabindex="20">
         </div>
-        <div class="direct-group direct-group-time">
-          <input type="tel" id="reverseDisplayHour_direct" placeholder="hh" maxlength="2" class="direct-two" tabindex="21">
-          <span class="delimiter">:</span>
-          <input type="tel" id="reverseDisplayMin_direct" placeholder="mm" maxlength="2" class="direct-two" tabindex="22">
-        </div>
-        <span class="direct-colon">:</span>
-        <div class="direct-group direct-group-sec">
-          <input type="tel" id="reverseDisplaySec_direct" placeholder="ss" maxlength="2" class="direct-two" tabindex="23">
+        <div class="direct-capsule-wrapper">
+          <div class="direct-group direct-group-time">
+            <input type="tel" id="reverseDisplayHour_direct" placeholder="hh" maxlength="2" class="direct-two" tabindex="21">
+            <span class="delimiter">:</span>
+            <input type="tel" id="reverseDisplayMin_direct" placeholder="mm" maxlength="2" class="direct-two" tabindex="22">
+          </div>
+          <span class="direct-colon">:</span>
+          <div class="direct-group direct-group-sec">
+            <input type="tel" id="reverseDisplaySec_direct" placeholder="ss" maxlength="2" class="direct-two" tabindex="23">
+          </div>
         </div>
       </div>
     </div>
@@ -352,7 +364,7 @@
     <h1 class="fkz" style="margin-top: 40px;">Information</h1>
     <div id="informationContent" style="margin-top: 30px; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;">
       <p style="margin-bottom: 8px;">このアプリは <strong>H.Fukazu</strong> によって制作されました。</p>
-      <p style="margin-bottom: 24px;">バージョン: <strong>v2.1.3</strong></p>
+      <p style="margin-bottom: 24px;">バージョン: <strong>v3.0.0</strong></p>
 
       <h3 style="margin-top:24px;">## 著作権および利用規約 (Copyright and Usage Policy)</h3>
       <p>本作品（ソフトウェア、コード、ドキュメント、および関連する全ての内容を含む）の著作権は、© 2025 H.Fukazu に帰属します。<br>**© 2025 H.Fukazu. All Rights Reserved.**</p><br>
@@ -419,31 +431,23 @@
     </div>
   </div>
 
-  <script src="script.js" defer></script>
+  <script src="script.js?v=3.0.0" defer></script>
   <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js")
-        .then(() => console.log("Service Worker registered"))
-        .catch(error => console.error("Service Worker registration failed:", error));
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        // Service Worker自体にもキャッシュバスティングを適用し、更新を強制
+        navigator.serviceWorker.register('./service-worker.js?v=3.0.0')
+          .then(registration => {
+            console.log('Service Worker 登録成功:', registration.scope);
+            // 起動時に明示的にアップデートを確認
+            registration.update();
+          })
+          .catch(error => {
+            console.log('Service Worker 登録失敗:', error);
+          });
+      });
     }
   </script>
-
-<script>
-      // Service Workerの登録
-      if ('serviceWorker' in navigator) {
-        // ページが完全にロードされた後でService Workerを登録する
-        window.addEventListener('load', () => {
-          // 'service-worker.js'を登録。このファイル名は変更しないでください。
-          navigator.serviceWorker.register('./service-worker.js')
-            .then(registration => {
-              console.log('Service Worker 登録成功:', registration.scope);
-            })
-            .catch(error => {
-              console.log('Service Worker 登録失敗:', error);
-            });
-        });
-      }
-    </script>
 
 </body>
 </html>
