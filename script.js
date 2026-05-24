@@ -34,13 +34,33 @@ function updateInputPlaceholderColor(inputId) {
   }
 }
 
-// すべての入力枠・セレクトボックスのプレースホルダー色を一括同期する
+// すべての入力枠・セレクトボックスのプレースホルダー色・ガイド表示を一括同期する
 function syncAllPlaceholderColors() {
   const selectIds = ["standardSeconds", "displaySeconds", "errorSeconds", "reverseDisplaySeconds"];
   selectIds.forEach(id => updateSelectPlaceholderColor(id));
 
   const dateTimeInputIds = ["displayDate", "displayTime", "standardDate", "standardTime", "errorTime", "reverseDisplayDate", "reverseDisplayTime"];
-  dateTimeInputIds.forEach(id => updateInputPlaceholderColor(id));
+  dateTimeInputIds.forEach(id => {
+    updateInputPlaceholderColor(id);
+    
+    // ガイド文字用の .time-empty / .date-empty クラスもここで完璧に一括同期！
+    const el = document.getElementById(id);
+    if (el) {
+      if (el.type === "time") {
+        if (!el.value) {
+          el.classList.add("time-empty");
+        } else {
+          el.classList.remove("time-empty");
+        }
+      } else if (el.type === "date") {
+        if (!el.value) {
+          el.classList.add("date-empty");
+        } else {
+          el.classList.remove("date-empty");
+        }
+      }
+    }
+  });
 }
 
 function toggleIncludeDate(enabled) {
@@ -2321,8 +2341,9 @@ function initPlaceholderGuides() {
     input.addEventListener("change", updateEmptyClass);
     input.addEventListener("blur", updateEmptyClass);
     input.addEventListener("focus", () => {
-      // フォーカス時はプレースホルダーを消してピッカー入力を邪魔しないようにする
-      input.classList.remove("time-empty");
+      // フォーカスイベントの不整合による「ガイドが消えたまま戻らない」バグを完全解決！
+      // フォーカス時も、値が空なら time-empty を維持し、ユーザーが文字入力を開始した瞬間に即座に消去します。
+      updateEmptyClass();
     });
   });
 
@@ -2343,8 +2364,9 @@ function initPlaceholderGuides() {
     input.addEventListener("change", updateEmptyClass);
     input.addEventListener("blur", updateEmptyClass);
     input.addEventListener("focus", () => {
-      // フォーカス時はプレースホルダーを消してピッカー入力を邪魔しないようにする
-      input.classList.remove("date-empty");
+      // フォーカスイベントの不整合による「ガイドが消えたまま戻らない」バグを完全解決！
+      // フォーカス時も、値が空なら date-empty を維持し、ユーザーが文字入力を開始した瞬間に即座に消去します。
+      updateEmptyClass();
     });
   });
 }
