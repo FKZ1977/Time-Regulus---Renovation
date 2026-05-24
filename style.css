@@ -1761,19 +1761,13 @@ select.seconds-fixed-00,
   box-sizing: border-box;
 }
 
-/* 年月日省略時 (.date-omitted / 下がるとき) の入力枠スライド（コロンにピタッと密着＆横幅最大化！） */
+/* 年月日省略時 (.date-omitted / 下がるとき) の入力枠スライド（コロンから5px離して上品な隙間＆右端ピッタリ！） */
 #errorModeDisplayInputGroup.date-omitted .datetime-row,
-#errorModeStandardInputGroup.date-omitted .datetime-row {
-  max-width: 220px !important; /* 時分の横幅をスリム縮小させず、たっぷり220pxまで極大拡張！ */
-  margin-left: 80px !important; /* ラベルのコロン（：）のすぐ右隣（80px）まで極限まで左に詰める！ */
-  transition-delay: 0s;
-}
-
-/* 入力補助OFF（直接手入力）の時：枠線がコロンに密着しすぎないよう、ほんの少し（5px）離して綺麗な隙間を確保！ */
 #errorModeDisplayInputGroup.date-omitted .datetime-direct-row,
+#errorModeStandardInputGroup.date-omitted .datetime-row,
 #errorModeStandardInputGroup.date-omitted .datetime-direct-row {
-  max-width: 215px !important; /* 隙間を空けた分、最大幅を215pxに微調整して右端ラインを完璧に維持 */
-  margin-left: 85px !important; /* コロンから 5px 離して 85px に設定 */
+  max-width: 215px !important; /* 時分の横幅をスリムに潰さず、たっぷり215pxまで確保！ */
+  margin-left: 85px !important; /* コロン「：」からちょうど5px離した 85px に完全統一し、美しく整列！ */
   transition-delay: 0s;
 }
 
