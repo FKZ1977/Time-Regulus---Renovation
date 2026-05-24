@@ -1726,7 +1726,9 @@ select.seconds-fixed-00,
   margin-top: 0 !important;
   padding: 0 !important; /* 高さと文字を中央で一致させるため */
   font-size: 14px !important; /* トグルスイッチより一回り大きい、見やすく押しやすい極上サイズ */
-  font-weight: bold !important;
+  font-weight: 900 !important; /* 極太の太字 */
+  color: #ffffff !important; /* 太字の白抜きの文字（純白） */
+  text-shadow: -1px -1px 0 #00403a, 1px -1px 0 #00403a, -1px 1px 0 #00403a, 1px 1px 0 #00403a, 0 0 4px rgba(0, 255, 240, 0.9) !important; /* クッキリと美しい水色アウトライン袋文字縁取り */
   z-index: 5;
   width: 72px !important; /* 押しやすい幅広サイズ */
   height: 32px !important; /* トグルスイッチ(28px)より十分に大きい32px */
@@ -2078,9 +2080,14 @@ select.seconds-fixed-00,
   font-size: 13px !important;
 }
 
-/* インプットにフォーカスが当たる、または値が入った（プレースホルダーが非表示の）時、ガイドを美しく消し去る */
-input[type="time"]:focus + .time-placeholder-guide,
-input[type="time"]:not(:placeholder-shown) + .time-placeholder-guide {
+/* デフォルトでは非表示（透明）にしておく */
+input[type="time"] + .time-placeholder-guide {
   opacity: 0 !important;
   visibility: hidden !important;
+}
+
+/* インプットが空（JSがtime-emptyクラスを付与）の時だけ、ガイドを美しく浮かび上がらせる（iOS Safari対応！） */
+input[type="time"].time-empty + .time-placeholder-guide {
+  opacity: 1 !important;
+  visibility: visible !important;
 }

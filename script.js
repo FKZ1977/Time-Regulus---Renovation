@@ -2272,3 +2272,39 @@ if ('serviceWorker' in navigator) {
         window.location.reload();
     });
 }
+
+// ==========================================================================
+// iPhone（iOS）用：input[type="time"] の .time-empty クラス着脱制御
+// ==========================================================================
+function initTimePlaceholderGuides() {
+  const timeInputs = document.querySelectorAll('input[type="time"]');
+  
+  timeInputs.forEach(input => {
+    const updateEmptyClass = () => {
+      if (!input.value) {
+        input.classList.add("time-empty");
+      } else {
+        input.classList.remove("time-empty");
+      }
+    };
+
+    // 初期化時
+    updateEmptyClass();
+
+    // イベント登録
+    input.addEventListener("input", updateEmptyClass);
+    input.addEventListener("change", updateEmptyClass);
+    input.addEventListener("blur", updateEmptyClass);
+    input.addEventListener("focus", () => {
+      // フォーカス時はプレースホルダーを消してピッカー入力を邪魔しないようにする
+      input.classList.remove("time-empty");
+    });
+  });
+}
+
+// ページロード時およびDOMContentLoaded時に確実に初期化
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initTimePlaceholderGuides);
+} else {
+  initTimePlaceholderGuides();
+}
