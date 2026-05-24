@@ -1092,6 +1092,55 @@ document.addEventListener("DOMContentLoaded", function () {
   // 起動初期状態のトグル同期を明示的に呼び出してUIと同期
   toggleIncludeDate(false);
   toggleIncludeDateCorrection(false);
+
+  // ==========================================================================
+  // 標準時刻が上のときの秒ロックドラムスワイプ同化（裏画面ドラッグすり抜けバグ完全撃破！）
+  // ==========================================================================
+  (function() {
+    let touchStartY = 0;
+    let lastScrollTopMin = 0;
+    
+    const secWheel = document.getElementById("pickerWheelSec");
+    if (!secWheel) return;
+    const secLockedContainer = secWheel.parentElement;
+    const minWheel = document.getElementById("pickerWheelMin");
+    
+    if (secLockedContainer && minWheel) {
+      // touchstart
+      secLockedContainer.addEventListener("touchstart", (e) => {
+        if (secLockedContainer.classList.contains("sec-locked")) {
+          touchStartY = e.touches[0].clientY;
+          lastScrollTopMin = minWheel.scrollTop;
+        }
+      }, { passive: true });
+      
+      // touchmove
+      secLockedContainer.addEventListener("touchmove", (e) => {
+        if (secLockedContainer.classList.contains("sec-locked")) {
+          // iOS Safariのメイン画面ドラッグすり抜けをブラウザレベルで完全ブロック！
+          if (e.cancelable) {
+            e.preventDefault();
+          }
+          
+          const currentY = e.touches[0].clientY;
+          const diffY = touchStartY - currentY;
+          
+          // 隣の「分」のドラムへとスワイプ移動量を「同化（連動）」！
+          minWheel.scrollTop = lastScrollTopMin + diffY;
+        }
+      }, { passive: false }); // preventDefault 実行のため passive: false が必須！
+      
+      // touchend
+      secLockedContainer.addEventListener("touchend", (e) => {
+        if (secLockedContainer.classList.contains("sec-locked")) {
+          // 指を離した瞬間、分ホイールを最も近い数値に極美にスナップ吸着させる！
+          if (drumMin) {
+            drumMin.snapToNearest();
+          }
+        }
+      }, { passive: true });
+    }
+  })();
 });
 
 /**
