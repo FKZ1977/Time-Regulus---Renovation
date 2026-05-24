@@ -1003,6 +1003,16 @@ input:checked + .switch-slider:before {
   text-align: center !important; /* 【新規追加】日数プレースホルダー d や数値を完璧に中央寄せ！ */
 }
 
+/* 【新規追加】input[type="number"] のスピンボタン（右側の上下矢印）を完全に非表示にし、プレースホルダーdを完璧にど真ん中に中央寄せ！ */
+#correctionMode .unit-input input[type="number"]::-webkit-outer-spin-button,
+#correctionMode .unit-input input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+#correctionMode .unit-input input[type="number"] {
+  -moz-appearance: textfield !important; /* Firefox用 */
+}
+
 /* iOS Safari 固有の誤差時間入力インナー要素リセット */
 #errorTime {
   padding: 0 4px !important;
@@ -1620,10 +1630,14 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   background: linear-gradient(to top, rgba(21, 28, 39, 0.98) 0%, rgba(21, 28, 39, 0.75) 45%, rgba(21, 28, 39, 0) 100%);
 }
 
-/* 標準時刻が上配置のときの秒ホイールロック (赤色ネオンアウトラインでプレミアムに表現) */
+/* 標準時刻が上配置のときの秒ホイールロック (すり抜けメインスクロールバグ完全撃破版) */
 .picker-wheel-container.sec-locked {
-  pointer-events: none !important;
   opacity: 0.35 !important;
+  touch-action: none !important; /* タッチドラッグ操作をブラウザレベルで強制ロック（すり抜けを完全防止！） */
+}
+.picker-wheel-container.sec-locked .picker-wheel {
+  overflow-y: hidden !important; /* ホイールの縦スクロールを完全に禁止 */
+  touch-action: none !important;
 }
 .picker-wheel-container.sec-locked .picker-selection-indicator {
   border-top-color: var(--error-late-color) !important;
@@ -2304,4 +2318,24 @@ input[type="time"]:focus::-webkit-datetime-edit-hour-field,
 input[type="time"]:focus::-webkit-datetime-edit-minute-field {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
+}
+
+/* ==========================================================================
+   ピッカー表示中の裏画面タッチスクロール完全ロック制御
+   ========================================================================== */
+body.scroll-locked {
+  overflow: hidden !important;
+  touch-action: none !important; /* 画面全体のタッチドラッグ（スクロール）を完全ブロック！ */
+}
+
+/* ピッカー本体およびその中身の操作はロック中も許可する */
+body.scroll-locked #regulusTimePicker,
+body.scroll-locked #regulusTimePicker * {
+  touch-action: auto !important;
+}
+
+/* ロック中の秒ホイールはスクロール禁止を最優先維持する */
+body.scroll-locked .picker-wheel-container.sec-locked,
+body.scroll-locked .picker-wheel-container.sec-locked * {
+  touch-action: none !important;
 }

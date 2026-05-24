@@ -598,6 +598,7 @@ function openTimePicker(group) {
 
   overlay.classList.add("show");
   sheet.classList.add("show");
+  document.body.classList.add("scroll-locked"); // 裏画面スクロール完全ロック起動！
 
   // 現在の入力値を読み取り
   let timeVal = "";
@@ -648,6 +649,7 @@ function closeTimePicker() {
   const sheet = document.getElementById("regulusTimePicker");
   if (overlay) overlay.classList.remove("show");
   if (sheet) sheet.classList.remove("show");
+  document.body.classList.remove("scroll-locked"); // 裏画面スクロールロック解除！
   activeTimePickerGroup = null;
 }
 
