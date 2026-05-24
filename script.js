@@ -1714,12 +1714,37 @@ function switchToCorrectionMode() {
 function toggleReverseMode(doToggle = true) {
   const toggleBtn = document.getElementById("reverseModeToggleBtn");
   const label = document.getElementById("reverseTimeLabel");
+  const textLeft = document.getElementById("swapTextLeft");
+  const textRight = document.getElementById("swapTextRight");
   
   if (doToggle) {
     reverseMode = reverseMode === "toStandard" ? "toDisplay" : "toStandard";
+    
+    // スワップアニメーション用のクラスを追加
+    if (textLeft) textLeft.classList.add("slide-to-right");
+    if (textRight) textRight.classList.add("slide-to-left");
+    
+    // アニメーション完了後にテキストをスワップし、クラスを削除して戻す
+    setTimeout(() => {
+      updateButtonTexts();
+      if (textLeft) textLeft.classList.remove("slide-to-right");
+      if (textRight) textRight.classList.remove("slide-to-left");
+    }, 150); // cssのtransition 0.25sより少し短めの150msで入れ替え
+  } else {
+    updateButtonTexts();
   }
 
-  toggleBtn.innerText = "⇆切替";
+  function updateButtonTexts() {
+    if (textLeft && textRight) {
+      if (reverseMode === "toDisplay") {
+        textLeft.textContent = "表示時刻を求める";
+        textRight.textContent = "補正時刻を求める";
+      } else {
+        textLeft.textContent = "補正時刻を求める";
+        textRight.textContent = "表示時刻を求める";
+      }
+    }
+  }
 
   if (reverseMode === "toDisplay") {
     label.innerHTML = '<span style="color: var(--toggle-bg); font-weight: bold;">探している時刻:</span>'; 

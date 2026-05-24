@@ -1057,17 +1057,34 @@ input:checked + .switch-slider:before {
   padding: 0 1px;
 }
 #correctionMode .input-group-direction {
-  gap: 4px !important;
-  margin-top: 6px !important;
-  margin-bottom: 8px !important;
+  display: flex !important;
+  flex-direction: row !important; /* 横並び（1列配置） */
+  align-items: center !important; /* 縦中央揃え */
+  justify-content: space-between !important; /* 両端寄せ */
+  gap: 8px !important;
+  margin-top: 10px !important;
+  margin-bottom: 12px !important;
+  width: 100% !important;
+  max-width: 310px !important; /* 入力枠の幅に同期させて美しく揃える */
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+#correctionMode .input-group-direction label {
+  font-size: 12px !important; /* 13.5px -> 12px に微調整してラベルの横幅をスリム化 */
+  font-weight: bold !important;
+  color: var(--text-main) !important;
+  white-space: nowrap !important; /* 絶対に折り返さない */
+  margin: 0 !important;
 }
 #correctionMode .segmented-control {
-  margin-top: 4px !important;
+  width: 175px !important; /* 155px -> 175px に横幅を広げて中の文字改行を完全防止 */
+  margin-top: 0 !important; /* 上マージンをリセットして縦ラインを完璧に揃える */
   padding: 2px !important;
 }
 #correctionMode .segment-btn {
-  padding: 6px !important;
-  font-size: 14px !important;
+  padding: 6px 2px !important; /* 左右のパディングを少し詰めて文字の格納力を最大化 */
+  font-size: 12.5px !important; /* ボタン幅拡大に伴い 12px -> 12.5px で視認性向上 */
+  font-weight: bold !important;
 }
 #correctionMode #reverseTimeBlock {
   margin-top: 6px !important;
@@ -1806,4 +1823,187 @@ select.seconds-fixed-00,
               margin-right 0.25s ease,
               padding 0.25s ease;
   transition-delay: 0s;
+}
+
+/* ==========================================================================
+   補正モード画面：入れ替えプレミアムアニメーション切替ボタン定義
+   ========================================================================== */
+
+#reverseModeToggleBtn {
+  width: 100% !important;
+  max-width: 310px !important; /* 入力枠幅と完全同期 */
+  margin: 16px auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 44px !important;
+  border-radius: 10px !important;
+  padding: 0 12px !important;
+  overflow: hidden !important;
+  position: relative !important;
+  box-shadow: 0 4px 15px rgba(0, 255, 224, 0.25) !important;
+  transition: transform 0.2s ease, background-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+#reverseModeToggleBtn:hover {
+  transform: scale(1.03) !important;
+}
+
+#reverseModeToggleBtn:active {
+  transform: scale(0.97) !important; /* クリック時の押し心地フィードバック */
+}
+
+#reverseModeToggleBtn.active-toggle-pink {
+  box-shadow: 0 4px 15px rgba(255, 0, 170, 0.25) !important;
+}
+
+.swap-text-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  height: 100% !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.swap-text-left,
+.swap-text-right {
+  font-size: 14px !important;
+  font-weight: bold !important;
+  color: inherit !important;
+  transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease !important;
+  display: inline-block !important;
+}
+
+.swap-arrow {
+  font-size: 16px !important;
+  font-weight: bold !important;
+  color: inherit !important;
+  transition: transform 0.25s ease !important;
+  display: inline-block !important;
+}
+
+/* 左のテキストが右へスライドしながらスッと消える */
+.swap-text-left.slide-to-right {
+  transform: translateX(110px) scale(0.8) !important;
+  opacity: 0 !important;
+}
+
+/* 右のテキストが左へスライドしながらスッと消える */
+.swap-text-right.slide-to-left {
+  transform: translateX(-110px) scale(0.8) !important;
+  opacity: 0 !important;
+}
+
+/* 補正モード画面の「年月日も計算」トグルをスワップボタンの下で綺麗に左寄せ配置 */
+.correction-date-toggle-wrapper {
+  max-width: 310px !important;
+  margin: 14px auto 8px auto !important; /* 入力枠幅に揃えて中央寄せしつつ、中身を左寄せ！ */
+  display: flex !important;
+  justify-content: flex-start !important; /* 左寄せ！ */
+  align-items: center !important;
+  gap: 12px !important;
+  padding-left: 4px !important; /* スワップボタンの左端ラインと完璧に合わせる */
+}
+
+/* ==========================================================================
+   補正時刻の計算：表示時刻・探している時刻の横並び（row）一元管理スタイル
+   ========================================================================== */
+
+#reverseTimeBlock {
+  display: flex !important;
+  flex-direction: row !important; /* 横並び（1列配置） */
+  align-items: center !important; /* 縦中央揃え */
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 310px !important; /* 全体幅を310pxに完全固定 */
+  margin: 14px auto !important; /* 画面中央寄せ */
+  box-sizing: border-box !important;
+}
+
+/* ラベルを左側に完全固定 */
+#correctionMode #reverseTimeLabel {
+  width: 70px !important; /* 78px -> 70px に極限まで縮めて左ギリギリまで詰める */
+  min-width: 70px !important;
+  text-align: left !important;
+  font-size: 10.5px !important; /* 11.5px -> 10.5px に超微調整し、絶対に文字切れを防止 */
+  letter-spacing: -0.6px !important; /* 文字間隔を極限まで詰めて美しい表示をキープ */
+  font-weight: bold;
+  white-space: nowrap !important;
+  margin: 0 !important;
+  display: block !important;
+}
+
+/* 入力枠コンテナを flex 内で余った領域に綺麗にフィットさせる（ID 2個の最強セレクタで上部の310px競合を完全撃破！） */
+#correctionMode #reverseTimeBlock .datetime-row,
+#correctionMode #reverseTimeBlock .datetime-direct-row {
+  flex: 1 !important;
+  width: auto !important;
+  max-width: 236px !important; /* 上部競合の max-width: 310px !important を完全に撃破して 236px を強制適用！ */
+  margin: 0 !important;
+  height: 38px !important;
+  display: flex; /* !important を排除し、JSによるON/OFFの display 制御を正しく機能させる */
+  align-items: center !important;
+  gap: 4px !important; /* 間隔を少し狭めて詰めやすくする */
+  box-sizing: border-box !important;
+}
+
+/* 年月日も計算ONの時（年月日枠あり）の、各枠の横幅スリム詰め調整 */
+#correctionMode #reverseTimeBlock input[type="date"],
+#correctionMode #reverseTimeBlock #reverseDisplayDateGroup_direct {
+  flex: 1.35 !important;
+  max-width: 116px !important; /* 108px -> 116px に限界拡張し、年月日の数字やプレースホルダーが隠れるのを完全防止！ */
+  min-width: 0 !important;
+}
+
+#correctionMode #reverseTimeBlock input[type="time"],
+#correctionMode #reverseTimeBlock .direct-group-time {
+  flex: 0.75 !important;
+  max-width: 66px !important; /* 68px -> 66px に微調整 */
+  min-width: 0 !important;
+}
+
+#correctionMode #reverseTimeBlock .seconds-select,
+#correctionMode #reverseTimeBlock .direct-group-sec {
+  flex: 0.52 !important;
+  max-width: 46px !important; /* 48px -> 46px に極限まで右端に詰めてコンパクト化 */
+  min-width: 42px !important; /* 文字被りが発生しない限界最小幅 */
+}
+
+/* 秒セレクトボックス of パディングをスリム化してはみ出し・矢印被りを完全防止 */
+#correctionMode #reverseTimeBlock .seconds-select {
+  padding-left: 2px !important;
+  padding-right: 10px !important; /* 矢印スペースをさらにスリム化 */
+  font-size: 13px !important; /* 13.5px -> 13px に微調整 */
+}
+
+/* 直接入力のプレースホルダー・テキストもスリム幅に合わせて微調整 */
+#correctionMode #reverseTimeBlock .datetime-direct-row input {
+  font-size: 13px !important; /* 13.5px -> 13px にスリム化してはみ出し防止 */
+}
+
+#correctionMode #reverseTimeBlock .direct-group {
+  padding: 0 1px !important; /* パディングを極限まで詰める */
+}
+
+/* 年月日省略（トグルOFF）のとき、時分秒を元のたっぷりしたサイズに戻す（ここも最強セレクタで完全制御！） */
+#correctionMode #reverseTimeBlock .datetime-row.omit-date-active input[type="date"],
+#correctionMode #reverseTimeBlock .datetime-direct-row.omit-date-active #reverseDisplayDateGroup_direct {
+  display: none !important; /* 即座に完全に消す */
+}
+
+#correctionMode #reverseTimeBlock .datetime-row.omit-date-active input[type="time"],
+#correctionMode #reverseTimeBlock .datetime-direct-row.omit-date-active .direct-group-time {
+  flex: 1.1 !important;
+  max-width: 105px !important; /* OFFの時は時分を元のたっぷりした幅に戻す */
+}
+
+#correctionMode #reverseTimeBlock .datetime-row.omit-date-active .seconds-select,
+#correctionMode #reverseTimeBlock .datetime-direct-row.omit-date-active .direct-group-sec {
+  flex: 0.7 !important;
+  max-width: 65px !important;
+  min-width: 62px !important; /* OFFの時は元の幅広に戻す */
 }

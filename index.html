@@ -254,15 +254,26 @@
       </div>
     </div>
 
-    <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 12px 0;">
-      <button class="action-btn toggle-btn active-toggle" id="reverseModeToggleBtn" onclick="toggleReverseMode()">⇆切替</button>
-      <div class="helper-toggle-wrapper" style="margin: 0 !important;">
-        <span class="helper-toggle-label" style="font-size: 14px !important;">年月日も計算</span>
-        <label class="switch-container">
-          <input type="checkbox" id="includeDateToggleCorrection" onchange="toggleIncludeDateCorrection(this.checked)">
-          <span class="switch-slider"></span>
-        </label>
-      </div>
+    <br>
+
+    <!-- 横長スワップボタンの独立配置コンテナ -->
+    <div style="text-align: center; margin: 0 auto; width: 100%; max-width: 310px;">
+      <button class="action-btn toggle-btn active-toggle" id="reverseModeToggleBtn" onclick="toggleReverseMode()">
+        <span class="swap-text-container">
+          <span class="swap-text-left" id="swapTextLeft">補正時刻を求める</span>
+          <span class="swap-arrow">⇆</span>
+          <span class="swap-text-right" id="swapTextRight">表示時刻を求める</span>
+        </span>
+      </button>
+    </div>
+
+    <!-- 年月日も計算トグルの独立配置・左寄せコンテナ -->
+    <div class="helper-toggle-wrapper correction-date-toggle-wrapper">
+      <span class="helper-toggle-label" style="font-size: 14px !important;">年月日も計算</span>
+      <label class="switch-container">
+        <input type="checkbox" id="includeDateToggleCorrection" onchange="toggleIncludeDateCorrection(this.checked)">
+        <span class="switch-slider"></span>
+      </label>
     </div>
 
     <div id="reverseTimeBlock" class="input-group">
