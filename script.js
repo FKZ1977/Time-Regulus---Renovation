@@ -376,7 +376,6 @@ class TimeRegulusDrum {
         this.items.push(String(i).padStart(2, '0'));
       }
     } else if (this.type === "sec") {
-      this.items.push("ss");
       for (let i = 0; i <= 59; i++) {
         this.items.push(String(i).padStart(2, '0'));
       }
@@ -512,14 +511,9 @@ class TimeRegulusDrum {
   setValue(value) {
     let index = 0;
     if (value !== null && value !== undefined && value !== "") {
-      const numVal = parseInt(value, 10);
-      if (this.type === "hour" || this.type === "min") {
-        index = numVal;
-      } else if (this.type === "sec") {
-        index = numVal + 1; // "ss" の次が 00 なので +1
-      }
+      index = parseInt(value, 10);
     } else {
-      index = 0; // 空の場合は一番上の項目 (時分は00、秒は"ss")
+      index = 0; // 空の場合は 00
     }
 
     // ドラム初期展開時の初期位置設定（setValue）のタイミングでのみ、無限ループの「真ん中のセット」へインデックスを強制補正する
@@ -638,30 +632,29 @@ function openTimePicker(group) {
     secVal = document.getElementById("errorSeconds")?.value || "";
   }
 
-  // 時分の分解
+  // 時分秒の分解と初期値設定（空欄起動時は 00:00:00 が初期値、値がある場合はそれを反映）
   let hNum = 0;
   let mNum = 0;
+  let sVal = "0"; // 空欄時は 00秒 がデフォルト
+
   if (timeVal !== "") {
     const parts = timeVal.split(":");
     hNum = parseInt(parts[0], 10);
     mNum = parseInt(parts[1], 10);
-  } else {
-    // 誤差時間 (error) 以外で空の場合は現在時刻を初期値とする
-    if (group !== "error") {
-      const now = new Date();
-      hNum = now.getHours();
-      mNum = now.getMinutes();
-    }
+  }
+
+  if (secVal !== "") {
+    sVal = secVal;
   }
 
   if (group === "standard" && isStandardOnTop) {
-    secVal = "0"; // ロック時は00固定
+    sVal = "0"; // ロック時は00固定
   }
 
   // 各ドラムホイールの初期位置設定（アニメーションなしで即座にスクロール）
   if (drumHour) drumHour.setValue(hNum);
   if (drumMin) drumMin.setValue(mNum);
-  if (drumSec) drumSec.setValue(secVal);
+  if (drumSec) drumSec.setValue(sVal);
 }
 
 function closeTimePicker() {
