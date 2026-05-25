@@ -7,6 +7,7 @@ function preloadMainScript() {
   script.defer = true;
   script.onload = () => {
     console.log('✓ Main script preloaded in background');
+    window.mainScriptLoaded = true;
   };
   script.onerror = () => {
     console.warn('⚠ Main script preload failed (will load on demand)');
