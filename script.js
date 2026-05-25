@@ -632,23 +632,19 @@ function openTimePicker(group) {
   sheet.classList.add("show");
   document.body.classList.add("result-highlighted"); // ぼかし解除を即時適用
 
-  // ドラムロール展開時のDOM変更（リフロー）が落ち着いてからスクロールを発動させる
+  // ピッカー展開と同時に、結果枠が隠れないように裏画面を即時スクロール（smoothはiOSでキャンセルされるためauto）
   const targetResultId = (group === "display" || group === "standard") ? "result" : "reverseResult";
   const targetEl = document.getElementById(targetResultId);
   if (targetEl) {
-    setTimeout(() => {
-      const rect = targetEl.getBoundingClientRect();
-      const pickerHeight = 380; // ピッカーの高さ350px + 余白
-      if (rect.bottom > window.innerHeight - pickerHeight) {
-        window.scrollBy({ top: rect.bottom - (window.innerHeight - pickerHeight), behavior: "smooth" });
-      }
-    }, 150);
+    const rect = targetEl.getBoundingClientRect();
+    const pickerHeight = 390; // ピッカーの高さ350px + 余白
+    if (rect.bottom > window.innerHeight - pickerHeight) {
+      window.scrollBy({ top: rect.bottom - (window.innerHeight - pickerHeight), behavior: "auto" });
+    }
   }
   
-  // スムーズスクロールが overflow: hidden に阻害されないよう、ロック適用をアニメーション後に遅延させる
-  setTimeout(() => {
-    document.body.classList.add("scroll-locked"); 
-  }, 550);
+  // スクロール完了後に即時ロックをかける
+  document.body.classList.add("scroll-locked");
 
   // 現在の入力値を読み取り
   let timeVal = "";
