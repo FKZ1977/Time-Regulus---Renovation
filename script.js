@@ -11,8 +11,6 @@ let inputHelperEnabled = false;
 let includeDateEnabled = false;
 let includeDateEnabledCorrection = false; // 補正画面用の年月日トグル状態
 let autoJumpTimer = null;
-let scrollLockTimeoutId = null;
-let keypadScrollTimeoutId = null;
 
 // セレクトボックス未選択時の灰色表示同期用ヘルパー
 function updateSelectPlaceholderColor(selectId) {
@@ -631,7 +629,6 @@ function openTimePicker(group) {
   }
 
   // ドラムロール展開時に、結果枠が隠れないように裏画面をスクロールして持ち上げる
-  let needsScroll = false;
   const targetResultId = (group === "display" || group === "standard") ? "result" : "reverseResult";
   const targetEl = document.getElementById(targetResultId);
   if (targetEl && targetEl.innerHTML.trim() !== "") {
@@ -640,23 +637,17 @@ function openTimePicker(group) {
     // 結果枠の下端がピッカーに隠れる場合、スクロールする
     if (rect.bottom > window.innerHeight - pickerHeight) {
       window.scrollBy({ top: rect.bottom - (window.innerHeight - pickerHeight), behavior: "smooth" });
-      needsScroll = true;
     }
   }
 
   overlay.classList.add("show");
   sheet.classList.add("show");
-  document.body.classList.add("picker-open"); // 背景暗幕と結果ハイライト（ぼかし解除）を即時実行
-
-  if (scrollLockTimeoutId) clearTimeout(scrollLockTimeoutId);
-  if (needsScroll) {
-    // スクロールが必要な場合は、スムーズスクロールが妨害されないようロックを遅延させる
-    scrollLockTimeoutId = setTimeout(() => {
-      document.body.classList.add("scroll-locked");
-    }, 350);
-  } else {
-    document.body.classList.add("scroll-locked"); // 即時ロック
-  }
+  document.body.classList.add("result-highlighted"); // ぼかし解除を即時適用
+  
+  // スムーズスクロールが overflow: hidden に阻害されないよう、ロック適用をアニメーション後に遅延させる
+  setTimeout(() => {
+    document.body.classList.add("scroll-locked"); 
+  }, 400);
 
   // 現在の入力値を読み取り
   let timeVal = "";
@@ -707,6 +698,7 @@ function closeTimePicker() {
   if (overlay) overlay.classList.remove("show");
   if (sheet) sheet.classList.remove("show");
   document.body.classList.remove("scroll-locked"); // 裏画面スクロールロック解除！
+  document.body.classList.remove("result-highlighted");
 
   // picker-focused をクリア（指示①）
   document.querySelectorAll(".picker-focused").forEach(el => el.classList.remove("picker-focused"));
