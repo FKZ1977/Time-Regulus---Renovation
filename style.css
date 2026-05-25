@@ -2022,26 +2022,16 @@ select.seconds-fixed-00,
   box-sizing: border-box !important;
 }
 
-/* 年月日も計算ONの時（年月日枠あり）の、各枠の横幅スリム詰め調整 */
+/* 年月日も計算ONの時（年月日枠あり）の、年月日枠の横幅設定
+   ★ 時分秒はカプセル（time-capsule-wrapper / direct-capsule-wrapper）の内部flex比率で管理するため
+     カプセル外からmax-widthを個別指定しない。カプセル全体が残り幅に広がる設計。
+   234px（コンテナ）- 130px（年月日）- 6px（margin-right）- 12px（colon）= 86px がカプセルに確保される。
+*/
 #correctionMode #reverseTimeBlock input[type="date"],
 #correctionMode #reverseTimeBlock #reverseDisplayDateGroup_direct {
-  flex: 1.55 !important;
-  max-width: 138px !important; /* 120px -> 138px に拡張！西暦4桁がしっかり収まるサイズ！ */
+  flex: 1.5 !important;
+  max-width: 130px !important; /* yyyy/mm/dd と西暦4桁がiPhone/Androidでしっかり収まるサイズ */
   min-width: 0 !important;
-}
-
-#correctionMode #reverseTimeBlock .time-input-wrapper,
-#correctionMode #reverseTimeBlock .direct-group-time {
-  flex: 0.65 !important;
-  max-width: 54px !important; /* 64px -> 54px に縮小（年月日拡張分をここで吸収） */
-  min-width: 0 !important;
-}
-
-#correctionMode #reverseTimeBlock .seconds-select,
-#correctionMode #reverseTimeBlock .direct-group-sec {
-  flex: 0.48 !important;
-  max-width: 38px !important; /* 44px -> 38px に縮小（年月日拡張分をここでも吸収） */
-  min-width: 34px !important;
 }
 
 /* 秒セレクトボックスのパディングをスリム化してはみ出し・矢印被りを完全防止 */
@@ -2081,11 +2071,11 @@ select.seconds-fixed-00,
 /* 補正モード（#reverseTimeBlock）の時間枠・秒枠・グループに対する極上スライドアニメーションの transition 設定 */
 #correctionMode #reverseTimeBlock .date-input-wrapper,
 #correctionMode #reverseTimeBlock #reverseDisplayDateGroup_direct {
-  flex: 1.55 !important;
-  max-width: 138px !important; /* 120px -> 138px に拡張！西暦4桁がしっかり収まるサイズ！ */
+  flex: 1.5 !important;
+  max-width: 130px !important; /* yyyy/mm/dd と西暦4桁がiPhone/Androidでしっかり収まるサイズ */
   opacity: 1;
   visibility: visible;
-  margin-right: 3px;
+  margin-right: 0; /* margin-rightは .date-input-wrapper / .direct-group-date の共通ルール（6px）に任せる */
   
   /* ONのとき（現れる）：滑らかに幅を広げてフェードイン */
   transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
@@ -2169,12 +2159,9 @@ select.seconds-fixed-00,
   flex: 1.8 !important;
 }
 
-/* 補正モード画面（#reverseTimeBlock 内の年月日計算あり：flex: 0.65, max-width: 54px） */
-#correctionMode #reverseTimeBlock .time-input-wrapper {
-  flex: 0.65 !important;
-  max-width: 54px !important; /* 64px -> 54px に縮小（年月日拡張分をここで吸収） */
-  min-width: 0 !important;
-}
+/* 補正モード画面（#reverseTimeBlock）の time-input-wrapper は
+   time-capsule-wrapper の内部flex比率（2.0:1.0）で自動決定されるため個別設定不要。
+   （年月日OFF時はカプセルが全幅に広がり、ON時はカプセルが86px程度になる） */
 
 /* 補正モード画面で年月日が非表示（トグルOFF）の時のたっぷりしたサイズ（flex: 1.1, max-width: 145px） */
 #correctionMode #reverseTimeBlock .datetime-row.omit-date-active .time-input-wrapper {
@@ -2247,10 +2234,10 @@ input[type="time"].time-empty + .time-placeholder-guide {
   width: auto !important;
 }
 
-/* 補正モード画面（#reverseTimeBlock 内の年月日計算あり：flex: 1.55, max-width: 138px） */
+/* 補正モード画面（#reverseTimeBlock 内の年月日計算あり：flex: 1.5, max-width: 130px） */
 #correctionMode #reverseTimeBlock .date-input-wrapper {
-  flex: 1.55 !important;
-  max-width: 138px !important; /* 120px -> 138px に拡張！西暦4桁がしっかり収まるサイズ！ */
+  flex: 1.5 !important;
+  max-width: 130px !important; /* yyyy/mm/dd と西暦4桁がiPhone/Androidでしっかり収まるサイズ */
   min-width: 0 !important;
 }
 
@@ -2409,6 +2396,26 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
 #correctionMode #reverseTimeBlock .datetime-direct-row.omit-date-active .direct-capsule-wrapper {
   flex: 1.0 !important;
   width: 100% !important;
+}
+
+/* 補正モード・年月日ONのとき、カプセル内の秒比率を広げて2桁数字が見やすい幅を確保
+   カプセル幅 ≈ 86px → 時分 (flex:2.0) ≈ 51px / 秒 (flex:1.3) ≈ 33px
+   ※ omit-date-activeクラスがない＝年月日ONの状態 */
+#correctionMode #reverseTimeBlock .time-capsule-wrapper .seconds-select,
+#correctionMode #reverseTimeBlock .direct-capsule-wrapper .direct-group-sec {
+  flex: 1.3 !important;
+}
+
+/* 年月日ONのときの秒セレクトボックス：狭いカプセル内でも矢印が被らないようパディング微調整 */
+#correctionMode #reverseTimeBlock .time-capsule-wrapper .seconds-select {
+  font-size: 13px !important;
+  padding-left: 0 !important;
+  padding-right: 12px !important; /* 矢印スペース確保 */
+}
+
+/* 年月日ONのときの秒直接入力枠：カプセル内で中央揃え */
+#correctionMode #reverseTimeBlock .direct-capsule-wrapper .direct-group-sec input {
+  font-size: 14px !important;
 }
 
 /* --- 3. 時・分・秒の完璧な三等分フレックス比率 (2.0 : 1.0) --- */
