@@ -628,6 +628,18 @@ function openTimePicker(group) {
     if (secContainer) secContainer.classList.remove("sec-locked");
   }
 
+  // ドラムロール展開時に、結果枠が隠れないように裏画面をスクロールして持ち上げる
+  const targetResultId = (group === "display" || group === "standard") ? "result" : "reverseResult";
+  const targetEl = document.getElementById(targetResultId);
+  if (targetEl && targetEl.innerHTML.trim() !== "") {
+    const rect = targetEl.getBoundingClientRect();
+    const pickerHeight = 370; // ピッカーの高さ350px + 余白
+    // 結果枠の下端がピッカーに隠れる場合、スクロールする
+    if (rect.bottom > window.innerHeight - pickerHeight) {
+      window.scrollBy({ top: rect.bottom - (window.innerHeight - pickerHeight), behavior: "smooth" });
+    }
+  }
+
   overlay.classList.add("show");
   sheet.classList.add("show");
   document.body.classList.add("scroll-locked"); // 裏画面スクロール完全ロック起動！

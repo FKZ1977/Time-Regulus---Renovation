@@ -2348,6 +2348,14 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
   touch-action: none !important;
 }
 
+/* ピッカー展開中、計算結果枠をオーバーレイ（ぼかし・暗幕）より手前に持ち上げてクッキリ見せる！ */
+body.scroll-locked #result,
+body.scroll-locked #reverseResult {
+  position: relative !important;
+  z-index: 100000 !important; /* .picker-overlay (99999) より上へ！ */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important; /* 浮遊感を強調 */
+}
+
 /* ==========================================================================
    時分秒入力枠の「カプセルラッパー手法」＆「完璧な三等分（1:1:1）」定義
    ========================================================================== */
