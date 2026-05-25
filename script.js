@@ -643,8 +643,10 @@ function openTimePicker(group) {
     }
   }
   
-  // スクロール完了後に即時ロックをかける
-  document.body.classList.add("scroll-locked");
+  // スクロールと overflow: hidden が同一フレームで処理されるとiOSでスクロールが無視されるため、ロックをわずかに遅延
+  setTimeout(() => {
+    document.body.classList.add("scroll-locked");
+  }, 50);
 
   // 現在の入力値を読み取り
   let timeVal = "";
