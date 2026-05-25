@@ -1632,6 +1632,10 @@ function calculateError() {
         messageStyle = `font-size: 14px; color: #FFFF00; font-weight: bold; line-height: 1.5;`; 
     }
     
+    resultElement.style.border = '';
+    resultElement.style.borderRadius = '';
+    resultElement.style.padding = '';
+    resultElement.style.backgroundColor = '';
     resultElement.innerHTML = `
         <span style="${messageStyle}">
             ${messageContent}
@@ -1669,9 +1673,13 @@ function calculateError() {
   const seconds = totalSeconds % 60;
 
   if (totalSeconds === 0) {
+    resultElement.style.border = '2px solid var(--accent)';
+    resultElement.style.borderRadius = '10px';
+    resultElement.style.padding = '12px 16px';
+    resultElement.style.backgroundColor = '';
     resultElement.innerHTML = `
-      <span style="color: var(--accent); font-weight: bold;">Precision Sync!</span><br>
-      <span style="color: var(--text-sub); font-size: 15px;">表示時刻は標準時刻と完全に一致しています。</span>
+      <p style="margin: 0 0 4px; font-size: 17px; color: var(--accent); font-weight: bold;">Precision Sync!</p>
+      <p style="margin: 0; font-size: 14px; color: var(--text-sub);">表示時刻は標準時刻と完全に一致しています。</p>
     `;
     document.getElementById("toReverseButton").style.display = "none";
     lastError = null;
@@ -1695,9 +1703,13 @@ function calculateError() {
     directionColor = "var(--error-early-color)"; // 太文字の黄緑
   }
 
+  resultElement.style.border = `2px solid ${directionColor}`;
+  resultElement.style.borderRadius = '10px';
+  resultElement.style.padding = '12px 16px';
+  resultElement.style.backgroundColor = '';
   resultElement.innerHTML = `
-    <span style="color: var(--accent); font-weight: bold;">${parts.join("")}</span><br>
-    <span style="color: ${directionColor}; font-weight: bold;">${directionText}</span>
+    <p style="margin: 0 0 6px; font-size: 17px; color: var(--accent); font-weight: bold; letter-spacing: 0.5px;">${parts.join('')}</p>
+    <p style="margin: 0; font-size: 16px; color: ${directionColor}; font-weight: bold;">${directionText}</p>
   `;
 
   gtag('event', 'calculate_error'); 
@@ -1959,17 +1971,19 @@ function handleReverseCalculation() {
   resultElement.style.color = 'var(--text-main)'; 
 
   resultElement.innerHTML = `
-    <div style="padding: 0 10px;">
-      <p style="margin: 0; line-height: 1.5;">${baseLabel}が</p>
-      <div style="background-color: var(--bg-dark); border: 1px solid ${resultBorderColor}; border-radius: 6px; padding: 6px 10px; margin: 4px 0; display: inline-block;">
-        <strong style="color: ${resultColor};">${baseStr}</strong>
+    <div style="padding: 6px 10px; line-height: 1.9; width: 100%; box-sizing: border-box;">
+      <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 0;">
+        <span style="font-size: 13px; text-align: right; white-space: nowrap; padding-right: 4px;">${baseLabel}が</span>
+        <span style="font-size: 14px; font-weight: bold; color: ${resultColor}; background: var(--bg-dark); border: 1px solid ${resultBorderColor}; border-radius: 6px; padding: 2px 8px; letter-spacing: 0.5px; white-space: nowrap;">${baseStr}</span>
+        <span></span>
       </div>
-      <p style="margin: 0; line-height: 1.5;">のとき</p>
-      <p style="margin: 10px 0 0; line-height: 1.5;">${resultLabel}は</p>
-      <div style="background-color: var(--bg-dark); border: 1px solid ${resultBorderColor}; border-radius: 6px; padding: 6px 10px; margin: 4px 0; display: inline-block;">
-        <strong style="color: ${resultColor};">${resultStr}</strong>
+      <p style="margin: 0; font-size: 13px; text-align: center;">のとき</p>
+      <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-top: 0;">
+        <span style="font-size: 13px; text-align: right; white-space: nowrap; padding-right: 4px;">${resultLabel}は</span>
+        <span style="font-size: 14px; font-weight: bold; color: ${resultColor}; background: var(--bg-dark); border: 1px solid ${resultBorderColor}; border-radius: 6px; padding: 2px 8px; letter-spacing: 0.5px; white-space: nowrap;">${resultStr}</span>
+        <span></span>
       </div>
-      <p style="margin: 0; line-height: 1.5;">である</p>
+      <p style="margin: 0; font-size: 13px; text-align: center;">である</p>
     </div>
   `;
 

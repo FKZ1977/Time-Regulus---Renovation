@@ -368,6 +368,9 @@ input, select {
   color: var(--accent);
   text-align: center;
   margin: 20px 0;
+  /* 枠表示ON/OFFの切り替えをスムーズに */
+  transition: border-color 0.25s ease, padding 0.2s ease, border-radius 0.2s ease;
+  box-sizing: border-box;
 }
 .result-box p {
   margin: 20px 0;
