@@ -2025,12 +2025,12 @@ select.seconds-fixed-00,
 /* 年月日も計算ONの時（年月日枠あり）の、年月日枠の横幅設定
    ★ 時分秒はカプセル（time-capsule-wrapper / direct-capsule-wrapper）の内部flex比率で管理するため
      カプセル外からmax-widthを個別指定しない。カプセル全体が残り幅に広がる設計。
-   234px（コンテナ）- 130px（年月日）- 6px（margin-right）- 12px（colon）= 86px がカプセルに確保される。
+   234px（コンテナ）- 138px（年月日）- 6px（margin-right）- 12px（colon）= 78px がカプセルに確保される。
 */
 #correctionMode #reverseTimeBlock input[type="date"],
 #correctionMode #reverseTimeBlock #reverseDisplayDateGroup_direct {
   flex: 1.5 !important;
-  max-width: 130px !important; /* yyyy/mm/dd と西暦4桁がiPhone/Androidでしっかり収まるサイズ */
+  max-width: 138px !important; /* yyyy/mm/dd と西暦4桁がiPhone/Androidでしっかり収まるサイズ */
   min-width: 0 !important;
 }
 
@@ -2072,7 +2072,7 @@ select.seconds-fixed-00,
 #correctionMode #reverseTimeBlock .date-input-wrapper,
 #correctionMode #reverseTimeBlock #reverseDisplayDateGroup_direct {
   flex: 1.5 !important;
-  max-width: 130px !important; /* yyyy/mm/dd と西暦4桁がiPhone/Androidでしっかり収まるサイズ */
+  max-width: 138px !important; /* yyyy/mm/dd と西暦4桁がiPhone/Androidでしっかり収まるサイズ */
   opacity: 1;
   visibility: visible;
   margin-right: 0; /* margin-rightは .date-input-wrapper / .direct-group-date の共通ルール（6px）に任せる */
@@ -2234,10 +2234,10 @@ input[type="time"].time-empty + .time-placeholder-guide {
   width: auto !important;
 }
 
-/* 補正モード画面（#reverseTimeBlock 内の年月日計算あり：flex: 1.5, max-width: 130px） */
+/* 補正モード画面（#reverseTimeBlock 内の年月日計算あり：flex: 1.5, max-width: 138px） */
 #correctionMode #reverseTimeBlock .date-input-wrapper {
   flex: 1.5 !important;
-  max-width: 130px !important; /* yyyy/mm/dd と西暦4桁がiPhone/Androidでしっかり収まるサイズ */
+  max-width: 138px !important; /* yyyy/mm/dd と西暦4桁がiPhone/Androidでしっかり収まるサイズ */
   min-width: 0 !important;
 }
 
@@ -2398,12 +2398,13 @@ body.scroll-locked .picker-wheel-container.sec-locked * {
   width: 100% !important;
 }
 
-/* 補正モード・年月日ONのとき、カプセル内の秒比率を広げて2桁数字が見やすい幅を確保
-   カプセル幅 ≈ 86px → 時分 (flex:2.0) ≈ 51px / 秒 (flex:1.3) ≈ 33px
+/* 補正モード・年月日ONのとき、カプセル内の秒比率を調整して時分幅をキープしつつ秒を短縮
+   コンテナ234px - 年月日138px - margin6px - colon12px = カプセル78px
+   カプセル78px × flex比: 時分(2.0) ≈ 52px / 秒(1.0) ≈ 26px
    ※ omit-date-activeクラスがない＝年月日ONの状態 */
 #correctionMode #reverseTimeBlock .time-capsule-wrapper .seconds-select,
 #correctionMode #reverseTimeBlock .direct-capsule-wrapper .direct-group-sec {
-  flex: 1.3 !important;
+  flex: 1.0 !important;
 }
 
 /* 年月日ONのときの秒セレクトボックス：狭いカプセル内でも矢印が被らないようパディング微調整 */
