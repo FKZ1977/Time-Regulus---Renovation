@@ -828,6 +828,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // mousedownとtouchstartの両方をフックし、ネイティブキーボード/ネイティブピッカーの起動を確実に抑止
     el.addEventListener("mousedown", handler, { passive: false });
     el.addEventListener("touchstart", handler, { passive: false });
+    // テンキーの「次へ」ボタン等でフォーカスが移った場合もネイティブピッカーを抑止して独自ピッカーを起動
+    el.addEventListener("focus", handler);
   };
 
   // 表示時刻 (Error mode)
