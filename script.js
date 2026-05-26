@@ -1782,6 +1782,14 @@ function setDirection(value) {
   select.dispatchEvent(event);
 }
 
+function toggleDirection() {
+  const select = document.getElementById("errorDirection");
+  if (!select) return;
+  const currentValue = select.value;
+  const newValue = (currentValue === "late") ? "early" : "late";
+  setDirection(newValue);
+}
+
 function applyLastErrorToReverseInputs() {
   if (!lastError) return;
   document.getElementById("errorDays").value = lastError.days || 0;

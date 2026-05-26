@@ -733,9 +733,9 @@ select:has(option[value=""]:checked) {
 
 /* 進んでいるが選択された状態（ピンク） */
 .segment-btn.active-late {
-  background-color: var(--toggle-bg) !important;
+  background-color: var(--error-late-color) !important;
   color: #ffffff !important;
-  box-shadow: 0 0 10px rgba(255, 0, 170, 0.4);
+  box-shadow: 0 0 10px rgba(255, 77, 77, 0.4);
 }
 
 /* 遅れているが選択された状態（緑） */
