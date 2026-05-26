@@ -815,6 +815,18 @@ document.addEventListener("DOMContentLoaded", function () {
   drumMin = new TimeRegulusDrum("pickerWheelMin", "min", onDrumValueChange);
   drumSec = new TimeRegulusDrum("pickerWheelSec", "sec", onDrumValueChange);
 
+  // 「日」の入力枠(errorDays)のフォーカス状態追跡フラグ
+  // iOS テンキーの「∧∨」による隣接time入力への誤フォーカスを「日」選択時のみ防止するため
+  let isDayFieldFocused = false;
+  const errorDaysEl = document.getElementById("errorDays");
+  if (errorDaysEl) {
+    errorDaysEl.addEventListener("focus", () => { isDayFieldFocused = true; });
+    errorDaysEl.addEventListener("blur", () => {
+      // blur → focus の発火順序を考慮し、わずかな遅延後にフラグをリセット
+      setTimeout(() => { isDayFieldFocused = false; }, 100);
+    });
+  }
+
   // 時分秒セレクト・インプットのネイティブ起動を抑止し、カスタム三連無限ドラムピッカーをフック起動
   const hookTimePicker = (triggerId, group) => {
     const el = document.getElementById(triggerId);
@@ -828,6 +840,15 @@ document.addEventListener("DOMContentLoaded", function () {
     // mousedownとtouchstartの両方をフックし、ネイティブキーボード/ネイティブピッカーの起動を確実に抑止
     el.addEventListener("mousedown", handler, { passive: false });
     el.addEventListener("touchstart", handler, { passive: false });
+
+    // iOS テンキーの「∧∨」ナビゲーションによるフォーカス移動を防止（「日」入力枠選択時のみ）
+    // ∧∨はmousedown/touchstartを経由せず直接focusを発火するため、
+    // 「日」の入力枠からの移動時のみblurしてネイティブピッカー起動を阻止する
+    el.addEventListener("focus", function() {
+      if (isDayFieldFocused) {
+        el.blur();
+      }
+    });
   };
 
   // 表示時刻 (Error mode)
