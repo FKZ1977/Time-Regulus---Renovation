@@ -827,17 +827,8 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     const focusHandler = (e) => {
-      // iOSのテンキー「次へ」ボタン等でフォーカスされた場合、単なるblurでは
-      // ネイティブピッカー（二連ドラム）が出てしまうため、一時的にreadonlyにして完全に抑止する
-      el.setAttribute("readonly", "readonly");
       el.blur();
-      
       openTimePicker(group);
-      
-      // ピッカーが開いた後、次回のフォーカスのためにreadonlyを解除
-      setTimeout(() => {
-        el.removeAttribute("readonly");
-      }, 500);
     };
 
     // mousedownとtouchstartの両方をフックし、タップによる起動を抑止
