@@ -825,11 +825,26 @@ document.addEventListener("DOMContentLoaded", function () {
       el.blur();
       openTimePicker(group);
     };
-    // mousedownとtouchstartの両方をフックし、ネイティブキーボード/ネイティブピッカーの起動を確実に抑止
+
+    const focusHandler = (e) => {
+      // iOSのテンキー「次へ」ボタン等でフォーカスされた場合、単なるblurでは
+      // ネイティブピッカー（二連ドラム）が出てしまうため、一時的にreadonlyにして完全に抑止する
+      el.setAttribute("readonly", "readonly");
+      el.blur();
+      
+      openTimePicker(group);
+      
+      // ピッカーが開いた後、次回のフォーカスのためにreadonlyを解除
+      setTimeout(() => {
+        el.removeAttribute("readonly");
+      }, 500);
+    };
+
+    // mousedownとtouchstartの両方をフックし、タップによる起動を抑止
     el.addEventListener("mousedown", handler, { passive: false });
     el.addEventListener("touchstart", handler, { passive: false });
-    // テンキーの「次へ」ボタン等でフォーカスが移った場合もネイティブピッカーを抑止して独自ピッカーを起動
-    el.addEventListener("focus", handler);
+    // テンキーの「次へ」ボタン等によるフォーカス移動を抑止
+    el.addEventListener("focus", focusHandler);
   };
 
   // 表示時刻 (Error mode)
