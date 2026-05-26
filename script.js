@@ -1160,9 +1160,13 @@ function setNowToStandard() {
   const dateVal = `${yyyy}-${mm}-${dd}`;
   const timeVal = `${hh}:${min}`;
 
-  document.getElementById("standardDate").value = dateVal;
-  document.getElementById("standardTime").value = timeVal;
-  document.getElementById("standardSeconds").value = sec;
+  const standardDateEl = document.getElementById("standardDate");
+  const standardTimeEl = document.getElementById("standardTime");
+  const standardSecondsEl = document.getElementById("standardSeconds");
+
+  if (standardDateEl) standardDateEl.value = dateVal;
+  if (standardTimeEl) standardTimeEl.value = timeVal;
+  if (standardSecondsEl) standardSecondsEl.value = sec;
 
   // 直接入力側にも値を設定
   const sY = document.getElementById("standardYear_direct");
@@ -1352,54 +1356,73 @@ function swapErrorModeInputs() {
   const standardSecDirect = document.getElementById("standardSec_direct");
   const swapButtonWrapper = document.querySelector('.swap-btn').parentElement; // ⇅ボタンの親div
 
-  // スワップ時のアニメーション暴走を防ぐため、一時的にtransitionを無効化する
-  if (displayGroup) displayGroup.classList.add("no-transition");
-  if (standardGroup) standardGroup.classList.add("no-transition");
+  if (!displayGroup || !standardGroup || !modeCard) return;
 
   const isMovingStandardUp = !isStandardOnTop;
+  const omitClass = !includeDateEnabled ? "date-omitted" : "";
 
+  // 1. フェードアウト＆スライド消去アニメーションの開始
   if (isMovingStandardUp) {
-    // 標準時刻を上 (isStandardOnTop = true) にする
-    modeCard.insertBefore(standardGroup, displayGroup); 
-    modeCard.insertBefore(swapButtonWrapper, displayGroup);
-    
-    // 機能の変更 (標準時刻が上)
-    nowButton.style.display = "none";
-    
-    // 直接入力側も00秒に固定
-    if (standardSecDirect) {
-      standardSecDirect.value = "00";
-      standardSecDirect.disabled = true;
-      standardSecDirect.style.pointerEvents = 'none';
-      standardSecDirect.classList.add('seconds-fixed-00');
-    }
+    // 標準時刻が上に上がる（標準Groupは上に消え、表示Groupは下に消える）
+    standardGroup.className = `input-group ${omitClass} animate-up-out`.trim();
+    displayGroup.className = `input-group ${omitClass} animate-down-out`.trim();
   } else {
-    // 標準時刻を下 (isStandardOnTop = false) に戻す
-    modeCard.insertBefore(displayGroup, standardGroup);
-    modeCard.insertBefore(swapButtonWrapper, standardGroup);
-    
-    // 機能の復元 (標準時刻が下)
-    nowButton.style.display = "inline-block"; // NOWボタン表示
-    
-    // 直接入力側も有効化して空に戻す
-    if (standardSecDirect) {
-      standardSecDirect.disabled = false;
-      standardSecDirect.style.pointerEvents = 'auto';
-      standardSecDirect.classList.remove('seconds-fixed-00');
-      standardSecDirect.value = "";
-    }
+    // 標準時刻が下に下がる（標準Groupは下に消え、表示Groupは上に消える）
+    standardGroup.className = `input-group ${omitClass} animate-down-out`.trim();
+    displayGroup.className = `input-group ${omitClass} animate-up-out`.trim();
   }
-  
-  // 状態更新
-  isStandardOnTop = isMovingStandardUp;
 
-  calculateError(); // 入れ替え後にも計算
-
-  // 少しディレイを空けてからtransitionを元に戻す
+  // アニメーション完了（150ms）後に物理的なDOMの入れ替えと機能変更を実行
   setTimeout(() => {
-    if (displayGroup) displayGroup.classList.remove("no-transition");
-    if (standardGroup) standardGroup.classList.remove("no-transition");
-  }, 50);
+    // 2. 物理的なDOM入れ替え
+    if (isMovingStandardUp) {
+      modeCard.insertBefore(standardGroup, displayGroup); 
+      modeCard.insertBefore(swapButtonWrapper, displayGroup);
+      
+      nowButton.style.display = "none";
+      if (standardSecDirect) {
+        standardSecDirect.value = "00";
+        standardSecDirect.disabled = true;
+        standardSecDirect.style.pointerEvents = 'none';
+        standardSecDirect.classList.add('seconds-fixed-00');
+      }
+    } else {
+      modeCard.insertBefore(displayGroup, standardGroup);
+      modeCard.insertBefore(swapButtonWrapper, standardGroup);
+      
+      nowButton.style.display = "inline-block";
+      if (standardSecDirect) {
+        standardSecDirect.disabled = false;
+        standardSecDirect.style.pointerEvents = 'auto';
+        standardSecDirect.classList.remove('seconds-fixed-00');
+        standardSecDirect.value = "";
+      }
+    }
+
+    isStandardOnTop = isMovingStandardUp;
+    calculateError();
+
+    // 3. スライドイン＆フェードイン出現アニメーションの適用
+    if (isMovingStandardUp) {
+      // 上に来た標準Groupは上から降りて出現し、下に来た表示Groupは下から昇って出現する
+      standardGroup.className = `input-group ${omitClass} animate-down-in`.trim();
+      displayGroup.className = `input-group ${omitClass} animate-up-in`.trim();
+    } else {
+      // 上に来た表示Groupは上から降りて出現し、下に来た標準Groupは下から昇って出現する
+      displayGroup.className = `input-group ${omitClass} animate-down-in`.trim();
+      standardGroup.className = `input-group ${omitClass} animate-up-in`.trim();
+    }
+
+    // 4. アニメーション終了（さらに150ms後）に元の静止クラス状態（date-omittedの有無など）に完全復元
+    setTimeout(() => {
+      const displayOmitClass = !includeDateEnabled ? "date-omitted" : "";
+      const standardOmitClass = !includeDateEnabled ? "date-omitted" : "";
+      
+      displayGroup.className = `input-group ${displayOmitClass}`.trim();
+      standardGroup.className = `input-group ${standardOmitClass}`.trim();
+    }, 150);
+
+  }, 150);
 }
 
 
@@ -1644,14 +1667,19 @@ function toggleDirection() {
 
 function applyLastErrorToReverseInputs() {
   if (!lastError) return;
-  document.getElementById("errorDays").value = lastError.days || 0;
+
+  const errorDaysEl = document.getElementById("errorDays");
+  if (errorDaysEl) errorDaysEl.value = lastError.days || 0;
   
   // hh:mm 形式にフォーマットして errorTime に代入
   const padH = String(lastError.hours || 0).padStart(2, '0');
   const padM = String(lastError.minutes || 0).padStart(2, '0');
-  document.getElementById("errorTime").value = `${padH}:${padM}`;
+
+  const errorTimeEl = document.getElementById("errorTime");
+  if (errorTimeEl) errorTimeEl.value = `${padH}:${padM}`;
   
-  document.getElementById("errorSeconds").value = lastError.seconds || 0;
+  const errorSecondsEl = document.getElementById("errorSeconds");
+  if (errorSecondsEl) errorSecondsEl.value = lastError.seconds || 0;
 
   // 直接入力側にも設定
   const errDaysD = document.getElementById("errorDays_direct");
@@ -1672,12 +1700,6 @@ function applyLastErrorToReverseInputs() {
 function switchToCorrectionMode() {
   document.getElementById("errorMode").style.display = "none";
   document.getElementById("correctionMode").style.display = "block";
-
-  const prevSeconds = document.getElementById("reverseDisplaySeconds").value;
-  populateSeconds("reverseDisplaySeconds");
-  if (prevSeconds !== "" && prevSeconds !== "ss" && prevSeconds !== "--") {
-    document.getElementById("reverseDisplaySeconds").value = prevSeconds;
-  }
 
   applyLastErrorToReverseInputs();
   reverseMode = "toStandard";

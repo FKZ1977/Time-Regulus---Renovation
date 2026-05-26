@@ -911,10 +911,10 @@ input:checked + .switch-slider:before {
   box-shadow: 0 0 6px var(--accent);
 }
 
-.datetime-direct-row input {
+.direct-group-date input {
   text-align: center;
   padding: 0 !important; /* 高さを揃えるため縦パディングを0にする */
-  height: 100% !important; /* 高さを親の41pxいっぱいに広げる */
+  height: 100% !important; /* 高さを親のいっぱいに広げる */
   font-size: 16px;
   background-color: transparent !important; /* 背景を透明にして一体化 */
   color: var(--text-main);
@@ -926,20 +926,21 @@ input:checked + .switch-slider:before {
   width: 100%;
 }
 
-.datetime-direct-row .direct-year {
-  flex: 1.4;
-  min-width: 0;
+.direct-group-date .direct-year {
+  flex: 1.4 !important;
+  min-width: 0 !important;
 }
-.datetime-direct-row .direct-two {
-  flex: 0.9;
-  min-width: 0;
+.direct-group-date .direct-two {
+  flex: 0.9 !important;
+  min-width: 0 !important;
 }
-.datetime-direct-row .delimiter {
+.direct-group-date .delimiter {
   color: var(--text-sub) !important;
   opacity: 0.6 !important; /* プレースホルダーと同じ不透明度にして一体化 */
   font-size: 15px;
   font-weight: bold;
   padding: 0 1px;
+  align-self: center !important;
 }
 .datetime-direct-row .direct-space {
   display: none; /* グループ化に伴い不要になったスペース要素は非表示 */
@@ -1437,8 +1438,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.25); /* 裏の文字がしっかり透けて見えるように黒幕を薄く (0.4 -> 0.25) */
-  backdrop-filter: blur(1.5px); /* 裏の文字が十分に読める程度の弱めのぼかしに変更 (4px -> 1.5px) */
-  -webkit-backdrop-filter: blur(1.5px); /* iOS 互換 */
   z-index: 99999;
   opacity: 0;
   pointer-events: none;
