@@ -121,11 +121,11 @@
         </div>
         <div class="time-capsule-wrapper">
           <div class="time-input-wrapper">
-            <input type="text" inputmode="none" class="time-picker-trigger" id="displayTime" placeholder="hh:mm">
+            <input type="time" id="displayTime" placeholder="hh:mm">
             <span class="time-placeholder-guide">hh  :  mm</span>
           </div>
           <span class="helper-colon">:</span>
-          <select id="displaySeconds" class="seconds-select" tabindex="-1">
+          <select id="displaySeconds" class="seconds-select">
             <option value="">ss</option>
           </select>
         </div>
@@ -170,11 +170,11 @@
         </div>
         <div class="time-capsule-wrapper">
           <div class="time-input-wrapper">
-            <input type="text" inputmode="none" class="time-picker-trigger" id="standardTime" placeholder="hh:mm">
+            <input type="time" id="standardTime" placeholder="hh:mm">
             <span class="time-placeholder-guide">hh  :  mm</span>
           </div>
           <span class="helper-colon">:</span>
-          <select id="standardSeconds" class="seconds-select" tabindex="-1">
+          <select id="standardSeconds" class="seconds-select">
             <option value="">ss</option>
           </select>
         </div>
@@ -234,11 +234,11 @@
       </div>
       <div class="unit-capsule-wrapper" style="flex: 3.0;">
         <div class="time-input-wrapper">
-          <input type="text" inputmode="none" class="time-picker-trigger" id="errorTime" placeholder="hh:mm" tabindex="14">
+          <input type="time" id="errorTime" placeholder="hh:mm" tabindex="14">
           <span class="time-placeholder-guide">hh  :  mm</span>
         </div>
         <span class="helper-colon">:</span>
-        <select id="errorSeconds" tabindex="-1">
+        <select id="errorSeconds" tabindex="15">
           <option value="">ss</option>
         </select>
       </div>
@@ -308,11 +308,11 @@
         </div>
         <div class="time-capsule-wrapper">
           <div class="time-input-wrapper">
-            <input type="text" inputmode="none" class="time-picker-trigger" id="reverseDisplayTime" placeholder="hh:mm" tabindex="19">
+            <input type="time" id="reverseDisplayTime" placeholder="hh:mm" step="60" tabindex="19">
             <span class="time-placeholder-guide">hh  :  mm</span>
           </div>
           <span class="helper-colon">:</span>
-          <select id="reverseDisplaySeconds" class="seconds-select" tabindex="-1">
+          <select id="reverseDisplaySeconds" class="seconds-select" tabindex="20">
             <option value="">ss</option>
           </select>
         </div>

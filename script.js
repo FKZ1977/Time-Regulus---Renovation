@@ -825,17 +825,9 @@ document.addEventListener("DOMContentLoaded", function () {
       el.blur();
       openTimePicker(group);
     };
-
-    const focusHandler = (e) => {
-      el.blur();
-      openTimePicker(group);
-    };
-
-    // mousedownとtouchstartの両方をフックし、タップによる起動を抑止
+    // mousedownとtouchstartの両方をフックし、ネイティブキーボード/ネイティブピッカーの起動を確実に抑止
     el.addEventListener("mousedown", handler, { passive: false });
     el.addEventListener("touchstart", handler, { passive: false });
-    // テンキーの「次へ」ボタン等によるフォーカス移動を抑止
-    el.addEventListener("focus", focusHandler);
   };
 
   // 表示時刻 (Error mode)
@@ -2379,21 +2371,7 @@ if ('serviceWorker' in navigator) {
 // iPhone（iOS）用：input[type="time"]/input[type="date"] の .time-empty / .date-empty クラス着脱制御
 // ==========================================================================
 function initPlaceholderGuides() {
-  // ブラウザの強力なキャッシュ対策：古い type="time" が残っていても強制的に text に変換し、iOSネイティブピッカーを撲滅する
-  // 同時に tabindex="-1" を付与し、テンキーの「次へ」ボタンからのフォーカス移動を完全に遮断する
-  document.querySelectorAll('.time-picker-trigger, input[type="time"]').forEach(input => {
-    input.type = "text";
-    input.inputMode = "none";
-    input.tabIndex = -1; // テンキー「次へ」からのフォーカスを完全ブロック
-    input.classList.add("time-picker-trigger");
-  });
-
-  // 秒選択の <select> がキャッシュで tabindex="-1" になっていない場合も強制的に -1 にする
-  document.querySelectorAll('.seconds-select, #errorSeconds').forEach(select => {
-    select.tabIndex = -1;
-  });
-
-  const timeInputs = document.querySelectorAll('.time-picker-trigger');
+  const timeInputs = document.querySelectorAll('input[type="time"]');
   const dateInputs = document.querySelectorAll('input[type="date"]');
   
   timeInputs.forEach(input => {
