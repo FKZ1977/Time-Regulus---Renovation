@@ -1,4 +1,4 @@
-const currentVersion = "3.0.1";
+const currentVersion = "3.0.2";
 let lastError = null;
 let hasCalculated = false;
 let reverseMode = "toStandard";
@@ -536,7 +536,10 @@ function openTimePicker(group) {
   document.body.classList.add("result-highlighted"); // ぼかし解除を即時適用
   document.body.classList.add("picker-open-padding"); // スクロール限界に達しないよう最下部に余白を追加
 
-  // 余白追加のDOM更新を待ってからスクロールを実行
+  // 【バグ修正】強制リフローを実行して、ブラウザに「余白が追加された後の高さ」を即座に認識させる
+  document.body.offsetHeight; 
+
+  // 【バグ修正】ディレイを10msから80msに延ばし、ブラウザのスクロール最大上限の更新を確実に待ってから実行
   setTimeout(() => {
     const targetResultId = (group === "display" || group === "standard") ? "result" : "reverseResult";
     const targetEl = document.getElementById(targetResultId);
@@ -552,7 +555,7 @@ function openTimePicker(group) {
     setTimeout(() => {
       document.body.classList.add("scroll-locked");
     }, 400);
-  }, 10);
+  }, 80);
 
   // 現在の入力値を読み取り
   let hNum = 0;
@@ -687,7 +690,7 @@ function generateKeypad() {
 document.addEventListener("DOMContentLoaded", function () {
   // 起動時のポップアップ
   if (localStorage.getItem("lastVersion") !== currentVersion) {
-    alert("Time RegulusはV3.0.1です！");
+    alert("Time RegulusはV3.0.2です！");
     localStorage.setItem("lastVersion", currentVersion);
   }
 
@@ -1254,16 +1257,29 @@ function backToCorrectionMode() {
 function resetApp(onlyInputs = false) {
   closeTimePicker();
   
-  // 入力内容のリセット処理（日付・日数のみ）
-  document.getElementById("displayDate").value = "";
-  document.getElementById("standardDate").value = "";
-  document.getElementById("result").innerHTML = "";
-  document.getElementById("toReverseButton").style.display = "none";
+  // 入力内容のリセット処理（すべての要素に対して存在チェックを徹底）
+  const displayDateEl = document.getElementById("displayDate");
+  if (displayDateEl) displayDateEl.value = "";
+
+  const standardDateEl = document.getElementById("standardDate");
+  if (standardDateEl) standardDateEl.value = "";
+
+  const resultEl = document.getElementById("result");
+  if (resultEl) resultEl.innerHTML = "";
+
+  const toReverseButtonEl = document.getElementById("toReverseButton");
+  if (toReverseButtonEl) toReverseButtonEl.style.display = "none";
   
-  document.getElementById("errorDays").value = "";
+  const errorDaysEl = document.getElementById("errorDays");
+  if (errorDaysEl) errorDaysEl.value = "";
+
   setDirection("late");
-  document.getElementById("reverseDisplayDate").value = "";
-  document.getElementById("reverseResult").innerHTML = "";
+
+  const reverseDisplayDateEl = document.getElementById("reverseDisplayDate");
+  if (reverseDisplayDateEl) reverseDisplayDateEl.value = "";
+
+  const reverseResultEl = document.getElementById("reverseResult");
+  if (reverseResultEl) reverseResultEl.innerHTML = "";
 
   // 直接入力欄のリセット
   const directInputs = [
@@ -1282,24 +1298,36 @@ function resetApp(onlyInputs = false) {
   reverseMode = "toStandard";
   hasCalculatedError = false;
 
+  // isStandardOnTop の同期リセット（アニメーションなしで確実に初期のDOM順序へ戻す）
   if (isStandardOnTop) {
-    swapErrorModeInputs(); // isStandardOnTopをfalseに戻すために実行
-  } else {
-     const nowButton = document.getElementById("standardNowButton");
-     const standardSeconds = document.getElementById("standardSeconds");
-     nowButton.style.display = "inline-block";
-     standardSeconds.disabled = false;
-     standardSeconds.style.pointerEvents = 'auto';
-     standardSeconds.classList.remove('seconds-fixed-00'); // スタイルを戻す
-     standardSeconds.value = "";
+    const displayGroup = document.getElementById("errorModeDisplayInputGroup");
+    const standardGroup = document.getElementById("errorModeStandardInputGroup");
+    const modeCard = displayGroup ? displayGroup.parentElement : null;
+    const swapButtonWrapper = document.querySelector('.swap-btn') ? document.querySelector('.swap-btn').parentElement : null;
+    if (displayGroup && standardGroup && modeCard && swapButtonWrapper) {
+      modeCard.insertBefore(displayGroup, standardGroup);
+      modeCard.insertBefore(swapButtonWrapper, standardGroup);
+    }
+    isStandardOnTop = false;
+  }
 
-     const standardSecDirect = document.getElementById("standardSec_direct");
-     if (standardSecDirect) {
-       standardSecDirect.disabled = false;
-       standardSecDirect.style.pointerEvents = 'auto';
-       standardSecDirect.classList.remove('seconds-fixed-00');
-       standardSecDirect.value = "";
-     }
+  const nowButton = document.getElementById("standardNowButton");
+  if (nowButton) nowButton.style.display = "inline-block";
+
+  const standardSeconds = document.getElementById("standardSeconds");
+  if (standardSeconds) {
+    standardSeconds.disabled = false;
+    standardSeconds.style.pointerEvents = 'auto';
+    standardSeconds.classList.remove('seconds-fixed-00'); // スタイルを戻す
+    standardSeconds.value = "";
+  }
+
+  const standardSecDirect = document.getElementById("standardSec_direct");
+  if (standardSecDirect) {
+    standardSecDirect.disabled = false;
+    standardSecDirect.style.pointerEvents = 'auto';
+    standardSecDirect.classList.remove('seconds-fixed-00');
+    standardSecDirect.value = "";
   }
   
   toggleReverseMode(false);
@@ -1309,7 +1337,8 @@ function resetApp(onlyInputs = false) {
   if (onlyInputs) { 
      resultHistory = [];
      localStorage.removeItem('resultHistory');
-     document.getElementById("showListLink").style.display = "none";
+     const showListLinkEl = document.getElementById("showListLink");
+     if (showListLinkEl) showListLinkEl.style.display = "none";
   } else {
      syncAllPlaceholderColors();
      return;
@@ -1332,17 +1361,28 @@ function showResetConfirmation() {
  * 入力情報を消去し、初期画面に戻る
  */
 function resetAppAndReturnToLock() {
-  resetApp(true); 
+  try {
+    resetApp(true); 
+  } catch (e) {
+    console.error("リセット処理中にエラーが発生しました:", e);
+  }
 
-  document.getElementById("modeSelect").style.display = "none";
-  document.getElementById("lockScreen").style.display = "block";
-  
-  document.getElementById("passcode").value = "";
+  // 画面の非表示・表示切り替え（ロック画面への確実な帰還）を保証するガード処理
+  const modeSelect = document.getElementById("modeSelect");
+  const lockScreen = document.getElementById("lockScreen");
+  const passcode = document.getElementById("passcode");
+  const resetConfirmContainer = document.getElementById("resetConfirmContainer");
 
-  document.getElementById("resetConfirmContainer").style.display = "none"; 
+  if (modeSelect) modeSelect.style.display = "none";
+  if (lockScreen) lockScreen.style.display = "block";
+  if (passcode) passcode.value = "";
+  if (resetConfirmContainer) resetConfirmContainer.style.display = "none"; 
 
-  alert("全てのリセットが完了しました。初期画面に戻ります。");
-  restartLockScreenAnimation();
+  // 【バグ修正】同期的な alert() による描画スレッドのロック（フリーズ）を防ぐため、100msの遅延後に alert を実行
+  setTimeout(() => {
+    alert("全てのリセットが完了しました。初期画面に戻ります。");
+    restartLockScreenAnimation();
+  }, 100);
 }
 
 /**
@@ -2334,6 +2374,7 @@ if (document.readyState === "loading") {
    テンキーキーボード表示時の自動スクロール（入力補助OFF時など）
    ========================================================================== */
 document.addEventListener("focusin", function(e) {
+  if (activeTimePickerGroup) return; // ピッカー起動中はキーボード用自動スクロールとの二重競合をシャットアウト！
   if (e.target.tagName === "INPUT" && 
       e.target.type !== "checkbox" && 
       e.target.type !== "radio" && 
