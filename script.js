@@ -11,6 +11,7 @@ let inputHelperEnabled = false;
 let includeDateEnabled = false;
 let includeDateEnabledCorrection = false; // 補正画面用の年月日トグル状態
 let autoJumpTimer = null;
+let isPickerClosing = false; // ピッカーを閉じる際の一時的な再起動防止ガード（iOSゴーストタップ対策）
 
 // セレクトボックス未選択時の灰色表示同期用ヘルパー
 function updateSelectPlaceholderColor(selectId) {
@@ -101,6 +102,16 @@ function toggleIncludeDateCorrection(enabled) {
     });
   }
 
+  // 「年月日も計算」がOFFのとき、誤差の「日」の枠も非表示にする
+  const errorDaysWrappers = document.querySelectorAll(".error-days-wrapper");
+  errorDaysWrappers.forEach(el => {
+    if (isOmit) {
+      el.classList.add("omit-days-active");
+    } else {
+      el.classList.remove("omit-days-active");
+    }
+  });
+
   // 再計算
   handleReverseCalculation();
 }
@@ -155,6 +166,28 @@ function toggleInputHelper(enabled) {
     document.body.classList.add("input-helper-off-mode");
     document.body.classList.remove("input-helper-on-mode");
   }
+
+  // 入力補助ONのときは、テンキー左上の「∧∨」キーボードナビゲーションを完全に無効化（グレーアウト）するため、
+  // すべての直接入力時分秒フィールドを readonly ＆ tabindex="-1" に設定。
+  // 入力補助OFFのときは、手動入力できるように readonly を解除し tabindex="0" に戻す。
+  const timeFields = [
+    "displayHour_direct", "displayMin_direct", "displaySec_direct",
+    "standardHour_direct", "standardMin_direct", "standardSec_direct",
+    "errorHours_direct", "errorMinutes_direct", "errorSeconds_direct",
+    "reverseDisplayHour_direct", "reverseDisplayMin_direct", "reverseDisplaySec_direct"
+  ];
+  timeFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (enabled) {
+        el.readOnly = true;
+        el.tabIndex = -1;
+      } else {
+        el.readOnly = false;
+        el.tabIndex = 0;
+      }
+    }
+  });
 
   // 年月日の表示状態を再同期
   toggleIncludeDate(includeDateEnabled);
@@ -486,6 +519,8 @@ function onDrumValueChange() {
 }
 
 function openTimePicker(group) {
+  if (isPickerClosing) return; // 閉じる処理中のゴースト起動を完全ブロック！
+
   activeTimePickerGroup = group;
 
   // 既存 of picker-focused をクリア
@@ -608,6 +643,17 @@ function closeTimePicker() {
   document.querySelectorAll(".picker-focused").forEach(el => el.classList.remove("picker-focused"));
 
   activeTimePickerGroup = null;
+
+  // 強制的に入力フォーカスを外してキーボードやiOSスクロールの誤動作を防止
+  if (document.activeElement && document.activeElement.tagName === "INPUT") {
+    document.activeElement.blur();
+  }
+
+  // iOSのタップすり抜け・ゴーストタップによる即時再起動を防ぐため、400msの間起動をブロック
+  isPickerClosing = true;
+  setTimeout(() => {
+    isPickerClosing = false;
+  }, 400);
 }
 
 function checkPass() {
@@ -741,19 +787,20 @@ document.addEventListener("DOMContentLoaded", function () {
     el.addEventListener("mousedown", handler, { passive: false });
     el.addEventListener("touchstart", handler, { passive: false });
 
-    // iOS テンキーの「∧∨」ナビゲーションによるフォーカス移動を防止（「日」入力枠選択時のみ）
+    // iOS テンキーの「∧∨」ナビゲーションによるフォーカス移動を防止
     el.addEventListener("focus", function() {
       if (isDirectField && !inputHelperEnabled) {
         // 直接入力枠で、かつ入力補助OFFのときはフォーカス移動させる
         return;
       }
-      if (isDayFieldFocused) {
+      // 入力補助ONのときは、キーボードナビゲーション（∧∨）による意図しないピッカー起動を防ぐため、
+      // focusイベント単体でのピッカー自動起動を完全に廃止し、即座にフォーカスを外す（blur）のみにする。
+      // 【バグ修正】focusイベントの最中に同期的に blur() を呼ぶと、iOS Safariがフォーカスを直前の"日"の枠に差し戻してしまい、
+      // "日"の入力枠が点滅フリーズ（デッドロック）するバグが発生します。
+      // これを防ぐため、setTimeoutで10msのディレイを挟み、非同期に安全に blur() を実行します。
+      setTimeout(() => {
         el.blur();
-      } else if (inputHelperEnabled) {
-        // 入力補助ONのときに直接入力枠へフォーカスが当たったら即座にblurしてピッカーを起動
-        el.blur();
-        openTimePicker(group);
-      }
+      }, 10);
     });
   };
 
@@ -1227,9 +1274,12 @@ function showCorrectionMode() {
   toggleReverseMode(false);
 
   // 初期状態でテンキーを起動する自動フォーカス処理
+  // 「年月日も計算」OFFのときは errorDays_direct が visibility:hidden で不可視のため、
+  // 不可視要素へのフォーカスによるiOS Safariフリーズを回避し、次の可視入力枠にフォーカスする
   if (!inputHelperEnabled) {
     setTimeout(() => {
-      const target = document.getElementById("errorDays_direct");
+      const targetId = includeDateEnabledCorrection ? "errorDays_direct" : "errorHours_direct";
+      const target = document.getElementById(targetId);
       if (target) {
         target.focus();
         if (target.select) target.select();
@@ -1814,6 +1864,11 @@ function handleReverseCalculation() {
     timeDateVal = buildDateString(rY, rM, rD);
   }
 
+  // 年月日も計算がOFFのときは、誤差の「日」は強制的に0日とする（非表示化に合わせた安全ガード）
+  if (!includeDateEnabledCorrection) {
+    days = 0;
+  }
+
   // 誤差時間は常に直接入力から取得
   const eH = document.getElementById("errorHours_direct").value;
   const eM = document.getElementById("errorMinutes_direct").value;
@@ -1847,16 +1902,20 @@ function handleReverseCalculation() {
   // 時間入力項目が一部不足している場合に親切なエラーを表示
   if (!hasTime && hasError) {
     const missing = [];
-    if (includeDateEnabledCorrection && !timeDateVal) missing.push("年月日");
+    const dateMissing = includeDateEnabledCorrection && !timeDateVal;
+    if (dateMissing) missing.push("年月日");
     if (!timeTimeVal) missing.push("時分");
     if (timeSec === "" || timeSec === "ss" || timeSec === "--") missing.push("秒");
     
+    const timeLabel = reverseMode === "toDisplay" ? "探している時刻" : "表示時刻";
+
     if (missing.length === (includeDateEnabledCorrection ? 3 : 2)) {
-      resultElement.innerText = reverseMode === "toDisplay"
-        ? "探している時刻を入力してください"
-        : "表示時刻を入力してください";
+      resultElement.innerText = `${timeLabel}を入力してください`;
+    } else if (dateMissing && missing.length === 1) {
+      // 年月日だけが不足している場合 → 黄色の小さい文字で目立たせる
+      resultElement.innerHTML = `<span style="color: #e6c300; font-size: 0.82em;">⚠ ${timeLabel}の年月日が不足</span>`;
     } else {
-      resultElement.innerText = `${reverseMode === "toDisplay" ? "探している時刻" : "表示時刻"}: ${missing.join(", ")}が不足`;
+      resultElement.innerHTML = `<span style="color: #e6c300; font-size: 0.82em;">⚠ ${timeLabel}: ${missing.join(", ")}が不足</span>`;
     }
     return;
   }
