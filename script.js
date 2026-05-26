@@ -2075,7 +2075,8 @@ function addResultToList() {
   const isDuplicate = group.entries.some(entry => 
     entry.base.getTime() === baseMs && 
     entry.result.getTime() === resultMs && 
-    entry.mode === r.mode
+    entry.mode === r.mode &&
+    entry.includeDateCorrection === r.includeDateCorrection
   );
 
   if (isDuplicate) {
