@@ -180,12 +180,13 @@ function toggleInputHelper(enabled) {
   timeFields.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
+      // どのルート（ON/OFF）でも、初回実行時に元の tabindex を確実に保存する
+      if (!el.hasAttribute('data-orig-tabindex') && el.hasAttribute('tabindex')) {
+        el.setAttribute('data-orig-tabindex', el.getAttribute('tabindex'));
+      }
+
       if (enabled) {
         el.readOnly = true;
-        // 元の tabindex が存在する場合は保存しておく
-        if (!el.hasAttribute('data-orig-tabindex') && el.hasAttribute('tabindex')) {
-          el.setAttribute('data-orig-tabindex', el.getAttribute('tabindex'));
-        }
         el.tabIndex = -1;
       } else {
         el.readOnly = false;
