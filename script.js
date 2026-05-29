@@ -12,6 +12,7 @@ let includeDateEnabled = false;
 let includeDateEnabledCorrection = false; // 補正画面用の年月日トグル状態
 let autoJumpTimer = null;
 let isPickerClosing = false; // ピッカーを閉じる際の一時的な再起動防止ガード（iOSゴーストタップ対策）
+let _pendingMainInit = null; // 「開く」ボタン押下後に実行するメイン機能初期化関数を保持する変数
 
 // セレクトボックス未選択時の灰色表示同期用ヘルパー
 function updateSelectPlaceholderColor(selectId) {
@@ -670,6 +671,11 @@ function checkPass() {
     inputField.style.border = "";
     errorMessage.innerText = "";
     gtag('event', 'unlock_success'); // Google Analyticsイベント
+    // ■ フェーズ2実行：認証成功後にメイン機能を初期化（テンキー操作中の割り込みを完全回避）
+    if (typeof _pendingMainInit === 'function') {
+      _pendingMainInit();
+      _pendingMainInit = null; // 二重実行防止
+    }
   } else {
     errorMessage.innerText = "暗証番号が違います";
     inputField.style.border = "2px solid red";
@@ -1175,13 +1181,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   } // end initMainFeatures()
 
-  // フェーズ2の実行: iOS Safariは requestIdleCallback に非対応なため setTimeout で代用
-  // timeout: 150ms → スマホの画面第一フレームが描画される十分な時間を許容した後に開始
-  if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(initMainFeatures, { timeout: 2000 });
-  } else {
-    setTimeout(initMainFeatures, 150); // iOS Safari フォールバック
-  }
+  // ■ フェーズ2は「開く」ボタン核心後に checkPass() から呼び出す。
+  // テンキー操作中の割り込みを完全回避するため、関数参照をグローバル変数に保持する。
+  _pendingMainInit = initMainFeatures;
 
 });
 
