@@ -2670,7 +2670,7 @@ body.picker-open-padding {
 body.input-helper-on-mode #displayDateWrapper,
 body.input-helper-on-mode #standardDateWrapper,
 body.input-helper-on-mode #reverseDisplayDateWrapper {
-  display: block !important; /* 年月日ONならカレンダーWrapperを表示 */
+  display: inline-flex !important; /* 年月日ONならカレンダーWrapperを表示 */
 }
 body.input-helper-on-mode #displayDateGroup_direct,
 body.input-helper-on-mode #standardDateGroup_direct,
