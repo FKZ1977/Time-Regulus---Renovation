@@ -2019,7 +2019,7 @@ select.seconds-fixed-00,
      カプセル外からmax-widthを個別指定しない。カプセル全体が残り幅に広がる設計。
    242px（コンテナ）- 148px（年月日）- 6px（margin-right）- 12px（colon）= 76px がカプセルに確保される。
 */
-#correctionMode #reverseTimeBlock input[type="date"],
+#correctionMode #reverseTimeBlock .date-input-wrapper,
 #correctionMode #reverseTimeBlock #reverseDisplayDateGroup_direct {
   flex: 1.65 !important;
   max-width: 156px !important; /* 148px -> 156px に拡張し西暦が綺麗に収まるように */
