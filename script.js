@@ -182,10 +182,19 @@ function toggleInputHelper(enabled) {
     if (el) {
       if (enabled) {
         el.readOnly = true;
+        // 元の tabindex が存在する場合は保存しておく
+        if (!el.hasAttribute('data-orig-tabindex') && el.hasAttribute('tabindex')) {
+          el.setAttribute('data-orig-tabindex', el.getAttribute('tabindex'));
+        }
         el.tabIndex = -1;
       } else {
         el.readOnly = false;
-        el.tabIndex = 0;
+        // 保存していた元の tabindex に復元するか、なければ 0 に戻す
+        if (el.hasAttribute('data-orig-tabindex')) {
+          el.setAttribute('tabindex', el.getAttribute('data-orig-tabindex'));
+        } else {
+          el.tabIndex = 0;
+        }
       }
     }
   });
