@@ -2021,8 +2021,8 @@ select.seconds-fixed-00,
 */
 #correctionMode #reverseTimeBlock input[type="date"],
 #correctionMode #reverseTimeBlock #reverseDisplayDateGroup_direct {
-  flex: 1.5 !important;
-  max-width: 148px !important; /* 138px -> 148px に拡張し西暦がiPhoneで完全に収まるように */
+  flex: 1.65 !important;
+  max-width: 156px !important; /* 148px -> 156px に拡張し西暦が綺麗に収まるように */
   min-width: 0 !important;
 }
 
@@ -2063,8 +2063,8 @@ select.seconds-fixed-00,
 /* 補正モード（#reverseTimeBlock）の時間枠・秒枠・グループに対する極上スライドアニメーションの transition 設定 */
 #correctionMode #reverseTimeBlock .date-input-wrapper,
 #correctionMode #reverseTimeBlock #reverseDisplayDateGroup_direct {
-  flex: 1.5 !important;
-  max-width: 148px !important; /* 138px -> 148px に拡張 */
+  flex: 1.65 !important;
+  max-width: 156px !important; /* 148px -> 156px に拡張 */
   opacity: 1;
   visibility: visible;
   margin-right: 0; /* margin-rightは .date-input-wrapper / .direct-group-date の共通ルール（6px）に任せる */
@@ -2218,10 +2218,10 @@ input[type="time"].time-empty + .time-placeholder-guide {
   width: auto !important;
 }
 
-/* 補正モード画面（#reverseTimeBlock 内の年月日計算あり：flex: 1.5, max-width: 148px） */
+/* 補正モード画面（#reverseTimeBlock 内の年月日計算あり：flex: 1.65, max-width: 156px） */
 #correctionMode #reverseTimeBlock .date-input-wrapper {
-  flex: 1.5 !important;
-  max-width: 148px !important; /* 138px -> 148px に拡張 */
+  flex: 1.65 !important;
+  max-width: 156px !important; /* 148px -> 156px に拡張 */
   min-width: 0 !important;
 }
 
