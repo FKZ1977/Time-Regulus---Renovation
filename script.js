@@ -2531,6 +2531,7 @@ document.addEventListener("focusin", function(e) {
 
 
 
+
 /* ==========================================================================
    スライドアニメーション付きスワイプナビゲーション (改修版)
    ========================================================================== */
@@ -2539,8 +2540,8 @@ document.addEventListener("focusin", function(e) {
   let startY = 0;
   let currentX = 0;
   let isSwiping = false;
-  let isTransitioning = false; // アニメーション中のロック（長めに設定）
-  let swipeDirectionAxis = null; // "horizontal" or "vertical"
+  let isTransitioning = false;
+  let swipeDirectionAxis = null; 
   
   let currentScreen = null;
   let targetScreen = null;
@@ -2561,6 +2562,12 @@ document.addEventListener("focusin", function(e) {
       return { id: "lockScreen", el: lockScreen };
     }
 
+    // modeSelectを最優先でチェック（リセット時などの重複表示対策）
+    const modeSelect = document.getElementById("modeSelect");
+    if (modeSelect && window.getComputedStyle(modeSelect).display !== "none") {
+      return { id: "modeSelect", el: modeSelect };
+    }
+
     for (const key in currentScreensDict) {
       const screen = currentScreensDict[key];
       if (screen && window.getComputedStyle(screen).display !== "none") {
@@ -2571,13 +2578,10 @@ document.addEventListener("focusin", function(e) {
   };
 
   const getTargetScreenAndFunc = (currentId, deltaX) => {
-    // ユーザー指定の厳密なマッピング
-    // 右スワイプ (deltaX > 0) -> 画面は右へ移動、新しい画面は左から来る
     if (deltaX > 0) {
       if (currentId === "errorMode") return { screen: currentScreensDict.correctionMode, func: window.showCorrectionMode };
       if (currentId === "correctionMode") return { screen: currentScreensDict.resultListPage, func: window.showResultList };
     } 
-    // 左スワイプ (deltaX < 0) -> 画面は左へ移動、新しい画面は右から来る
     else if (deltaX < 0) {
       if (currentId === "correctionMode") return { screen: currentScreensDict.modeSelect, func: window.backToModeSelect };
       if (currentId === "resultListPage") return { screen: currentScreensDict.correctionMode, func: window.backToCorrectionMode };
@@ -2588,7 +2592,7 @@ document.addEventListener("focusin", function(e) {
   let targetFunc = null;
 
   document.addEventListener("touchstart", function(e) {
-    if (isTransitioning) return; // アニメーション終了まで一切のタッチを無視して「落ち着かせる」
+    if (isTransitioning) return; 
     if (typeof activeTimePickerGroup !== "undefined" && activeTimePickerGroup) return; 
     if (e.touches.length > 1) return;
     
@@ -2601,21 +2605,24 @@ document.addEventListener("focusin", function(e) {
         };
     }
     
+    // ダイレクトチェックによる確実なロック
+    const lockScreen = document.getElementById("lockScreen");
+    const modeSelect = document.getElementById("modeSelect");
+    const isLockVisible = lockScreen && window.getComputedStyle(lockScreen).display !== "none";
+    const isModeVisible = modeSelect && window.getComputedStyle(modeSelect).display !== "none";
+    
+    if (isLockVisible || isModeVisible) {
+      isSwiping = false;
+      return; 
+    }
+
     const visibleInfo = getVisibleScreen();
     if (!visibleInfo) return;
     currentScreen = visibleInfo.el;
-    const currentId = visibleInfo.id;
     
-    // ①ロック画面、②モード選択画面 はスワイプ開始しない（固定対象）
-    if (currentId === "lockScreen" || currentId === "modeSelect") {
-      isSwiping = false;
-      return; // touchmoveでpreventDefaultして固定する
-    }
-
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     
-    // 画面端からのスワイプ（ブラウザバック等）は無視
     if (startX < 20 || startX > window.innerWidth - 20) {
       isSwiping = false;
       return;
@@ -2630,24 +2637,28 @@ document.addEventListener("focusin", function(e) {
   }, { passive: true });
 
   document.addEventListener("touchmove", function(e) {
-    const visibleInfo = getVisibleScreen();
-    if (!visibleInfo) return;
-    const currentId = visibleInfo.id;
-
-    // ①ロック画面、②モード選択画面では、上下左右すべてのスクロール（バウンス含む）を完全固定
-    if (currentId === "lockScreen" || currentId === "modeSelect") {
-      e.preventDefault();
+    // 【最重要】DOMを直接チェックして確実にブロック（getVisibleScreenの誤検知を防ぐ）
+    const lockScreen = document.getElementById("lockScreen");
+    const modeSelect = document.getElementById("modeSelect");
+    const isLockVisible = lockScreen && window.getComputedStyle(lockScreen).display !== "none";
+    const isModeVisible = modeSelect && window.getComputedStyle(modeSelect).display !== "none";
+    
+    if (isLockVisible || isModeVisible) {
+      e.preventDefault(); // いかなる状況でもスクロールを許さない
       return;
     }
 
     if (!isSwiping || isTransitioning) return;
+    
+    const visibleInfo = getVisibleScreen();
+    if (!visibleInfo) return;
+    const currentId = visibleInfo.id;
     
     currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
     const deltaX = currentX - startX;
     const deltaY = currentY - startY;
     
-    // スワイプ方向の判定
     if (!swipeDirectionAxis) {
       if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
         if (Math.abs(deltaY) > Math.abs(deltaX)) {
@@ -2662,16 +2673,13 @@ document.addEventListener("focusin", function(e) {
       }
     }
     
-    // 横スワイプ中
     if (swipeDirectionAxis === "horizontal") {
-      // 画面の映り込み（ブラウザのネイティブスワイプ）やグラグラを完全に防ぐ
       e.preventDefault();
 
       const targetInfo = getTargetScreenAndFunc(currentId, deltaX);
       const potentialTarget = targetInfo ? targetInfo.screen : null;
       const potentialFunc = targetInfo ? targetInfo.func : null;
       
-      // 無効な方向へのスワイプは画面を微動だにさせない
       if (!potentialTarget) {
         return; 
       }
@@ -2722,7 +2730,6 @@ document.addEventListener("focusin", function(e) {
     if (targetScreen) targetScreen.style.transition = "";
 
     if (Math.abs(deltaX) > threshold) {
-      // アニメーション完了まで＋余裕を持たせてロックし「画面を落ち着かせる」
       isTransitioning = true; 
       
       const finalTranslate = deltaX > 0 ? "100%" : "-100%";
@@ -2741,6 +2748,7 @@ document.addEventListener("focusin", function(e) {
         targetScreen.style.transform = "";
         targetScreen.classList.remove("swipe-transition");
         
+        // 遷移先の初期化処理
         if (typeof targetFunc === "function") {
           targetFunc();
         } else {
@@ -2750,7 +2758,6 @@ document.addEventListener("focusin", function(e) {
           else if (targetScreen === currentScreensDict.errorMode && typeof showErrorMode === "function") showErrorMode();
         }
         
-        // 遷移完了後、さらに200msロックして連続スワイプの勢いを殺す
         setTimeout(() => { isTransitioning = false; }, 200);
       }, 300);
     } else {
