@@ -2530,16 +2530,17 @@ document.addEventListener("focusin", function(e) {
 
 
 
+
 /* ==========================================================================
-   スライドアニメーション付きスワイプナビゲーション
+   スライドアニメーション付きスワイプナビゲーション (改修版)
    ========================================================================== */
 (function() {
   let startX = 0;
   let startY = 0;
   let currentX = 0;
   let isSwiping = false;
-  let isTransitioning = false; // アニメーション中の連続スワイプ防止用
-  let hasDeterminedDirection = false;
+  let isTransitioning = false; // アニメーション中のロック（長めに設定）
+  let swipeDirectionAxis = null; // "horizontal" or "vertical"
   
   let currentScreen = null;
   let targetScreen = null;
@@ -2557,28 +2558,29 @@ document.addEventListener("focusin", function(e) {
   const getVisibleScreen = () => {
     const lockScreen = document.getElementById("lockScreen");
     if (lockScreen && window.getComputedStyle(lockScreen).display !== "none") {
-      return null;
+      return { id: "lockScreen", el: lockScreen };
     }
 
     for (const key in currentScreensDict) {
       const screen = currentScreensDict[key];
       if (screen && window.getComputedStyle(screen).display !== "none") {
-        return screen;
+        return { id: key, el: screen };
       }
     }
     return null;
   };
 
-  const getTargetScreenAndFunc = (current, deltaX) => {
-    // 【修正】左スワイプ (deltaX < 0) -> 次へ進む (→の動き)
-    if (deltaX < 0) {
-      if (current === currentScreensDict.errorMode) return { screen: currentScreensDict.correctionMode, func: window.showCorrectionMode };
-      if (current === currentScreensDict.correctionMode) return { screen: currentScreensDict.resultListPage, func: window.showResultList };
+  const getTargetScreenAndFunc = (currentId, deltaX) => {
+    // ユーザー指定の厳密なマッピング
+    // 右スワイプ (deltaX > 0) -> 画面は右へ移動、新しい画面は左から来る
+    if (deltaX > 0) {
+      if (currentId === "errorMode") return { screen: currentScreensDict.correctionMode, func: window.showCorrectionMode };
+      if (currentId === "correctionMode") return { screen: currentScreensDict.resultListPage, func: window.showResultList };
     } 
-    // 【修正】右スワイプ (deltaX > 0) -> 前へ戻る (←の動き)
-    else if (deltaX > 0) {
-      if (current === currentScreensDict.resultListPage) return { screen: currentScreensDict.correctionMode, func: window.backToCorrectionMode };
-      if (current === currentScreensDict.correctionMode) return { screen: currentScreensDict.modeSelect, func: window.backToModeSelect };
+    // 左スワイプ (deltaX < 0) -> 画面は左へ移動、新しい画面は右から来る
+    else if (deltaX < 0) {
+      if (currentId === "correctionMode") return { screen: currentScreensDict.modeSelect, func: window.backToModeSelect };
+      if (currentId === "resultListPage") return { screen: currentScreensDict.correctionMode, func: window.backToCorrectionMode };
     }
     return null;
   };
@@ -2586,7 +2588,7 @@ document.addEventListener("focusin", function(e) {
   let targetFunc = null;
 
   document.addEventListener("touchstart", function(e) {
-    if (isTransitioning) return; // 画面遷移中はスワイプをブロック
+    if (isTransitioning) return; // アニメーション終了まで一切のタッチを無視して「落ち着かせる」
     if (typeof activeTimePickerGroup !== "undefined" && activeTimePickerGroup) return; 
     if (e.touches.length > 1) return;
     
@@ -2599,97 +2601,115 @@ document.addEventListener("focusin", function(e) {
         };
     }
     
-    currentScreen = getVisibleScreen();
+    const visibleInfo = getVisibleScreen();
+    if (!visibleInfo) return;
+    currentScreen = visibleInfo.el;
+    const currentId = visibleInfo.id;
     
-    // ロック画面・モード選択画面からはスワイプさせない
-    if (!currentScreen || currentScreen === currentScreensDict.modeSelect) {
+    // ①ロック画面、②モード選択画面 はスワイプ開始しない（固定対象）
+    if (currentId === "lockScreen" || currentId === "modeSelect") {
       isSwiping = false;
-      return;
+      return; // touchmoveでpreventDefaultして固定する
     }
 
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     
-    // 画面端からのスワイプはブラウザネイティブの戻る動作と競合するため無視
+    // 画面端からのスワイプ（ブラウザバック等）は無視
     if (startX < 20 || startX > window.innerWidth - 20) {
       isSwiping = false;
       return;
     }
 
     isSwiping = true;
-    hasDeterminedDirection = false;
+    swipeDirectionAxis = null;
     targetScreen = null;
     targetFunc = null;
     
-    if (currentScreen) {
-      currentScreen.style.transition = "none";
-    }
+    currentScreen.style.transition = "none";
   }, { passive: true });
 
   document.addEventListener("touchmove", function(e) {
-    if (!isSwiping || !currentScreen || isTransitioning) return;
+    const visibleInfo = getVisibleScreen();
+    if (!visibleInfo) return;
+    const currentId = visibleInfo.id;
+
+    // ①ロック画面、②モード選択画面では、上下左右すべてのスクロール（バウンス含む）を完全固定
+    if (currentId === "lockScreen" || currentId === "modeSelect") {
+      e.preventDefault();
+      return;
+    }
+
+    if (!isSwiping || isTransitioning) return;
     
     currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
     const deltaX = currentX - startX;
     const deltaY = currentY - startY;
     
-    if (!hasDeterminedDirection) {
+    // スワイプ方向の判定
+    if (!swipeDirectionAxis) {
       if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-        hasDeterminedDirection = true;
         if (Math.abs(deltaY) > Math.abs(deltaX)) {
+          swipeDirectionAxis = "vertical";
           isSwiping = false; 
           return;
+        } else {
+          swipeDirectionAxis = "horizontal";
         }
       } else {
         return; 
       }
     }
     
-    const targetInfo = getTargetScreenAndFunc(currentScreen, deltaX);
-    const potentialTarget = targetInfo ? targetInfo.screen : null;
-    const potentialFunc = targetInfo ? targetInfo.func : null;
-    
-    if (!potentialTarget) {
-      return; // 許可されていない方向の場合は画面を動かさない（固定）
-    }
-    
-    if (targetScreen !== potentialTarget) {
-      if (targetScreen) {
-        targetScreen.style.display = "none";
-      }
-      targetScreen = potentialTarget;
-      targetFunc = potentialFunc;
+    // 横スワイプ中
+    if (swipeDirectionAxis === "horizontal") {
+      // 画面の映り込み（ブラウザのネイティブスワイプ）やグラグラを完全に防ぐ
+      e.preventDefault();
+
+      const targetInfo = getTargetScreenAndFunc(currentId, deltaX);
+      const potentialTarget = targetInfo ? targetInfo.screen : null;
+      const potentialFunc = targetInfo ? targetInfo.func : null;
       
-      targetScreen.style.transition = "none";
-      targetScreen.style.position = "absolute";
-      targetScreen.style.top = "0";
-      targetScreen.style.left = "0";
-      targetScreen.style.width = "100%";
-      targetScreen.style.display = "block";
+      // 無効な方向へのスワイプは画面を微動だにさせない
+      if (!potentialTarget) {
+        return; 
+      }
+      
+      if (targetScreen !== potentialTarget) {
+        if (targetScreen) {
+          targetScreen.style.display = "none";
+        }
+        targetScreen = potentialTarget;
+        targetFunc = potentialFunc;
+        
+        targetScreen.style.transition = "none";
+        targetScreen.style.position = "absolute";
+        targetScreen.style.top = "0";
+        targetScreen.style.left = "0";
+        targetScreen.style.width = "100%";
+        targetScreen.style.display = "block";
+      }
+      
+      currentScreen.style.transform = `translateX(${deltaX}px)`;
+      const targetBase = deltaX > 0 ? -window.innerWidth : window.innerWidth;
+      targetScreen.style.transform = `translateX(${targetBase + deltaX}px)`;
     }
-    
-    currentScreen.style.transform = `translateX(${deltaX}px)`;
-    // deltaX < 0 (左スワイプ) なら target は 100vw の位置から引っ張ってくる
-    // deltaX > 0 (右スワイプ) なら target は -100vw の位置から引っ張ってくる
-    const targetBase = deltaX > 0 ? -window.innerWidth : window.innerWidth;
-    targetScreen.style.transform = `translateX(${targetBase + deltaX}px)`;
-    
   }, { passive: false });
 
   document.addEventListener("touchend", function(e) {
-    if (!isSwiping || !currentScreen || isTransitioning) return;
+    if (!isSwiping || isTransitioning) return;
     isSwiping = false;
     
-    if (!hasDeterminedDirection) {
-      currentScreen.style.transform = "";
+    if (swipeDirectionAxis !== "horizontal") {
+      if (currentScreen) currentScreen.style.transform = "";
       return;
     }
     
     const deltaX = currentX - startX;
     
     if (!targetScreen) {
-      currentScreen.style.transform = "";
+      if (currentScreen) currentScreen.style.transform = "";
       return;
     }
 
@@ -2702,7 +2722,9 @@ document.addEventListener("focusin", function(e) {
     if (targetScreen) targetScreen.style.transition = "";
 
     if (Math.abs(deltaX) > threshold) {
-      isTransitioning = true; // アニメーション開始ロック
+      // アニメーション完了まで＋余裕を持たせてロックし「画面を落ち着かせる」
+      isTransitioning = true; 
+      
       const finalTranslate = deltaX > 0 ? "100%" : "-100%";
       currentScreen.style.transform = `translateX(${finalTranslate})`;
       targetScreen.style.transform = `translateX(0px)`;
@@ -2728,13 +2750,15 @@ document.addEventListener("focusin", function(e) {
           else if (targetScreen === currentScreensDict.errorMode && typeof showErrorMode === "function") showErrorMode();
         }
         
-        isTransitioning = false; // アニメーション完了でロック解除
+        // 遷移完了後、さらに200msロックして連続スワイプの勢いを殺す
+        setTimeout(() => { isTransitioning = false; }, 200);
       }, 300);
     } else {
       isTransitioning = true;
       currentScreen.style.transform = `translateX(0px)`;
       const initTranslate = deltaX > 0 ? "-100%" : "100%";
       targetScreen.style.transform = `translateX(${initTranslate})`;
+      
       setTimeout(() => {
         targetScreen.style.display = "none";
         targetScreen.style.position = "";
