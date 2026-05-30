@@ -185,17 +185,13 @@ function toggleInputHelper(enabled) {
         el.setAttribute('data-orig-tabindex', el.getAttribute('tabindex'));
       }
 
-      if (enabled) {
-        el.readOnly = true;
-        el.tabIndex = -1;
+      // 入力補助ONのときでも、テンキー左上の「∧∨」キーボードナビゲーションで到達できるように、
+      // readonly と tabindex="-1" には「しない」。常にフォーカス可能（ネイティブキーボードは touchstart 等で抑止済）
+      el.readOnly = false;
+      if (el.hasAttribute('data-orig-tabindex')) {
+        el.setAttribute('tabindex', el.getAttribute('data-orig-tabindex'));
       } else {
-        el.readOnly = false;
-        // 保存していた元の tabindex に復元するか、なければ 0 に戻す
-        if (el.hasAttribute('data-orig-tabindex')) {
-          el.setAttribute('tabindex', el.getAttribute('data-orig-tabindex'));
-        } else {
-          el.tabIndex = 0;
-        }
+        el.tabIndex = 0;
       }
     }
   });
@@ -817,19 +813,21 @@ document.addEventListener("DOMContentLoaded", function () {
       el.addEventListener("mousedown", handler, { passive: false });
       el.addEventListener("touchstart", handler, { passive: false });
 
-      // iOS テンキーの「∧∨」ナビゲーションによるフォーカス移動を防止
+      // iOS テンキーの「∧∨」ナビゲーションによるフォーカス移動時もピッカーを展開する
       el.addEventListener("focus", function() {
         if (isDirectField && !inputHelperEnabled) {
-          // 直接入力枠で、かつ入力補助OFFのときはフォーカス移動させる
+          // 直接入力枠で、かつ入力補助OFFのときはそのままネイティブ入力させる
           return;
         }
-        // 入力補助ONのときは、キーボードナビゲーション（∧∨）による意図しないピッカー起動を防ぐため、
-        // focusイベント単体でのピッカー自動起動を完全に廃止し、即座にフォーカスを外す（blur）のみにする。
-        // 【バグ修正】focusイベントの最中に同期的に blur() を呼ぶと、iOS Safariがフォーカスを直前の"日"の枠に差し戻してしまい、
-        // "日"の入力枠が点滅フリーズ（デッドロック）するバグが発生します。
-        // これを防ぐため、setTimeoutで少しまとしてから blur() を安全に実行します。
+        
+        // 入力補助ONのときはネイティブテンキーを強制的に閉じる（blur）
+        // 【バグ回避】iOS Safariのデッドロック防止のため setTimeout で非同期化
         setTimeout(() => {
           el.blur();
+          // ピッカーを閉じるアニメーション中でなければ、オリジナルドラムピッカーを展開する
+          if (!isPickerClosing) {
+            openTimePicker(group);
+          }
         }, 10);
       });
     };
