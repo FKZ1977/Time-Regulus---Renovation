@@ -2534,8 +2534,9 @@ document.addEventListener("focusin", function(e) {
 
 
 
+
 /* ==========================================================================
-   スライドアニメーション付きスワイプナビゲーション (最終堅牢版)
+   スライドアニメーション付きスワイプナビゲーション (最終決定版)
    ========================================================================== */
 (function() {
   let startX = 0;
@@ -2549,7 +2550,6 @@ document.addEventListener("focusin", function(e) {
   let targetScreen = null;
   let currentScreensDict = {};
   
-  // スワイプ中の誤タップ防止
   document.addEventListener("click", function(e) {
     if (isSwiping || isTransitioning) {
       e.preventDefault();
@@ -2565,7 +2565,6 @@ document.addEventListener("focusin", function(e) {
       resultListPage: document.getElementById("resultListPage")
     };
     
-    // 結果一覧画面が透明で下の画面が透けてしまうのを防ぐため、背景色を強制適用
     const rl = document.getElementById("resultListPage");
     if (rl) {
       rl.style.background = "var(--bg-dark, #1a1a24)";
@@ -2594,14 +2593,13 @@ document.addEventListener("focusin", function(e) {
   };
 
   const getTargetScreenAndFunc = (currentId, deltaX) => {
-    // ユーザー様のご指定通りの完全マッピング
-    // 【右スワイプ】(deltaX > 0)
-    if (deltaX > 0) {
+    // 【左スワイプ】(指を左へ動かす, deltaX < 0) -> 次の画面へ進む
+    if (deltaX < 0) {
       if (currentId === "errorMode") return { screen: currentScreensDict.correctionMode, func: window.showCorrectionMode };
       if (currentId === "correctionMode") return { screen: currentScreensDict.resultListPage, func: window.showResultList };
     } 
-    // 【左スワイプ】(deltaX < 0)
-    else if (deltaX < 0) {
+    // 【右スワイプ】(指を右へ動かす, deltaX > 0) -> 前の画面へ戻る
+    else if (deltaX > 0) {
       if (currentId === "resultListPage") return { screen: currentScreensDict.correctionMode, func: window.backToCorrectionMode };
       if (currentId === "correctionMode") return { screen: currentScreensDict.modeSelect, func: window.backToModeSelect };
     }
@@ -2714,7 +2712,6 @@ document.addEventListener("focusin", function(e) {
         targetScreen.style.left = "0";
         targetScreen.style.right = "0";
         targetScreen.style.margin = "0 auto";
-        // 背景透過による重なり防止
         targetScreen.style.background = targetScreen.id === "resultListPage" ? "var(--bg-dark, #1a1a24)" : "";
         targetScreen.style.display = "block";
       }
