@@ -2536,280 +2536,301 @@ document.addEventListener("focusin", function(e) {
 
 
 /* ==========================================================================
-   スライドアニメーション付きスワイプナビゲーション (最終決定版)
+   スライドアニメーション付きスワイプナビゲーション (根本設計見直し版)
+   
+   【設計方針】
+   - スワイプ完了後は既存関数(showResultList等)を「呼ばない」
+     理由: 既存関数がdisplay:none/blockを再設定し、アニメーション済み画面を消してしまうため
+   - スワイプ側で表示制御を完結させ、必要な場合だけ副作用のない初期化処理のみ呼ぶ
+   - 左スワイプ(指を左へ) = 次の画面へ進む
+   - 右スワイプ(指を右へ) = 前の画面へ戻る
    ========================================================================== */
 (function() {
+  'use strict';
+
   let startX = 0;
   let startY = 0;
-  let currentX = 0;
+  let lastX = 0;         // touchmoveの最新X (currentXの代替、クロージャ問題解消)
   let isSwiping = false;
   let isTransitioning = false;
-  let swipeDirectionAxis = null; 
-  
-  let currentScreen = null;
-  let targetScreen = null;
-  let currentScreensDict = {};
-  
-  document.addEventListener("click", function(e) {
+  let axisLocked = null; // 'horizontal' | 'vertical' | null
+
+  let fromEl = null;     // スワイプ元の要素
+  let toEl   = null;     // スワイプ先の要素
+  let toId   = null;     // スワイプ先のID
+
+  // ---- スクリーンID定義 ----
+  const SWIPEABLE = ['errorMode', 'correctionMode', 'resultListPage'];
+  const LOCKED    = ['lockScreen', 'modeSelect'];
+
+  function getEl(id) { return document.getElementById(id); }
+
+  // 現在表示中のスクリーンIDを返す
+  function getCurrentId() {
+    for (const id of LOCKED) {
+      const el = getEl(id);
+      if (el && el.style.display !== 'none' && el.style.display !== '') return id;
+    }
+    for (const id of SWIPEABLE) {
+      const el = getEl(id);
+      if (el && el.style.display !== 'none' && el.style.display !== '') return id;
+    }
+    return null;
+  }
+
+  // スワイプ方向と現在IDから遷移先IDを返す
+  // 左スワイプ(deltaX < 0) → 進む, 右スワイプ(deltaX > 0) → 戻る
+  function getDestId(currentId, deltaX) {
+    if (deltaX < 0) {
+      // 左へスワイプ = 進む
+      if (currentId === 'errorMode')       return 'correctionMode';
+      if (currentId === 'correctionMode')  return 'resultListPage';
+    } else {
+      // 右へスワイプ = 戻る
+      if (currentId === 'resultListPage')  return 'correctionMode';
+      if (currentId === 'correctionMode')  return 'modeSelect';
+    }
+    return null;
+  }
+
+  // スワイプ完了後に必要な副作用のない初期化だけ呼ぶ
+  function afterSwipe(destId) {
+    if (destId === 'resultListPage') {
+      // 結果一覧のレンダリングだけ行う (display変更はしない)
+      if (typeof renderResultList === 'function') renderResultList();
+    }
+    // modeSelectへ戻る場合のみ、resetConfirmContainerを隠す
+    if (destId === 'modeSelect') {
+      const rc = getEl('resetConfirmContainer');
+      if (rc) rc.style.display = 'none';
+    }
+  }
+
+  // スワイプ中のクリック誤作動を防ぐ
+  document.addEventListener('click', function(e) {
     if (isSwiping || isTransitioning) {
       e.preventDefault();
       e.stopPropagation();
     }
   }, true);
 
-  document.addEventListener("DOMContentLoaded", () => {
-    currentScreensDict = {
-      modeSelect: document.getElementById("modeSelect"),
-      errorMode: document.getElementById("errorMode"),
-      correctionMode: document.getElementById("correctionMode"),
-      resultListPage: document.getElementById("resultListPage")
-    };
-    
-    const rl = document.getElementById("resultListPage");
-    if (rl) {
-      rl.style.background = "var(--bg-dark, #1a1a24)";
-      rl.style.minHeight = "100vh";
-    }
-  });
-
-  const getVisibleScreen = () => {
-    const lockScreen = document.getElementById("lockScreen");
-    if (lockScreen && window.getComputedStyle(lockScreen).display !== "none") {
-      return { id: "lockScreen", el: lockScreen };
-    }
-
-    const modeSelect = document.getElementById("modeSelect");
-    if (modeSelect && window.getComputedStyle(modeSelect).display !== "none") {
-      return { id: "modeSelect", el: modeSelect };
-    }
-
-    for (const key in currentScreensDict) {
-      const screen = currentScreensDict[key];
-      if (screen && window.getComputedStyle(screen).display !== "none") {
-        return { id: key, el: screen };
-      }
-    }
-    return null;
-  };
-
-  const getTargetScreenAndFunc = (currentId, deltaX) => {
-    // 【左スワイプ】(指を左へ動かす, deltaX < 0) -> 次の画面へ進む
-    if (deltaX < 0) {
-      if (currentId === "errorMode") return { screen: currentScreensDict.correctionMode, func: window.showCorrectionMode };
-      if (currentId === "correctionMode") return { screen: currentScreensDict.resultListPage, func: window.showResultList };
-    } 
-    // 【右スワイプ】(指を右へ動かす, deltaX > 0) -> 前の画面へ戻る
-    else if (deltaX > 0) {
-      if (currentId === "resultListPage") return { screen: currentScreensDict.correctionMode, func: window.backToCorrectionMode };
-      if (currentId === "correctionMode") return { screen: currentScreensDict.modeSelect, func: window.backToModeSelect };
-    }
-    return null;
-  };
-
-  let targetFunc = null;
-
-  document.addEventListener("touchstart", function(e) {
-    if (isTransitioning) return; 
-    if (typeof activeTimePickerGroup !== "undefined" && activeTimePickerGroup) return; 
+  // ---- touchstart ----
+  document.addEventListener('touchstart', function(e) {
+    if (isTransitioning) return;
     if (e.touches.length > 1) return;
-    
-    if (Object.keys(currentScreensDict).length === 0) {
-        currentScreensDict = {
-          modeSelect: document.getElementById("modeSelect"),
-          errorMode: document.getElementById("errorMode"),
-          correctionMode: document.getElementById("correctionMode"),
-          resultListPage: document.getElementById("resultListPage")
-        };
-    }
-    
-    const lockScreen = document.getElementById("lockScreen");
-    const modeSelect = document.getElementById("modeSelect");
-    const isLockVisible = lockScreen && window.getComputedStyle(lockScreen).display !== "none";
-    const isModeVisible = modeSelect && window.getComputedStyle(modeSelect).display !== "none";
-    
-    if (isLockVisible || isModeVisible) {
+    if (typeof activeTimePickerGroup !== 'undefined' && activeTimePickerGroup) return;
+
+    const currentId = getCurrentId();
+    if (!currentId) return;
+
+    // ロック画面・モード選択画面はスワイプさせない
+    if (LOCKED.includes(currentId)) {
       isSwiping = false;
-      return; 
+      return;
     }
 
-    const visibleInfo = getVisibleScreen();
-    if (!visibleInfo) return;
-    currentScreen = visibleInfo.el;
-    
+    fromEl = getEl(currentId);
+    if (!fromEl) return;
+
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
-    
+    lastX  = startX;
+
+    // 画面端20px以内からのスワイプは除外 (ブラウザの戻るジェスチャー対策)
     if (startX < 20 || startX > window.innerWidth - 20) {
       isSwiping = false;
+      fromEl = null;
       return;
     }
 
-    isSwiping = true;
-    swipeDirectionAxis = null;
-    targetScreen = null;
-    targetFunc = null;
-    
-    currentScreen.style.transition = "none";
+    isSwiping  = true;
+    axisLocked = null;
+    toEl = null;
+    toId = null;
+
+    // アニメーションを一時停止
+    fromEl.style.transition = 'none';
+
   }, { passive: true });
 
-  document.addEventListener("touchmove", function(e) {
-    const lockScreen = document.getElementById("lockScreen");
-    const modeSelect = document.getElementById("modeSelect");
-    const isLockVisible = lockScreen && window.getComputedStyle(lockScreen).display !== "none";
-    const isModeVisible = modeSelect && window.getComputedStyle(modeSelect).display !== "none";
-    
-    if (isLockVisible || isModeVisible) {
-      e.preventDefault(); 
+  // ---- touchmove ----
+  document.addEventListener('touchmove', function(e) {
+
+    // ロック画面・モード選択は常に完全固定
+    const currentId = getCurrentId();
+    if (LOCKED.includes(currentId)) {
+      e.preventDefault();
       return;
     }
 
     if (!isSwiping || isTransitioning) return;
-    
-    const visibleInfo = getVisibleScreen();
-    if (!visibleInfo) return;
-    const currentId = visibleInfo.id;
-    
-    currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
-    const deltaX = currentX - startX;
-    const deltaY = currentY - startY;
-    
-    if (!swipeDirectionAxis) {
-      if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-        if (Math.abs(deltaY) > Math.abs(deltaX)) {
-          swipeDirectionAxis = "vertical";
-          isSwiping = false; 
-          return;
-        } else {
-          swipeDirectionAxis = "horizontal";
-        }
-      } else {
-        return; 
-      }
-    }
-    
-    if (swipeDirectionAxis === "horizontal") {
-      e.preventDefault();
 
-      const targetInfo = getTargetScreenAndFunc(currentId, deltaX);
-      const potentialTarget = targetInfo ? targetInfo.screen : null;
-      const potentialFunc = targetInfo ? targetInfo.func : null;
-      
-      if (!potentialTarget) {
-        return; 
+    const x = e.touches[0].clientX;
+    const y = e.touches[0].clientY;
+    const dX = x - startX;
+    const dY = y - startY;
+    lastX = x;
+
+    // 軸を確定 (10px動くまで待つ)
+    if (!axisLocked) {
+      if (Math.abs(dX) < 10 && Math.abs(dY) < 10) return;
+      axisLocked = Math.abs(dX) >= Math.abs(dY) ? 'horizontal' : 'vertical';
+      if (axisLocked === 'vertical') {
+        isSwiping = false;
+        fromEl.style.transition = '';
+        fromEl = null;
+        return;
       }
-      
-      if (targetScreen !== potentialTarget) {
-        if (targetScreen) {
-          targetScreen.style.display = "none";
-        }
-        targetScreen = potentialTarget;
-        targetFunc = potentialFunc;
-        
-        targetScreen.style.transition = "none";
-        targetScreen.style.position = "absolute";
-        targetScreen.style.top = "0";
-        targetScreen.style.left = "0";
-        targetScreen.style.right = "0";
-        targetScreen.style.margin = "0 auto";
-        targetScreen.style.background = targetScreen.id === "resultListPage" ? "var(--bg-dark, #1a1a24)" : "";
-        targetScreen.style.display = "block";
-      }
-      
-      currentScreen.style.transform = `translateX(${deltaX}px)`;
-      const targetBase = deltaX > 0 ? -window.innerWidth : window.innerWidth;
-      targetScreen.style.transform = `translateX(${targetBase + deltaX}px)`;
     }
+
+    e.preventDefault(); // 水平スワイプ中はスクロール禁止
+
+    // 遷移先を決定
+    const destId = getDestId(currentId, dX);
+    if (!destId) {
+      // 行き先なし: 少し引っ張られる感触だけ与えて戻す
+      fromEl.style.transform = `translateX(${dX * 0.15}px)`;
+      return;
+    }
+
+    // 遷移先要素を初回だけ準備
+    if (toId !== destId) {
+      if (toEl) {
+        toEl.style.display   = 'none';
+        toEl.style.position  = '';
+        toEl.style.zIndex    = '';
+        toEl.style.transform = '';
+      }
+      toId = destId;
+      toEl = getEl(toId);
+      toEl.style.transition = 'none';
+      toEl.style.position   = 'fixed';
+      toEl.style.top        = '0';
+      toEl.style.left       = '0';
+      toEl.style.width      = '100%';
+      toEl.style.minHeight  = '100%';
+      toEl.style.zIndex     = '10';
+      toEl.style.background = 'var(--bg-dark, #111118)';
+      toEl.style.display    = 'block';
+    }
+
+    // 指に追従させる
+    const w = window.innerWidth;
+    fromEl.style.transform = `translateX(${dX}px)`;
+    // 遷移先は画面の反対側から入ってくる
+    const base = dX > 0 ? -w : w;
+    toEl.style.transform   = `translateX(${base + dX}px)`;
+
   }, { passive: false });
 
-  document.addEventListener("touchend", function(e) {
+  // ---- touchend ----
+  document.addEventListener('touchend', function(e) {
     if (!isSwiping || isTransitioning) return;
     isSwiping = false;
-    
-    if (swipeDirectionAxis !== "horizontal") {
-      if (currentScreen) currentScreen.style.transform = "";
-      return;
-    }
-    
-    const deltaX = currentX - startX;
-    
-    if (!targetScreen) {
-      if (currentScreen) currentScreen.style.transform = "";
+
+    if (axisLocked !== 'horizontal') {
+      if (fromEl) { fromEl.style.transition = ''; fromEl.style.transform = ''; }
+      fromEl = null; toEl = null; toId = null;
       return;
     }
 
-    const threshold = window.innerWidth * 0.25; 
-    
-    currentScreen.classList.add("swipe-transition");
-    if (targetScreen) targetScreen.classList.add("swipe-transition");
-    
-    currentScreen.style.transition = "";
-    if (targetScreen) targetScreen.style.transition = "";
+    const dX        = lastX - startX;
+    const w         = window.innerWidth;
+    const threshold = w * 0.25;
 
-    if (Math.abs(deltaX) > threshold) {
-      isTransitioning = true; 
-      
-      const finalTranslate = deltaX > 0 ? window.innerWidth + "px" : -window.innerWidth + "px";
-      currentScreen.style.transform = `translateX(${finalTranslate})`;
-      targetScreen.style.transform = `translateX(0px)`;
-      
-      setTimeout(() => {
-        try {
-          currentScreen.style.display = "none";
-          currentScreen.style.transform = "";
-          currentScreen.classList.remove("swipe-transition");
-          
-          targetScreen.style.position = "";
-          targetScreen.style.top = "";
-          targetScreen.style.left = "";
-          targetScreen.style.right = "";
-          targetScreen.style.margin = "";
-          targetScreen.style.transform = "";
-          targetScreen.classList.remove("swipe-transition");
-          
-          if (typeof targetFunc === "function") {
-            targetFunc();
-          } else {
-            if (targetScreen === currentScreensDict.resultListPage && typeof showResultList === "function") showResultList();
-            else if (targetScreen === currentScreensDict.correctionMode && typeof backToCorrectionMode === "function") backToCorrectionMode();
-            else if (targetScreen === currentScreensDict.modeSelect && typeof backToModeSelect === "function") backToModeSelect();
-            else if (targetScreen === currentScreensDict.errorMode && typeof showErrorMode === "function") showErrorMode();
-          }
-        } catch (err) {
-          console.error("Swipe transition cleanup error:", err);
-        } finally {
-          setTimeout(() => { isTransitioning = false; }, 200);
-        }
-      }, 300);
-    } else {
+    // toElがない(行き先なし)場合は元に戻す
+    if (!toEl) {
+      if (fromEl) {
+        fromEl.style.transition = 'transform 0.3s ease';
+        fromEl.style.transform  = 'translateX(0)';
+        setTimeout(() => {
+          if (fromEl) { fromEl.style.transition = ''; fromEl.style.transform = ''; }
+          fromEl = null;
+        }, 300);
+      }
+      axisLocked = null;
+      return;
+    }
+
+    const DURATION = '0.3s';
+    const EASE     = 'ease';
+
+    if (Math.abs(dX) > threshold) {
+      // ---- 遷移確定 ----
       isTransitioning = true;
-      currentScreen.style.transform = `translateX(0px)`;
-      const initTranslate = deltaX > 0 ? -window.innerWidth + "px" : window.innerWidth + "px";
-      targetScreen.style.transform = `translateX(${initTranslate})`;
-      
+
+      fromEl.style.transition = `transform ${DURATION} ${EASE}`;
+      toEl.style.transition   = `transform ${DURATION} ${EASE}`;
+
+      fromEl.style.transform  = `translateX(${dX > 0 ? w : -w}px)`;
+      toEl.style.transform    = 'translateX(0)';
+
+      const capturedFrom = fromEl;
+      const capturedTo   = toEl;
+      const capturedToId = toId;
+
+      fromEl = null; toEl = null; toId = null;
+
       setTimeout(() => {
-        try {
-          targetScreen.style.display = "none";
-          targetScreen.style.position = "";
-          targetScreen.style.top = "";
-          targetScreen.style.left = "";
-          targetScreen.style.right = "";
-          targetScreen.style.margin = "";
-          targetScreen.style.transform = "";
-          targetScreen.classList.remove("swipe-transition");
-          
-          currentScreen.style.transform = "";
-          currentScreen.classList.remove("swipe-transition");
-        } catch (err) {
-          console.error("Swipe cancel cleanup error:", err);
-        } finally {
-          isTransitioning = false;
-        }
+        // from画面を非表示
+        capturedFrom.style.display    = 'none';
+        capturedFrom.style.transform  = '';
+        capturedFrom.style.transition = '';
+
+        // to画面のpositionをfixedから通常フローへ戻す
+        capturedTo.style.position   = '';
+        capturedTo.style.top        = '';
+        capturedTo.style.left       = '';
+        capturedTo.style.width      = '';
+        capturedTo.style.minHeight  = '';
+        capturedTo.style.zIndex     = '';
+        capturedTo.style.background = '';
+        capturedTo.style.transform  = '';
+        capturedTo.style.transition = '';
+        capturedTo.style.display    = 'block';
+
+        // modeSelectのみ固定背景除去と確認ダイアログ非表示
+        afterSwipe(capturedToId);
+
+        setTimeout(() => { isTransitioning = false; }, 50);
+      }, 300);
+
+    } else {
+      // ---- 遷移キャンセル: 元の位置に戻す ----
+      isTransitioning = true;
+
+      fromEl.style.transition = `transform ${DURATION} ${EASE}`;
+      toEl.style.transition   = `transform ${DURATION} ${EASE}`;
+
+      fromEl.style.transform  = 'translateX(0)';
+      toEl.style.transform    = `translateX(${dX > 0 ? -w : w}px)`;
+
+      const capturedFrom = fromEl;
+      const capturedTo   = toEl;
+
+      fromEl = null; toEl = null; toId = null;
+
+      setTimeout(() => {
+        capturedFrom.style.transform  = '';
+        capturedFrom.style.transition = '';
+
+        capturedTo.style.display    = 'none';
+        capturedTo.style.position   = '';
+        capturedTo.style.top        = '';
+        capturedTo.style.left       = '';
+        capturedTo.style.width      = '';
+        capturedTo.style.minHeight  = '';
+        capturedTo.style.zIndex     = '';
+        capturedTo.style.background = '';
+        capturedTo.style.transform  = '';
+        capturedTo.style.transition = '';
+
+        isTransitioning = false;
       }, 300);
     }
-    
-    currentScreen = null;
-    targetScreen = null;
+
+    axisLocked = null;
   });
+
 })();
 
