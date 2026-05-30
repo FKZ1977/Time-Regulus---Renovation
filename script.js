@@ -2529,6 +2529,7 @@ document.addEventListener("focusin", function(e) {
 });
 
 
+
 /* ==========================================================================
    スライドアニメーション付きスワイプナビゲーション
    ========================================================================== */
@@ -2537,6 +2538,7 @@ document.addEventListener("focusin", function(e) {
   let startY = 0;
   let currentX = 0;
   let isSwiping = false;
+  let isTransitioning = false; // アニメーション中の連続スワイプ防止用
   let hasDeterminedDirection = false;
   
   let currentScreen = null;
@@ -2553,7 +2555,6 @@ document.addEventListener("focusin", function(e) {
   });
 
   const getVisibleScreen = () => {
-    // ロック画面が表示中の場合はスワイプ無効
     const lockScreen = document.getElementById("lockScreen");
     if (lockScreen && window.getComputedStyle(lockScreen).display !== "none") {
       return null;
@@ -2569,26 +2570,23 @@ document.addEventListener("focusin", function(e) {
   };
 
   const getTargetScreenAndFunc = (current, deltaX) => {
-    // 右スワイプ (deltaX > 0) -> 左から新しい画面が来る
-    if (deltaX > 0) {
-      // 誤差の計算モードからは右スワイプで補正時刻計算モードへ
+    // 【修正】左スワイプ (deltaX < 0) -> 次へ進む (→の動き)
+    if (deltaX < 0) {
       if (current === currentScreensDict.errorMode) return { screen: currentScreensDict.correctionMode, func: window.showCorrectionMode };
-      // 補正時刻計算モードからは右スワイプで結果一覧へ
       if (current === currentScreensDict.correctionMode) return { screen: currentScreensDict.resultListPage, func: window.showResultList };
     } 
-    // 左スワイプ (deltaX < 0) -> 右から新しい画面が来る
-    else if (deltaX < 0) {
-      // 結果一覧からは左スワイプで補正時刻計算モードへ
+    // 【修正】右スワイプ (deltaX > 0) -> 前へ戻る (←の動き)
+    else if (deltaX > 0) {
       if (current === currentScreensDict.resultListPage) return { screen: currentScreensDict.correctionMode, func: window.backToCorrectionMode };
-      // 補正時刻計算モードからは左スワイプでモード選択へ
       if (current === currentScreensDict.correctionMode) return { screen: currentScreensDict.modeSelect, func: window.backToModeSelect };
     }
-    return null; // 指定されていない遷移は弾く
+    return null;
   };
 
   let targetFunc = null;
 
   document.addEventListener("touchstart", function(e) {
+    if (isTransitioning) return; // 画面遷移中はスワイプをブロック
     if (typeof activeTimePickerGroup !== "undefined" && activeTimePickerGroup) return; 
     if (e.touches.length > 1) return;
     
@@ -2603,7 +2601,7 @@ document.addEventListener("focusin", function(e) {
     
     currentScreen = getVisibleScreen();
     
-    // ロック画面やモード選択画面は完全に固定（スワイプ開始しない）
+    // ロック画面・モード選択画面からはスワイプさせない
     if (!currentScreen || currentScreen === currentScreensDict.modeSelect) {
       isSwiping = false;
       return;
@@ -2612,6 +2610,7 @@ document.addEventListener("focusin", function(e) {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     
+    // 画面端からのスワイプはブラウザネイティブの戻る動作と競合するため無視
     if (startX < 20 || startX > window.innerWidth - 20) {
       isSwiping = false;
       return;
@@ -2628,7 +2627,7 @@ document.addEventListener("focusin", function(e) {
   }, { passive: true });
 
   document.addEventListener("touchmove", function(e) {
-    if (!isSwiping || !currentScreen) return;
+    if (!isSwiping || !currentScreen || isTransitioning) return;
     
     currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
@@ -2651,9 +2650,8 @@ document.addEventListener("focusin", function(e) {
     const potentialTarget = targetInfo ? targetInfo.screen : null;
     const potentialFunc = targetInfo ? targetInfo.func : null;
     
-    // 定義されていないスワイプ方向の場合は画面を微動だにさせない（完全固定）
     if (!potentialTarget) {
-      return;
+      return; // 許可されていない方向の場合は画面を動かさない（固定）
     }
     
     if (targetScreen !== potentialTarget) {
@@ -2672,13 +2670,15 @@ document.addEventListener("focusin", function(e) {
     }
     
     currentScreen.style.transform = `translateX(${deltaX}px)`;
+    // deltaX < 0 (左スワイプ) なら target は 100vw の位置から引っ張ってくる
+    // deltaX > 0 (右スワイプ) なら target は -100vw の位置から引っ張ってくる
     const targetBase = deltaX > 0 ? -window.innerWidth : window.innerWidth;
     targetScreen.style.transform = `translateX(${targetBase + deltaX}px)`;
     
   }, { passive: false });
 
   document.addEventListener("touchend", function(e) {
-    if (!isSwiping || !currentScreen) return;
+    if (!isSwiping || !currentScreen || isTransitioning) return;
     isSwiping = false;
     
     if (!hasDeterminedDirection) {
@@ -2688,7 +2688,6 @@ document.addEventListener("focusin", function(e) {
     
     const deltaX = currentX - startX;
     
-    // スワイプ先が存在しない方向だった場合は何もしない
     if (!targetScreen) {
       currentScreen.style.transform = "";
       return;
@@ -2703,6 +2702,7 @@ document.addEventListener("focusin", function(e) {
     if (targetScreen) targetScreen.style.transition = "";
 
     if (Math.abs(deltaX) > threshold) {
+      isTransitioning = true; // アニメーション開始ロック
       const finalTranslate = deltaX > 0 ? "100%" : "-100%";
       currentScreen.style.transform = `translateX(${finalTranslate})`;
       targetScreen.style.transform = `translateX(0px)`;
@@ -2727,8 +2727,11 @@ document.addEventListener("focusin", function(e) {
           else if (targetScreen === currentScreensDict.modeSelect && typeof backToModeSelect === "function") backToModeSelect();
           else if (targetScreen === currentScreensDict.errorMode && typeof showErrorMode === "function") showErrorMode();
         }
+        
+        isTransitioning = false; // アニメーション完了でロック解除
       }, 300);
     } else {
+      isTransitioning = true;
       currentScreen.style.transform = `translateX(0px)`;
       const initTranslate = deltaX > 0 ? "-100%" : "100%";
       targetScreen.style.transform = `translateX(${initTranslate})`;
@@ -2743,6 +2746,8 @@ document.addEventListener("focusin", function(e) {
         
         currentScreen.style.transform = "";
         currentScreen.classList.remove("swipe-transition");
+        
+        isTransitioning = false;
       }, 300);
     }
     
