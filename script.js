@@ -825,24 +825,31 @@ document.addEventListener("DOMContentLoaded", function () {
         if (isProcessingFocus) return;
         isProcessingFocus = true;
         
-        // 【バグ回避】iOS Safariでキーボードの「∨」を押した際、移動先で blur() すると
-        // 直前の「日」枠（errorDays）にフォーカスが強制的に戻され、テンキーが開きっぱなしになる現象を防ぐ。
-        // 直前の枠を一時的に readonly にすることで、フォーカスが戻っても確実にテンキーを閉じさせる。
+        // 【最強バグ回避】iOS Safariは readonly や blur() だけではキーボードを下げないことがあるため、
+        // 移動先と現在フォーカス中の要素を一時的に「disabled（無効化）」することで、
+        // 強制的にフォーカスを完全喪失させ、キーボードを確実に下ろさせる。
         setTimeout(() => {
-          const ed = document.getElementById("errorDays");
-          if (ed) ed.readOnly = true;
+          const active = document.activeElement;
           
-          el.blur(); // テンキーを閉じる
+          // 現在フォーカスを持っている要素（直前の枠など）を強制無効化
+          if (active && active.tagName === 'INPUT') {
+            active.disabled = true;
+          }
+          // 移動先（時分秒枠）も強制無効化
+          el.disabled = true;
           
           // ピッカーを展開する
           if (!isPickerClosing) {
             openTimePicker(group);
           }
           
-          // 一定時間後にフラグと readonly を元に戻す
+          // 0.5秒後にこっそり無効化を解除（ピッカー起動中は裏側に隠れているのでユーザーには見えない）
           setTimeout(() => {
             isProcessingFocus = false;
-            if (ed) ed.readOnly = false;
+            if (active && active.tagName === 'INPUT') {
+              active.disabled = false;
+            }
+            el.disabled = false;
           }, 500);
         }, 10);
       });
