@@ -814,20 +814,31 @@ document.addEventListener("DOMContentLoaded", function () {
       el.addEventListener("touchstart", handler, { passive: false });
 
       // iOS テンキーの「∧∨」ナビゲーションによるフォーカス移動時もピッカーを展開する
+      let isProcessingFocus = false;
       el.addEventListener("focus", function() {
         if (isDirectField && !inputHelperEnabled) {
           // 直接入力枠で、かつ入力補助OFFのときはそのままネイティブ入力させる
           return;
         }
         
-        // 入力補助ONのときはネイティブテンキーを強制的に閉じる（blur）
-        // 【バグ回避】iOS Safariのデッドロック防止のため setTimeout で非同期化
+        // 連続発火（フリーズ）防止フラグ
+        if (isProcessingFocus) return;
+        isProcessingFocus = true;
+        
+        // 入力補助ONのときはネイティブテンキーを強制的に閉じる
+        // 【バグ回避】iOS Safariのデッドロック防止のため、単純な blur() ではなく
+        // ダミーの readonly 要素にフォーカスを移して安全にキーボードを閉じる
         setTimeout(() => {
-          el.blur();
+          const closer = document.getElementById('iosKeyboardCloser');
+          if (closer) closer.focus();
+          else el.blur(); // フォールバック
+          
           // ピッカーを閉じるアニメーション中でなければ、オリジナルドラムピッカーを展開する
           if (!isPickerClosing) {
             openTimePicker(group);
           }
+          
+          setTimeout(() => { isProcessingFocus = false; }, 300);
         }, 10);
       });
     };
