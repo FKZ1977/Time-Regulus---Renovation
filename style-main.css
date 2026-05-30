@@ -1960,7 +1960,7 @@ select.seconds-fixed-00,
 /* 補正モード画面の「年月日も計算」トグルをスワップボタンの下で綺麗に左寄せ配置 */
 .correction-date-toggle-wrapper {
   max-width: 310px !important;
-  margin: 28px auto 8px auto !important; /* 上マージンを 14px -> 28px へ倍増させ、スワップボタンとの間にゆったりとした綺麗な隙間を完全確保！ */
+  margin: 12px auto 8px auto !important; /* スワップボタンとの距離を広すぎないよう12pxに半減して微調整 */
   display: flex !important;
   justify-content: flex-start !important; /* 左寄せ！ */
   align-items: center !important;
