@@ -1,4 +1,4 @@
-﻿const currentVersion = "3.0.3";
+const currentVersion = "3.0.3";
 let lastError = null;
 let hasCalculated = false;
 let reverseMode = "toStandard";
@@ -2596,13 +2596,20 @@ document.addEventListener("focusin", function(e) {
   }
 
   // 遷移完了後の副作用のない後処理のみ
-  function afterSwipe(destId) {
+  function afterSwipe(destId, srcId) {
     if (destId === 'resultListPage') {
       if (typeof renderResultList === 'function') renderResultList();
     }
     if (destId === 'modeSelect') {
       const rc = getEl('resetConfirmContainer');
       if (rc) rc.style.display = 'none';
+    }
+    // ①: 誤差の計算モードからスワイプで補正時刻の計算モードに来た場合、計算結果を反映
+    if (destId === 'correctionMode' && srcId === 'errorMode') {
+      if (typeof applyLastErrorToReverseInputs === 'function'
+          && typeof lastError !== 'undefined' && lastError) {
+        applyLastErrorToReverseInputs();
+      }
     }
   }
 
@@ -2710,23 +2717,36 @@ document.addEventListener("focusin", function(e) {
         toEl.style.display    = 'none';
         toEl.style.position   = '';
         toEl.style.zIndex     = '';
-        toEl.style.width      = '';
-        toEl.style.minHeight  = '';
+        // resultListPageのみwidth/minHeight/backgroundをリセット
+        if (toEl.id === 'resultListPage') {
+          toEl.style.width      = '';
+          toEl.style.minHeight  = '';
+          toEl.style.background = '';
+        }
         toEl.style.transform  = '';
         toEl.style.transition = '';
       }
       toId = destId;
       toEl = getEl(toId);
 
-      // ★ background は上書きしない → CSS クラスの色がそのまま使われる
-      //   これにより「色が後から出現する」バグを解消
+      // ② mode-cardの要素(correctionMode/errorMode)はwidthとminHeightを変更しない。
+      //   CSSクラスの width:94% / border-radius をそのまま維持することで
+      //   遷移後のサイズ変化フラッシュ（全画面緑→カードサイズ）を解消。
+      //   resultListPageだけ全画面背景が必要なため個別設定。
+      const initW = window.innerWidth;
+      const initBase = dX > 0 ? -initW : initW;
       toEl.style.transition = 'none';
       toEl.style.position   = 'fixed';
       toEl.style.top        = '0';
       toEl.style.left       = '0';
-      toEl.style.width      = '100vw';
-      toEl.style.minHeight  = '100vh';
+      if (toId === 'resultListPage') {
+        toEl.style.width      = '100%';
+        toEl.style.minHeight  = '100vh';
+        toEl.style.background = 'var(--bg-dark, #111118)';
+      }
       toEl.style.zIndex     = '100';
+      // display:blockより先にtransformで画面外へ → 表示時に一瞬でも中央に見えない
+      toEl.style.transform  = `translateX(${initBase + dX}px)`;
       toEl.style.display    = 'block';
     }
 
@@ -2779,6 +2799,7 @@ document.addEventListener("focusin", function(e) {
       const cFrom  = fromEl;
       const cTo    = toEl;
       const cToId  = toId;
+      const cFromId = currentId;  // ①の判定用: 遷移元IDを保存
 
       fromEl = null; toEl = null; toId = null; currentId = null;
 
@@ -2788,18 +2809,23 @@ document.addEventListener("focusin", function(e) {
         cFrom.style.transform  = '';
         cFrom.style.transition = '';
 
-        // to 画面を通常フローへ戻す（★background はリセットしない → クラスの色が維持される）
+        // to 画面を通常フローへ戻す
         cTo.style.position   = '';
         cTo.style.top        = '';
         cTo.style.left       = '';
-        cTo.style.width      = '';
-        cTo.style.minHeight  = '';
+        // mode-cardはwidth/minHeight/backgroundを変更していないのでリセット不要
+        // resultListPageのみリセット
+        if (cTo.id === 'resultListPage') {
+          cTo.style.width      = '';
+          cTo.style.minHeight  = '';
+          cTo.style.background = '';
+        }
         cTo.style.zIndex     = '';
         cTo.style.transform  = '';
         cTo.style.transition = '';
         cTo.style.display    = 'block';
 
-        afterSwipe(cToId);
+        afterSwipe(cToId, cFromId);
         setTimeout(() => { isTransitioning = false; }, 50);
       }, 300);
 
@@ -2825,8 +2851,11 @@ document.addEventListener("focusin", function(e) {
         cTo.style.position   = '';
         cTo.style.top        = '';
         cTo.style.left       = '';
-        cTo.style.width      = '';
-        cTo.style.minHeight  = '';
+        if (cTo.id === 'resultListPage') {
+          cTo.style.width      = '';
+          cTo.style.minHeight  = '';
+          cTo.style.background = '';
+        }
         cTo.style.zIndex     = '';
         cTo.style.transform  = '';
         cTo.style.transition = '';
