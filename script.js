@@ -825,20 +825,25 @@ document.addEventListener("DOMContentLoaded", function () {
         if (isProcessingFocus) return;
         isProcessingFocus = true;
         
-        // 入力補助ONのときはネイティブテンキーを強制的に閉じる
-        // 【バグ回避】iOS Safariのデッドロック防止のため、単純な blur() ではなく
-        // ダミーの readonly 要素にフォーカスを移して安全にキーボードを閉じる
+        // 【バグ回避】iOS Safariでキーボードの「∨」を押した際、移動先で blur() すると
+        // 直前の「日」枠（errorDays）にフォーカスが強制的に戻され、テンキーが開きっぱなしになる現象を防ぐ。
+        // 直前の枠を一時的に readonly にすることで、フォーカスが戻っても確実にテンキーを閉じさせる。
         setTimeout(() => {
-          const closer = document.getElementById('iosKeyboardCloser');
-          if (closer) closer.focus();
-          else el.blur(); // フォールバック
+          const ed = document.getElementById("errorDays");
+          if (ed) ed.readOnly = true;
           
-          // ピッカーを閉じるアニメーション中でなければ、オリジナルドラムピッカーを展開する
+          el.blur(); // テンキーを閉じる
+          
+          // ピッカーを展開する
           if (!isPickerClosing) {
             openTimePicker(group);
           }
           
-          setTimeout(() => { isProcessingFocus = false; }, 300);
+          // 一定時間後にフラグと readonly を元に戻す
+          setTimeout(() => {
+            isProcessingFocus = false;
+            if (ed) ed.readOnly = false;
+          }, 500);
         }, 10);
       });
     };
