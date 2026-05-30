@@ -2536,37 +2536,42 @@ document.addEventListener("focusin", function(e) {
 
 
 /* ==========================================================================
-   スライドアニメーション付きスワイプナビゲーション (根本設計見直し版)
-   
-   【設計方針】
-   - スワイプ完了後は既存関数(showResultList等)を「呼ばない」
-     理由: 既存関数がdisplay:none/blockを再設定し、アニメーション済み画面を消してしまうため
-   - スワイプ側で表示制御を完結させ、必要な場合だけ副作用のない初期化処理のみ呼ぶ
+   スライドアニメーション付きスワイプナビゲーション (バグ修正最終版)
+
+   【修正した根本原因】
+   - touchmove内でgetCurrentId()を毎回呼ぶと、toElをdisplay:blockにした瞬間
+     「現在の画面」と誤検知し、ロック判定やdestId計算が狂う
+   - 修正: touchstartで画面を1回確定し、touchmove/touchendはその値を使い続ける
+   - 遷移先のbackground上書きを廃止: CSS クラスの色を生かすことで
+     「色が後から出現する」バグを解消
    - 左スワイプ(指を左へ) = 次の画面へ進む
    - 右スワイプ(指を右へ) = 前の画面へ戻る
    ========================================================================== */
 (function() {
   'use strict';
 
-  let startX = 0;
-  let startY = 0;
-  let lastX = 0;         // touchmoveの最新X (currentXの代替、クロージャ問題解消)
-  let isSwiping = false;
+  let startX       = 0;
+  let startY       = 0;
+  let lastX        = 0;
+  let isSwiping    = false;
   let isTransitioning = false;
-  let axisLocked = null; // 'horizontal' | 'vertical' | null
+  let axisLocked   = null;   // null | 'horizontal' | 'vertical'
+  let currentId    = null;   // touchstartで確定した現在画面ID（以降変更しない）
+  let isLockedScreen = false; // ロック/モード選択画面かどうか（touchstartで確定）
 
-  let fromEl = null;     // スワイプ元の要素
-  let toEl   = null;     // スワイプ先の要素
-  let toId   = null;     // スワイプ先のID
+  let fromEl = null;
+  let toEl   = null;
+  let toId   = null;
 
-  // ---- スクリーンID定義 ----
+  // スワイプ可能な画面一覧
   const SWIPEABLE = ['errorMode', 'correctionMode', 'resultListPage'];
+  // スワイプさせない画面一覧
   const LOCKED    = ['lockScreen', 'modeSelect'];
 
   function getEl(id) { return document.getElementById(id); }
 
-  // 現在表示中のスクリーンIDを返す
-  function getCurrentId() {
+  // 現在表示中のスクリーンIDを返す（touchstartのみで呼ぶ）
+  function detectCurrentId() {
     for (const id of LOCKED) {
       const el = getEl(id);
       if (el && el.style.display !== 'none' && el.style.display !== '') return id;
@@ -2578,35 +2583,30 @@ document.addEventListener("focusin", function(e) {
     return null;
   }
 
-  // スワイプ方向と現在IDから遷移先IDを返す
-  // 左スワイプ(deltaX < 0) → 進む, 右スワイプ(deltaX > 0) → 戻る
-  function getDestId(currentId, deltaX) {
-    if (deltaX < 0) {
-      // 左へスワイプ = 進む
-      if (currentId === 'errorMode')       return 'correctionMode';
-      if (currentId === 'correctionMode')  return 'resultListPage';
+  // 左スワイプ(dX<0)=進む, 右スワイプ(dX>0)=戻る
+  function getDestId(srcId, dX) {
+    if (dX < 0) {
+      if (srcId === 'errorMode')      return 'correctionMode';
+      if (srcId === 'correctionMode') return 'resultListPage';
     } else {
-      // 右へスワイプ = 戻る
-      if (currentId === 'resultListPage')  return 'correctionMode';
-      if (currentId === 'correctionMode')  return 'modeSelect';
+      if (srcId === 'resultListPage') return 'correctionMode';
+      if (srcId === 'correctionMode') return 'modeSelect';
     }
     return null;
   }
 
-  // スワイプ完了後に必要な副作用のない初期化だけ呼ぶ
+  // 遷移完了後の副作用のない後処理のみ
   function afterSwipe(destId) {
     if (destId === 'resultListPage') {
-      // 結果一覧のレンダリングだけ行う (display変更はしない)
       if (typeof renderResultList === 'function') renderResultList();
     }
-    // modeSelectへ戻る場合のみ、resetConfirmContainerを隠す
     if (destId === 'modeSelect') {
       const rc = getEl('resetConfirmContainer');
       if (rc) rc.style.display = 'none';
     }
   }
 
-  // スワイプ中のクリック誤作動を防ぐ
+  // スワイプ/遷移中はボタン誤作動を防ぐ
   document.addEventListener('click', function(e) {
     if (isSwiping || isTransitioning) {
       e.preventDefault();
@@ -2614,18 +2614,24 @@ document.addEventListener("focusin", function(e) {
     }
   }, true);
 
-  // ---- touchstart ----
+  // ----------------------------------------------------------------
+  // touchstart: 現在の画面を1回だけ確定し、以降はその値を使い続ける
+  // ----------------------------------------------------------------
   document.addEventListener('touchstart', function(e) {
     if (isTransitioning) return;
     if (e.touches.length > 1) return;
     if (typeof activeTimePickerGroup !== 'undefined' && activeTimePickerGroup) return;
 
-    const currentId = getCurrentId();
+    // 現在の画面を確定（toElを表示する前のクリーンな状態で検出）
+    currentId      = detectCurrentId();
+    isLockedScreen = currentId ? LOCKED.includes(currentId) : false;
+
     if (!currentId) return;
 
-    // ロック画面・モード選択画面はスワイプさせない
-    if (LOCKED.includes(currentId)) {
+    // ロック画面・モード選択はスワイプ開始しない
+    if (isLockedScreen) {
       isSwiping = false;
+      fromEl = null;
       return;
     }
 
@@ -2636,7 +2642,7 @@ document.addEventListener("focusin", function(e) {
     startY = e.touches[0].clientY;
     lastX  = startX;
 
-    // 画面端20px以内からのスワイプは除外 (ブラウザの戻るジェスチャー対策)
+    // 画面端20px以内は除外（ブラウザの戻るジェスチャー対策）
     if (startX < 20 || startX > window.innerWidth - 20) {
       isSwiping = false;
       fromEl = null;
@@ -2648,89 +2654,99 @@ document.addEventListener("focusin", function(e) {
     toEl = null;
     toId = null;
 
-    // アニメーションを一時停止
     fromEl.style.transition = 'none';
 
   }, { passive: true });
 
-  // ---- touchmove ----
+  // ----------------------------------------------------------------
+  // touchmove: touchstartで確定したcurrentId/fromElを使う
+  //            toElをdisplay:blockにしても誤検知しない
+  // ----------------------------------------------------------------
   document.addEventListener('touchmove', function(e) {
 
-    // ロック画面・モード選択は常に完全固定
-    const currentId = getCurrentId();
-    if (LOCKED.includes(currentId)) {
+    // ロック画面・モード選択は常に全スクロール禁止
+    // ※ isLockedScreenフラグを使い、toElの表示状態に左右されない
+    if (isLockedScreen) {
       e.preventDefault();
       return;
     }
 
     if (!isSwiping || isTransitioning) return;
+    if (!fromEl || !currentId) return;
 
-    const x = e.touches[0].clientX;
-    const y = e.touches[0].clientY;
+    const x  = e.touches[0].clientX;
+    const y  = e.touches[0].clientY;
     const dX = x - startX;
     const dY = y - startY;
     lastX = x;
 
-    // 軸を確定 (10px動くまで待つ)
+    // 軸を確定（10px動くまで待つ）
     if (!axisLocked) {
       if (Math.abs(dX) < 10 && Math.abs(dY) < 10) return;
       axisLocked = Math.abs(dX) >= Math.abs(dY) ? 'horizontal' : 'vertical';
       if (axisLocked === 'vertical') {
         isSwiping = false;
         fromEl.style.transition = '';
+        fromEl.style.transform  = '';
         fromEl = null;
         return;
       }
     }
 
-    e.preventDefault(); // 水平スワイプ中はスクロール禁止
+    // 水平スワイプと確定したのでスクロールを禁止
+    e.preventDefault();
 
-    // 遷移先を決定
+    // currentId（touchstartで確定）を使って遷移先を判定
     const destId = getDestId(currentId, dX);
     if (!destId) {
-      // 行き先なし: 少し引っ張られる感触だけ与えて戻す
+      // 行き先なし: 少しだけ引っ張られる感触
       fromEl.style.transform = `translateX(${dX * 0.15}px)`;
       return;
     }
 
-    // 遷移先要素を初回だけ準備
+    // 遷移先を初回だけ準備
     if (toId !== destId) {
       if (toEl) {
-        toEl.style.display   = 'none';
-        toEl.style.position  = '';
-        toEl.style.zIndex    = '';
-        toEl.style.transform = '';
+        toEl.style.display    = 'none';
+        toEl.style.position   = '';
+        toEl.style.zIndex     = '';
+        toEl.style.width      = '';
+        toEl.style.minHeight  = '';
+        toEl.style.transform  = '';
+        toEl.style.transition = '';
       }
       toId = destId;
       toEl = getEl(toId);
+
+      // ★ background は上書きしない → CSS クラスの色がそのまま使われる
+      //   これにより「色が後から出現する」バグを解消
       toEl.style.transition = 'none';
       toEl.style.position   = 'fixed';
       toEl.style.top        = '0';
       toEl.style.left       = '0';
-      toEl.style.width      = '100%';
-      toEl.style.minHeight  = '100%';
-      toEl.style.zIndex     = '10';
-      toEl.style.background = 'var(--bg-dark, #111118)';
+      toEl.style.width      = '100vw';
+      toEl.style.minHeight  = '100vh';
+      toEl.style.zIndex     = '100';
       toEl.style.display    = 'block';
     }
 
-    // 指に追従させる
-    const w = window.innerWidth;
-    fromEl.style.transform = `translateX(${dX}px)`;
-    // 遷移先は画面の反対側から入ってくる
+    const w    = window.innerWidth;
     const base = dX > 0 ? -w : w;
+    fromEl.style.transform = `translateX(${dX}px)`;
     toEl.style.transform   = `translateX(${base + dX}px)`;
 
   }, { passive: false });
 
-  // ---- touchend ----
+  // ----------------------------------------------------------------
+  // touchend: 遷移確定 or キャンセル
+  // ----------------------------------------------------------------
   document.addEventListener('touchend', function(e) {
     if (!isSwiping || isTransitioning) return;
     isSwiping = false;
 
     if (axisLocked !== 'horizontal') {
       if (fromEl) { fromEl.style.transition = ''; fromEl.style.transform = ''; }
-      fromEl = null; toEl = null; toId = null;
+      fromEl = null; toEl = null; toId = null; currentId = null;
       return;
     }
 
@@ -2738,92 +2754,82 @@ document.addEventListener("focusin", function(e) {
     const w         = window.innerWidth;
     const threshold = w * 0.25;
 
-    // toElがない(行き先なし)場合は元に戻す
     if (!toEl) {
+      // 行き先なし: 元に戻す
       if (fromEl) {
         fromEl.style.transition = 'transform 0.3s ease';
         fromEl.style.transform  = 'translateX(0)';
-        setTimeout(() => {
-          if (fromEl) { fromEl.style.transition = ''; fromEl.style.transform = ''; }
-          fromEl = null;
-        }, 300);
+        const f = fromEl;
+        setTimeout(() => { f.style.transition = ''; f.style.transform = ''; }, 300);
       }
+      fromEl = null; toEl = null; toId = null; currentId = null;
       axisLocked = null;
       return;
     }
 
-    const DURATION = '0.3s';
-    const EASE     = 'ease';
-
     if (Math.abs(dX) > threshold) {
-      // ---- 遷移確定 ----
+      // ===== 遷移確定 =====
       isTransitioning = true;
 
-      fromEl.style.transition = `transform ${DURATION} ${EASE}`;
-      toEl.style.transition   = `transform ${DURATION} ${EASE}`;
-
+      fromEl.style.transition = 'transform 0.3s ease';
+      toEl.style.transition   = 'transform 0.3s ease';
       fromEl.style.transform  = `translateX(${dX > 0 ? w : -w}px)`;
       toEl.style.transform    = 'translateX(0)';
 
-      const capturedFrom = fromEl;
-      const capturedTo   = toEl;
-      const capturedToId = toId;
+      const cFrom  = fromEl;
+      const cTo    = toEl;
+      const cToId  = toId;
 
-      fromEl = null; toEl = null; toId = null;
+      fromEl = null; toEl = null; toId = null; currentId = null;
 
       setTimeout(() => {
-        // from画面を非表示
-        capturedFrom.style.display    = 'none';
-        capturedFrom.style.transform  = '';
-        capturedFrom.style.transition = '';
+        // from 画面を完全に非表示
+        cFrom.style.display    = 'none';
+        cFrom.style.transform  = '';
+        cFrom.style.transition = '';
 
-        // to画面のpositionをfixedから通常フローへ戻す
-        capturedTo.style.position   = '';
-        capturedTo.style.top        = '';
-        capturedTo.style.left       = '';
-        capturedTo.style.width      = '';
-        capturedTo.style.minHeight  = '';
-        capturedTo.style.zIndex     = '';
-        capturedTo.style.background = '';
-        capturedTo.style.transform  = '';
-        capturedTo.style.transition = '';
-        capturedTo.style.display    = 'block';
+        // to 画面を通常フローへ戻す（★background はリセットしない → クラスの色が維持される）
+        cTo.style.position   = '';
+        cTo.style.top        = '';
+        cTo.style.left       = '';
+        cTo.style.width      = '';
+        cTo.style.minHeight  = '';
+        cTo.style.zIndex     = '';
+        cTo.style.transform  = '';
+        cTo.style.transition = '';
+        cTo.style.display    = 'block';
 
-        // modeSelectのみ固定背景除去と確認ダイアログ非表示
-        afterSwipe(capturedToId);
-
+        afterSwipe(cToId);
         setTimeout(() => { isTransitioning = false; }, 50);
       }, 300);
 
     } else {
-      // ---- 遷移キャンセル: 元の位置に戻す ----
+      // ===== キャンセル: 元の位置に戻す =====
       isTransitioning = true;
 
-      fromEl.style.transition = `transform ${DURATION} ${EASE}`;
-      toEl.style.transition   = `transform ${DURATION} ${EASE}`;
-
+      fromEl.style.transition = 'transform 0.3s ease';
+      toEl.style.transition   = 'transform 0.3s ease';
       fromEl.style.transform  = 'translateX(0)';
       toEl.style.transform    = `translateX(${dX > 0 ? -w : w}px)`;
 
-      const capturedFrom = fromEl;
-      const capturedTo   = toEl;
+      const cFrom = fromEl;
+      const cTo   = toEl;
 
-      fromEl = null; toEl = null; toId = null;
+      fromEl = null; toEl = null; toId = null; currentId = null;
 
       setTimeout(() => {
-        capturedFrom.style.transform  = '';
-        capturedFrom.style.transition = '';
+        cFrom.style.transform  = '';
+        cFrom.style.transition = '';
 
-        capturedTo.style.display    = 'none';
-        capturedTo.style.position   = '';
-        capturedTo.style.top        = '';
-        capturedTo.style.left       = '';
-        capturedTo.style.width      = '';
-        capturedTo.style.minHeight  = '';
-        capturedTo.style.zIndex     = '';
-        capturedTo.style.background = '';
-        capturedTo.style.transform  = '';
-        capturedTo.style.transition = '';
+        cTo.style.display    = 'none';
+        cTo.style.position   = '';
+        cTo.style.top        = '';
+        cTo.style.left       = '';
+        cTo.style.width      = '';
+        cTo.style.minHeight  = '';
+        cTo.style.zIndex     = '';
+        cTo.style.transform  = '';
+        cTo.style.transition = '';
 
         isTransitioning = false;
       }, 300);
@@ -2833,4 +2839,3 @@ document.addEventListener("focusin", function(e) {
   });
 
 })();
-
