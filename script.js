@@ -1457,6 +1457,9 @@ function resetApp(onlyInputs = false) {
   if (onlyInputs) { 
      resultHistory = [];
      localStorage.removeItem('resultHistory');
+     // スワイプで一覧画面に遷移した際に古い内容が一瞬見えないよう、リセット時点で即時クリア
+     const resultListContainerEl = document.getElementById("resultListContainer");
+     if (resultListContainerEl) resultListContainerEl.innerHTML = "";
      const showListLinkEl = document.getElementById("showListLink");
      if (showListLinkEl) showListLinkEl.style.display = "none";
   } else {
