@@ -956,8 +956,10 @@ function _updateViewLockClock() {
   
   // ★「分」の切り替わり時にスタイルを自動ランダム変更
   if (_lastViewLockMinute !== -1 && _lastViewLockMinute !== m) {
+    // 【バグ修正】ここで先に_lastViewLockMinuteを更新しないと、changeViewLockStyle内で
+    // 再度_updateViewLockClockが呼ばれた際に無限ループに陥ってしまう
+    _lastViewLockMinute = m;
     changeViewLockStyle();
-    // changeViewLockStyle内で再度_updateViewLockClockが呼ばれるためここでリターン
     return;
   }
   _lastViewLockMinute = m;
@@ -1018,6 +1020,11 @@ function _updateViewLockClock() {
     let finalPx = Math.min(fontSizePx, maxFontSizePxByVh);
     if (finalPx < 60) finalPx = 60; // 下限 60px
     
+    // ★【バグ修正】CSSアニメーション（transition）が設定されていると、
+    // offsetWidthの測定値がアニメーション途中の値になってしまい、サイズが振動するバグを防ぐ
+    const originalTransition = clockEl.style.transition;
+    clockEl.style.transition = 'none';
+    
     clockEl.style.fontSize = finalPx + 'px';
     
     // ★【はみ出し完全防止】フォントごとの文字幅の違い（特殊フォント対策）
@@ -1030,6 +1037,10 @@ function _updateViewLockClock() {
       finalPx = finalPx * scaleDownRatio;
       clockEl.style.fontSize = finalPx + 'px';
     }
+    
+    // 変更をブラウザに反映（強制リフロー）させた後、アニメーション設定を元に戻す
+    void clockEl.offsetWidth;
+    clockEl.style.transition = originalTransition;
   }
 }
 
