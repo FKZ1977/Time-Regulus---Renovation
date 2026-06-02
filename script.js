@@ -756,7 +756,11 @@ let _viewLockHoldTimer = null;
 let _viewLockStyleInterval = null;
 let _viewLockCurrentFormat = 'standard';
 let _viewLockScaleFactor = 1.0;
-let _viewLockHoldInitialized = false; // initViewLockHold() の二重登録防止フラグ
+// viewLockScreen 長押しジェスチャー用モジュールレベル状態
+// クロージャの代わりに名前付き関数を使うことで removeEventListener が確実に機能する
+let _vlPressStartTime = 0;
+let _vlIsLongPressSuccess = false;
+let _vlBlockingClick = false;
 
 const VIEW_LOCK_FONTS = [
   // ── デジタル・SF系 ──────────────────────────────────────
@@ -1093,106 +1097,109 @@ function restartLockScreenAnimation() {
   });
 }
 
-function initViewLockHold() {
-  // ★【Bug修正】showViewLockScreen()が複数回呼び出されたとき、
-  // イベントリスナーが累積登録されるのを防ぎます。
-  // 2回目以降の要素タップ時に孤児タイマーが発火して初期画面に戻るバグの根本原因。
-  if (_viewLockHoldInitialized) return;
-  _viewLockHoldInitialized = true;
-  const viewLock = document.getElementById("viewLockScreen");
+// ──────────────────────────────────────────────────────────────
+// viewLockScreen 長押しジェスチャー ハンドラ群（モジュールレベル名前付き関数）
+// クロージャではなく名前付き関数にすることで、removeEventListener による
+// 完全なリスナー削除が可能になり、孤児タイマー問題を根本解決する。
+// ──────────────────────────────────────────────────────────────
+
+// iPhoneのghost click（幽霊クリック）をブロックするハンドラ
+function _vlClickBlocker(e) {
+  if (_vlBlockingClick) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+}
+
+// 指離し（touchend / mouseup）ハンドラ
+function _vlEndHold(e) {
+  if (_vlIsLongPressSuccess) return;
+  clearTimeout(_viewLockHoldTimer);
+  _viewLockHoldTimer = null;
   const ring = document.getElementById("viewLockHoldRing");
   const circle = document.getElementById("viewLockRingCircle");
-  let pressStartTime = 0;
-  let isLongPressSuccess = false;
-  let _blockingClick = false; // iPhoneのghost click（幽霊クリック）ブロック用フラグ
-  
-  // iPhoneはtouchend後に自動的にclickを発火する（ghost click）ため、それを捕捉して破棄する
-  viewLock.addEventListener('click', (e) => {
-    if (_blockingClick) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-  }, true); // キャプチャフェーズで処理することで確実にブロック
-  
-  const endHold = (e) => {
-    if (isLongPressSuccess) return;
-    
-    clearTimeout(_viewLockHoldTimer);
-    _viewLockHoldTimer = null;
-    ring.style.opacity = "0";
+  if (ring) ring.style.opacity = "0";
+  if (circle) {
     circle.style.transition = "stroke-dashoffset 0.1s linear";
     circle.style.strokeDashoffset = "164";
-    
-    // シングルタップ（400ms未満）でスタイル変更
-    if (pressStartTime > 0 && (Date.now() - pressStartTime < 400)) {
-      changeViewLockStyle();
-    }
-    pressStartTime = 0;
-    
-    // ghost clickを300msだけブロックする
-    _blockingClick = true;
-    setTimeout(() => { _blockingClick = false; }, 300);
-  };
+  }
+  // シングルタップ（400ms未満）でスタイル変更
+  if (_vlPressStartTime > 0 && (Date.now() - _vlPressStartTime < 400)) {
+    changeViewLockStyle();
+  }
+  _vlPressStartTime = 0;
+  // ghost clickを300msだけブロック
+  _vlBlockingClick = true;
+  setTimeout(() => { _vlBlockingClick = false; }, 300);
+}
 
-  const startHold = (e) => {
-    if (e.cancelable) e.preventDefault();
-    isLongPressSuccess = false;
-    pressStartTime = Date.now();
-    
-    const touch = e.touches ? e.touches[0] : e;
+// 指触れ（touchstart / mousedown）ハンドラ
+function _vlStartHold(e) {
+  if (e.cancelable) e.preventDefault();
+  _vlIsLongPressSuccess = false;
+  _vlPressStartTime = Date.now();
+  const ring = document.getElementById("viewLockHoldRing");
+  const circle = document.getElementById("viewLockRingCircle");
+  const touch = e.touches ? e.touches[0] : e;
+  if (ring) {
     ring.style.left = touch.clientX + "px";
     ring.style.top = touch.clientY + "px";
     ring.style.opacity = "1";
-
+  }
+  if (circle) {
     circle.style.transition = "stroke-dashoffset 1s linear";
-    requestAnimationFrame(() => {
-      circle.style.strokeDashoffset = "0";
-    });
-
-    _viewLockHoldTimer = setTimeout(() => {
-      isLongPressSuccess = true;
-      if (_viewLockClockTimer) {
-        clearInterval(_viewLockClockTimer);
-        _viewLockClockTimer = null;
-      }
-      if (_viewLockStyleInterval) {
-        clearInterval(_viewLockStyleInterval);
-        _viewLockStyleInterval = null;
-      }
-      window.removeEventListener('resize', _handleViewLockResize);
-      // ★【省電力】visibilitychangeリスナーもクリーンアップ
-      if (viewLock._visibilityHandler) {
-        document.removeEventListener('visibilitychange', viewLock._visibilityHandler);
-        viewLock._visibilityHandler = null;
-      }
-      
-      // ★【消灯防止】Wake Lock を解放する
-      _releaseWakeLock();
-      
-      // ★【Bug修正①】フラグをリセットし、次回の initViewLockHold() を有効にする
-      _viewLockHoldInitialized = false;
-      
-      viewLock.style.display = "none";
-      document.getElementById("lockScreen").style.display = "block";
-      
-      // ★【Bug修正②】ロック画面のアニメーションを再起動（タイトル・ボタンが常に見えない問題の修正）
-      restartLockScreenAnimation();
-      
-      ring.style.opacity = "0";
+    requestAnimationFrame(() => { circle.style.strokeDashoffset = "0"; });
+  }
+  // 1秒長押しで初期画面へ戻るタイマー
+  _viewLockHoldTimer = setTimeout(() => {
+    _vlIsLongPressSuccess = true;
+    if (_viewLockClockTimer)   { clearInterval(_viewLockClockTimer);   _viewLockClockTimer   = null; }
+    if (_viewLockStyleInterval) { clearInterval(_viewLockStyleInterval); _viewLockStyleInterval = null; }
+    window.removeEventListener('resize', _handleViewLockResize);
+    const viewLock = document.getElementById("viewLockScreen");
+    if (viewLock && viewLock._visibilityHandler) {
+      document.removeEventListener('visibilitychange', viewLock._visibilityHandler);
+      viewLock._visibilityHandler = null;
+    }
+    _releaseWakeLock();
+    if (viewLock) viewLock.style.display = "none";
+    document.getElementById("lockScreen").style.display = "block";
+    restartLockScreenAnimation();
+    if (ring)   { ring.style.opacity = "0"; }
+    if (circle) {
       circle.style.transition = "stroke-dashoffset 0.1s linear";
       circle.style.strokeDashoffset = "164";
-    }, 1000);
-  };
+    }
+  }, 1000);
+}
 
-  viewLock.addEventListener('mousedown', startHold);
-  viewLock.addEventListener('touchstart', startHold, { passive: false });
-  
-  viewLock.addEventListener('mouseup', endHold);
-  viewLock.addEventListener('mouseleave', endHold);
-  viewLock.addEventListener('touchend', endHold);
-  viewLock.addEventListener('touchcancel', endHold);
+function initViewLockHold() {
+  const viewLock = document.getElementById("viewLockScreen");
+  if (!viewLock) return;
+  // ★先に既存リスナーを必ず削除する（重複登録の完全防止）
+  // 同一関数参照を渡すことで removeEventListener が正確に機能する
+  viewLock.removeEventListener('click',       _vlClickBlocker, true);
+  viewLock.removeEventListener('mousedown',   _vlStartHold);
+  viewLock.removeEventListener('touchstart',  _vlStartHold);
+  viewLock.removeEventListener('mouseup',     _vlEndHold);
+  viewLock.removeEventListener('mouseleave',  _vlEndHold);
+  viewLock.removeEventListener('touchend',    _vlEndHold);
+  viewLock.removeEventListener('touchcancel', _vlEndHold);
+  // 状態をリセット
+  _vlPressStartTime = 0;
+  _vlIsLongPressSuccess = false;
+  _vlBlockingClick = false;
+  // リスナーを登録
+  viewLock.addEventListener('click',       _vlClickBlocker, true);
+  viewLock.addEventListener('mousedown',   _vlStartHold);
+  viewLock.addEventListener('touchstart',  _vlStartHold, { passive: false });
+  viewLock.addEventListener('mouseup',     _vlEndHold);
+  viewLock.addEventListener('mouseleave',  _vlEndHold);
+  viewLock.addEventListener('touchend',    _vlEndHold);
+  viewLock.addEventListener('touchcancel', _vlEndHold);
   viewLock.addEventListener('contextmenu', (e) => e.preventDefault());
 }
+
 
 /* ============================================================
    ダミー画面（デコイ時計）ロジック
