@@ -1,4 +1,4 @@
-const currentVersion = "3.0.3";
+const currentVersion = "3.10";
 let lastError = null;
 let hasCalculated = false;
 let reverseMode = "toStandard";
@@ -682,8 +682,8 @@ function checkPass() {
   const inputField = document.getElementById("passcode");
   const input = inputField.value;
   const correct = "164";
-  const DECOY_PASS = "4444"; // 元祖ダミー画面（タイマー機能付き）用パスワード
-  const VIEW_LOCK_PASS = "12345"; // 新しいダミー時計画面（ネオン時計）用パスワード
+  const DECOY_PASS = "12345"; // 元祖ダミー画面（タイマー機能付き）用パスワード
+  const VIEW_LOCK_PASS = "7777"; // 新しいダミー時計画面（ネオン時計）用パスワード
   const errorMessage = document.getElementById("error");
 
   if (input === DECOY_PASS) {
@@ -735,17 +735,29 @@ let _viewLockCurrentFormat = 'standard';
 let _viewLockScaleFactor = 1.0;
 
 const VIEW_LOCK_FONTS = [
-  'Orbitron', 'Courier New', 'Helvetica Neue', 'Times New Roman', 'Georgia',
-  'Impact', 'Comic Sans MS', 'Arial', 'Verdana', 'Trebuchet MS', 'Palatino',
-  'Baskerville', 'Didot', 'Futura', 'Gill Sans', 'Hoefler Text', 'Optima',
-  'Papyrus', 'Snell Roundhand', 'Courier', 'Monaco', 'Consolas', 'Roboto',
-  'Droid Serif', 'sans-serif', 'serif', 'monospace', 'cursive', 'fantasy', 'system-ui',
-  'Arial Black', 'Century Gothic', 'Franklin Gothic Medium', 'Lucida Console', 'Tahoma',
-  'Geneva', 'Garamond', 'Bookman', 'Rockwell', 'Cambria', 'Calibri', 'Candara', 'Segoe UI',
-  'Constantia', 'Corbel', 'Lucida Sans Unicode', 'Lucida Grande', 'Menlo', 'PT Sans',
-  'Oswald', 'Open Sans', 'Lato', 'Montserrat', 'Raleway', 'Merriweather', 'Noto Sans',
-  'Ubuntu', 'Playfair Display', 'Lora', 'Muli', 'Nunito', 'Rubik', 'Work Sans', 'Fira Sans',
-  'Quicksand', 'Karla', 'Inconsolata', 'Josefin Sans', 'Anton', 'Cabin', 'Abel', 'Dancing Script'
+  // ── デジタル・SF系 ──────────────────────────────────────
+  'Orbitron',          // SFっぽい未来的デジタル
+  'VT323',             // レトロゲーム・CRTモニター風ドット文字
+  'Share Tech Mono',   // シャープでクリーンなデジタルモノスペース
+  'Sixtyfour',         // 64セグメントの超ユニークデジタル
+  // ── かすれ・消えそう系 ───────────────────────────────────
+  'Rubik Dirt',        // 土ぼこり・傷ついてかすれた文字
+  'Moirai One',        // 波打つように消えかかった神秘的な文字
+  // ── ぐるぐる・立体系 ─────────────────────────────────────
+  'Bungee Shade',      // 影が立体的でくるっとしたポップ文字
+  // ── 個性的・エレガント系 ─────────────────────────────────
+  'Diplomata SC',      // 古典的・彫刻のような重厚感のある文字
+  'Bellefair',         // 繊細でエレガントな細身の文字
+  // ── システム内蔵フォント（フォールバック） ─────────────────
+  'Courier New', 'Helvetica Neue', 'Times New Roman', 'Georgia',
+  'Impact', 'Arial', 'Verdana', 'Trebuchet MS',
+  'Baskerville', 'Futura', 'Gill Sans', 'Optima',
+  'Papyrus', 'Monaco', 'Consolas', 'Roboto',
+  'Arial Black', 'Lucida Console', 'Tahoma', 'Garamond',
+  'Cambria', 'Calibri', 'Segoe UI', 'Menlo', 'PT Sans',
+  'Oswald', 'Open Sans', 'Lato', 'Montserrat', 'Raleway',
+  'Ubuntu', 'Playfair Display', 'Nunito', 'Rubik',
+  'Quicksand', 'Inconsolata', 'Josefin Sans', 'Anton', 'Dancing Script'
 ];
 
 // 標準や全角の確率を上げ、時計としての読みやすさを確保（標準:8, 全角:4, 漢字系:6, ローマ:1）
@@ -915,6 +927,23 @@ function showViewLockScreen() {
   
   window.addEventListener('resize', _handleViewLockResize);
   
+  // ★【省電力】画面が非表示（スリープ・タブ切替）になったらタイマーを停止し、戻ったら再開する
+  function _viewLockVisibilityHandler() {
+    if (document.hidden) {
+      // 画面が隠れた → タイマーを一時停止
+      if (_viewLockClockTimer) { clearInterval(_viewLockClockTimer); _viewLockClockTimer = null; }
+      if (_viewLockStyleInterval) { clearInterval(_viewLockStyleInterval); _viewLockStyleInterval = null; }
+    } else {
+      // 画面が戻った → タイマーを再開し、時刻を即時更新
+      _updateViewLockClock();
+      _viewLockClockTimer = setInterval(_updateViewLockClock, 1000);
+      _viewLockStyleInterval = setInterval(changeViewLockStyle, 60000);
+    }
+  }
+  document.addEventListener('visibilitychange', _viewLockVisibilityHandler);
+  // クリーンアップ用にリスナーを保存
+  viewLock._visibilityHandler = _viewLockVisibilityHandler;
+  
   initViewLockBattery();
   initViewLockHold();
 }
@@ -971,8 +1000,7 @@ function _updateViewLockClock() {
     let maxVw = 90 / emWidth;
     let calculatedVw = maxVw * _viewLockScaleFactor;
     
-    // 読めなくなるほど小さくならないよう、最低15vw（またはある程度の大きさ）は確保する
-    if (calculatedVw < 15) calculatedVw = 15;
+    // 文字が多い場合に画面外へはみ出さないよう、最低サイズの強制(15vw)を撤廃しました
     
     // 極端に大きくなりすぎないように上限を40vwに設定
     if (calculatedVw > 40) calculatedVw = 40;
@@ -1017,6 +1045,15 @@ function initViewLockHold() {
   const circle = document.getElementById("viewLockRingCircle");
   let pressStartTime = 0;
   let isLongPressSuccess = false;
+  let _blockingClick = false; // iPhoneのghost click（幽霊クリック）ブロック用フラグ
+  
+  // iPhoneはtouchend後に自動的にclickを発火する（ghost click）ため、それを捕捉して破棄する
+  viewLock.addEventListener('click', (e) => {
+    if (_blockingClick) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }, true); // キャプチャフェーズで処理することで確実にブロック
   
   const endHold = (e) => {
     if (isLongPressSuccess) return;
@@ -1031,6 +1068,10 @@ function initViewLockHold() {
       changeViewLockStyle();
     }
     pressStartTime = 0;
+    
+    // ghost clickを300msだけブロックする
+    _blockingClick = true;
+    setTimeout(() => { _blockingClick = false; }, 300);
   };
 
   const startHold = (e) => {
@@ -1060,6 +1101,11 @@ function initViewLockHold() {
         _viewLockStyleInterval = null;
       }
       window.removeEventListener('resize', _handleViewLockResize);
+      // ★【省電力】visibilitychangeリスナーもクリーンアップ
+      if (viewLock._visibilityHandler) {
+        document.removeEventListener('visibilitychange', viewLock._visibilityHandler);
+        viewLock._visibilityHandler = null;
+      }
       
       viewLock.style.display = "none";
       document.getElementById("lockScreen").style.display = "block";
@@ -1123,9 +1169,22 @@ function showDecoyScreen() {
     el.classList.add("anim-slow-fade");
   });
 
-  // 時計を即時更新してからタイマー開始（コンマ秒表示のため約50fps）
+  // ★【省電力】20ms(50fps)から1秒(1fps)に変更。画面オフ中は0消費
   _updateDecoyClock();
-  _decoyClockTimer = setInterval(_updateDecoyClock, 20);
+  _decoyClockTimer = setInterval(_updateDecoyClock, 1000);
+
+  // ★【省電力】画面が非表示になったらタイマーを停止し、戻ったら再開する
+  function _decoyVisibilityHandler() {
+    if (document.hidden) {
+      if (_decoyClockTimer) { clearInterval(_decoyClockTimer); _decoyClockTimer = null; }
+    } else {
+      _updateDecoyClock();
+      _decoyClockTimer = setInterval(_updateDecoyClock, 1000);
+    }
+  }
+  document.addEventListener('visibilitychange', _decoyVisibilityHandler);
+  const decoyEl = document.getElementById("decoyScreen");
+  if (decoyEl) decoyEl._visibilityHandler = _decoyVisibilityHandler;
 
   // 長押しイベント登録
   decoy.addEventListener("touchstart",  _decoyHoldStart,  { passive: true });
@@ -1146,6 +1205,11 @@ function hideDecoyScreen() {
 
   const decoy = document.getElementById("decoyScreen");
   cancelDecoyTimer(); // タイマーも解除
+  // ★【省電力】visibilitychangeリスナーをクリーンアップ
+  if (decoy._visibilityHandler) {
+    document.removeEventListener('visibilitychange', decoy._visibilityHandler);
+    decoy._visibilityHandler = null;
+  }
   decoy.removeEventListener("touchstart",  _decoyHoldStart);
   decoy.removeEventListener("touchend",    _decoyHoldEnd);
   decoy.removeEventListener("touchcancel", _decoyHoldEnd);
@@ -1543,7 +1607,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 起動時のバージョンポップアップ
   if (localStorage.getItem("lastVersion") !== currentVersion) {
-    alert("タイムレグルスはV3.0.3にアップデートされました！");
+    alert("タイムレグルスはV3.10にアップデートされました！");
     localStorage.setItem("lastVersion", currentVersion);
   }
 

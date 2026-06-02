@@ -18,12 +18,21 @@
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-title" content="TaimuRegurus✨">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <!-- ★【起動高速化】ロック画面用CSS（小・ブロッキング）→ 先に読み込んで即表示 -->
-  <link rel="stylesheet" href="style-lock.css?v=3.10">
-  <!-- ★【起動高速化】メインCSS（大・非ブロッキング）→ ロック画面表示後に裏で読み込む -->
-  <link rel="stylesheet" href="style-main.css?v=3.10"
+  <!-- 置時計用 Google Fonts（非ブロッキング非同期読み込み） -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=VT323&family=Share+Tech+Mono&family=Sixtyfour&family=Rubik+Dirt&family=Moirai+One&family=Bungee+Shade&family=Diplomata+SC&family=Bellefair&display=swap"
         media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="style-main.css?v=3.10"></noscript>
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=VT323&family=Share+Tech+Mono&family=Sixtyfour&family=Rubik+Dirt&family=Moirai+One&family=Bungee+Shade&family=Diplomata+SC&family=Bellefair&display=swap">
+  </noscript>
+  <!-- ★【起動高速化】ロック画面用CSS（小・ブロッキング）→ 先に読み込んで即表示 -->
+  <link rel="stylesheet" href="style-lock.css?c=1">
+  <!-- ★【起動高速化】メインCSS（大・非ブロッキング）→ ロック画面表示後に裏で読み込む -->
+  <link rel="stylesheet" href="style-main.css?c=1"
+        media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="style-main.css?c=1"></noscript>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -465,7 +474,7 @@
     </div>
   </div>
 
-  <script src="script.js?v=3.10" defer></script>
+  <script src="script.js?c=1" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

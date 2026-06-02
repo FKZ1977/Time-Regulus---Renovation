@@ -1,3 +1,70 @@
+/* ============================================================
+   オフライン対応フォント定義（置時計用 9種 - アプリ同梱フォント）
+   ============================================================ */
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/Orbitron-Bold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'VT323';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/VT323.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Share Tech Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/ShareTechMono.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Sixtyfour';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/Sixtyfour.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rubik Dirt';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/RubikDirt.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Moirai One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/MoiraiOne.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Bungee Shade';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/BungeeShade.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Diplomata SC';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/DiplomataSC.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Bellefair';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/Bellefair.ttf') format('truetype');
+}
+
 * {
   box-sizing: border-box;
   touch-action: manipulation;
@@ -2989,7 +3056,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   align-items: center;
   height: 100vh;
   width: 100%;
-  overflow: hidden;
+  overflow: visible; /* hiddenにすると文字が左右でスッパリ切れてしまうため visible に変更 */
 }
 .view-lock-clock {
   font-family: 'Orbitron', 'Courier New', monospace;
@@ -2998,6 +3065,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   font-weight: 700;
   color: #fff;
   white-space: nowrap;
+  flex-shrink: 0; /* Flexbox内で要素が勝手に縮み、はみ出した文字が描画レイヤーの端で切れるのを防ぐ */
   padding: 0 10px;
   box-sizing: border-box;
   text-shadow: 
