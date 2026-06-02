@@ -826,7 +826,7 @@ function changeViewLockStyle() {
   const randomColor = VIEW_LOCK_COLORS[Math.floor(Math.random() * VIEW_LOCK_COLORS.length)];
   
   // 文字の大きさをランダム化（最大サイズの50%〜100%の範囲）
-  _viewLockScaleFactor = 0.5 + Math.random() * 0.5;
+  _viewLockScaleFactor = 0.75 + Math.random() * 0.25; // 75%〜100%のランダムサイズ（最小値を引き上げ）
   
   const clockEl = document.getElementById("viewLockClock");
   if (clockEl) {
@@ -996,17 +996,13 @@ function _updateViewLockClock() {
       }
     }
     
-    // 画面幅の約90%を占める最大サイズを計算し、そこにランダムな倍率を掛ける
-    let maxVw = 90 / emWidth;
+    // 画面幅の約95%を占める最大サイズを計算し、そこにランダムな倍率を掛ける
+    let maxVw = 95 / emWidth;
     let calculatedVw = maxVw * _viewLockScaleFactor;
     
-    // 文字が多い場合に画面外へはみ出さないよう、最低サイズの強制(15vw)を撤廃しました
-    
-    // 極端に大きくなりすぎないように上限を40vwに設定
-    if (calculatedVw > 40) calculatedVw = 40;
-    
     // JSで安全にピクセル値を計算して直接指定する（古いSafariでのclamp/min構文エラーを完全回避）
-    const vhLimit = 45 * _viewLockScaleFactor;
+    // vh上限も95%まで拡大（縦長にも対応）
+    const vhLimit = 90 * _viewLockScaleFactor;
     const winW = window.innerWidth;
     const winH = window.innerHeight;
     
@@ -1014,8 +1010,8 @@ function _updateViewLockClock() {
     let maxFontSizePxByVh = (vhLimit / 100) * winH;
     
     let finalPx = Math.min(fontSizePx, maxFontSizePxByVh);
-    if (finalPx < 30) finalPx = 30; // 下限 30px
-    if (finalPx > 300) finalPx = 300; // 上限 300px
+    if (finalPx < 60) finalPx = 60; // 下限 60px（以前の30pxより大きく）
+    // 上限はピクセル固定ではなく画面サイズに依存するため固定上限なし
     
     clockEl.style.fontSize = finalPx + 'px';
   }
@@ -1055,6 +1051,8 @@ function initViewLockHold() {
     }
   }, true); // キャプチャフェーズで処理することで確実にブロック
   
+  let _lastTapTime = 0; // ダブルタップ検出用
+  
   const endHold = (e) => {
     if (isLongPressSuccess) return;
     
@@ -1064,8 +1062,17 @@ function initViewLockHold() {
     circle.style.transition = "stroke-dashoffset 0.1s linear";
     circle.style.strokeDashoffset = "164";
     
+    // ダブルタップ（400ms以内に2回タップ）でスタイル変更
+    // シングルタップ・ダブルタップともに初期画面へは戻らない
     if (pressStartTime > 0 && (Date.now() - pressStartTime < 400)) {
-      changeViewLockStyle();
+      const now = Date.now();
+      if (now - _lastTapTime < 400) {
+        // ダブルタップ検出 → スタイルをランダム変更
+        changeViewLockStyle();
+        _lastTapTime = 0;
+      } else {
+        _lastTapTime = now;
+      }
     }
     pressStartTime = 0;
     
@@ -1169,9 +1176,10 @@ function showDecoyScreen() {
     el.classList.add("anim-slow-fade");
   });
 
-  // ★【省電力】20ms(50fps)から1秒(1fps)に変更。画面オフ中は0消費
+  // ★ コンマ秒（2桁）を素早く表示するため50fps（20ms）で動かす
+  // ただし画面が非表示（スリープ・タブ切替）になったら即座に停止する（省電力）
   _updateDecoyClock();
-  _decoyClockTimer = setInterval(_updateDecoyClock, 1000);
+  _decoyClockTimer = setInterval(_updateDecoyClock, 20);
 
   // ★【省電力】画面が非表示になったらタイマーを停止し、戻ったら再開する
   function _decoyVisibilityHandler() {
@@ -1179,7 +1187,7 @@ function showDecoyScreen() {
       if (_decoyClockTimer) { clearInterval(_decoyClockTimer); _decoyClockTimer = null; }
     } else {
       _updateDecoyClock();
-      _decoyClockTimer = setInterval(_updateDecoyClock, 1000);
+      _decoyClockTimer = setInterval(_updateDecoyClock, 20);
     }
   }
   document.addEventListener('visibilitychange', _decoyVisibilityHandler);
