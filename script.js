@@ -1062,17 +1062,18 @@ function _updateViewLockClock() {
   const clockEl = document.getElementById("viewLockClock");
   const dateEl = document.getElementById("viewLockDate");
   
+  // 独立した日付枠は使用しないため常に非表示
   if (dateEl) {
-    if (_viewLockShowDate) {
-      dateEl.innerText = dateStr;
-      dateEl.style.display = "block";
-    } else {
-      dateEl.style.display = "none";
-    }
+    dateEl.style.display = "none";
   }
 
   if (clockEl) {
-    clockEl.innerText = timeStr;
+    if (_viewLockShowDate) {
+      clockEl.innerHTML = `<div style="font-size: 0.6em; line-height: 1.2; margin-bottom: 0.1em; text-align: center;">${dateStr}</div><div style="text-align: center;">${timeStr}</div>`;
+    } else {
+      clockEl.innerText = timeStr;
+    }
+
     
     // 表示される文字列の長さに応じて、画面幅（vw）に対する最大フォントサイズを動的に計算する
     let emWidth = 0;
