@@ -1030,36 +1030,35 @@ function _updateViewLockClock() {
     case 'fullwidth':
       const fw_h = String(h).padStart(2, '0').replace(/[0-9]/g, str => String.fromCharCode(str.charCodeAt(0) + 0xFEE0));
       const fw_m = String(m).padStart(2, '0').replace(/[0-9]/g, str => String.fromCharCode(str.charCodeAt(0) + 0xFEE0));
-      const fw_s = String(s).padStart(2, '0').replace(/[0-9]/g, str => String.fromCharCode(str.charCodeAt(0) + 0xFEE0));
-      timeStr = `${fw_h}：${fw_m}：${fw_s}`;
+      timeStr = `${fw_h}：${fw_m}`;
       const fw_y = String(year).replace(/[0-9]/g, str => String.fromCharCode(str.charCodeAt(0) + 0xFEE0));
       const fw_mo = String(month).padStart(2, '0').replace(/[0-9]/g, str => String.fromCharCode(str.charCodeAt(0) + 0xFEE0));
       const fw_d = String(date).padStart(2, '0').replace(/[0-9]/g, str => String.fromCharCode(str.charCodeAt(0) + 0xFEE0));
       dateStr = `${fw_y}年${fw_mo}月${fw_d}日`;
       break;
     case 'kanji':
-      timeStr = `${_toKanji(h)}時${_toKanji(m)}分${_toKanji(s)}秒`;
+      timeStr = `${_toKanji(h)}時${_toKanji(m)}分`;
       dateStr = `令和${reiwaYear === 1 ? '元' : _toKanji(reiwaYear)}年${_toKanji(month)}月${_toKanji(date)}日`;
       break;
     case 'old_kanji':
-      timeStr = `${_toOldKanji(h)}時${_toOldKanji(m)}分${_toOldKanji(s)}秒`;
+      timeStr = `${_toOldKanji(h)}時${_toOldKanji(m)}分`;
       dateStr = `令和${reiwaYear === 1 ? '元' : _toOldKanji(reiwaYear)}年${_toOldKanji(month)}月${_toOldKanji(date)}日`;
       break;
     case 'kanji_digit':
-      timeStr = `${_toKanjiDigit(h)}：${_toKanjiDigit(m)}：${_toKanjiDigit(s)}`;
+      timeStr = `${_toKanjiDigit(h)}：${_toKanjiDigit(m)}`;
       dateStr = `令和${reiwaYear === 1 ? '元' : _toKanjiDigit(reiwaYear)}年${_toKanjiDigit(month)}月${_toKanjiDigit(date)}日`;
       break;
     case 'old_kanji_digit':
-      timeStr = `${_toOldKanjiDigit(h)}：${_toOldKanjiDigit(m)}：${_toOldKanjiDigit(s)}`;
+      timeStr = `${_toOldKanjiDigit(h)}：${_toOldKanjiDigit(m)}`;
       dateStr = `令和${reiwaYear === 1 ? '元' : _toOldKanjiDigit(reiwaYear)}年${_toOldKanjiDigit(month)}月${_toOldKanjiDigit(date)}日`;
       break;
     case 'roman':
-      timeStr = `${_toRoman(h)} : ${_toRoman(m)} : ${_toRoman(s)}`;
+      timeStr = `${_toRoman(h)} : ${_toRoman(m)}`;
       dateStr = `${_toRoman(year)} . ${_toRoman(month)} . ${_toRoman(date)}`;
       break;
     case 'standard':
     default:
-      timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       dateStr = `${year}/${String(month).padStart(2, '0')}/${String(date).padStart(2, '0')}`;
       break;
   }
