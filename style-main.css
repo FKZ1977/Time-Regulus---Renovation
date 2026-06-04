@@ -3049,7 +3049,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
     display: none !important;
   }
   
-  #decoyScreen {
+  #decoyScreen:not([style*="none"]) {
     padding-top: 0;
     display: flex !important;
     flex-direction: column;
@@ -3058,19 +3058,21 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   }
 
   #decoyScreen .decoy-clock-wrap {
-    padding: 20px 40px;
+    padding: 0;
+    width: 100%;
     border: none;
     background: transparent;
     box-shadow: none;
   }
 
   #decoyScreen .decoy-date {
-    font-size: 4vw;
+    font-size: 6vw;
     margin-bottom: 2vh;
   }
 
   #decoyScreen .decoy-time {
-    font-size: 10vw;
+    font-size: 16vw;
+    white-space: nowrap;
   }
 }
 
