@@ -1680,13 +1680,12 @@ function _decoyHoldEnd(e) {
   if (_decoySingleTapTimer) clearTimeout(_decoySingleTapTimer);
   
   if (_decoyTapCount === 3) {
-    // トリプルタップ
+    // トリプルタップ (元々はダブルタップの機能)
     _decoyTapCount = 0;
-    _decoyHideSubSeconds = !_decoyHideSubSeconds;
-    if (_decoyHideSubSeconds) {
-      _decoyClockPaused = false; // コンマ秒をなくした時計が起動したときは静止を解除
+    _decoyClockPaused = !_decoyClockPaused; // 停止/再開をトグル
+    if (!_decoyClockPaused) {
+      _updateDecoyClock(); // 即時反映
     }
-    _updateDecoyClock(); // 即時反映
   } else {
     // 400ms待って次のタップが来なければ確定させる
     _decoySingleTapTimer = setTimeout(() => {
@@ -1696,10 +1695,13 @@ function _decoyHoldEnd(e) {
         // シングルタップ
         _decoyDisplayMode = (_decoyDisplayMode + 1) % 3;
       } else if (count === 2) {
-        // ダブルタップ
-        _decoyClockPaused = !_decoyClockPaused;
+        // ダブルタップ (元々はトリプルタップの機能)
+        _decoyHideSubSeconds = !_decoyHideSubSeconds;
+        if (_decoyHideSubSeconds) {
+          _decoyClockPaused = false; // コンマ秒をなくした時計が起動したときは静止を解除
+        }
       }
-      if (!_decoyClockPaused) {
+      if (!_decoyClockPaused || count === 2) {
         _updateDecoyClock(); // 即時反映
       }
     }, 400);
