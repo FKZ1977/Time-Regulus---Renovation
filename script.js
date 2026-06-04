@@ -1242,12 +1242,18 @@ function _vlEndHold(e) {
 
   if (absDeltaY > 40 && absDeltaY > absDeltaX && elapsed < 700) {
     // ─── 縦スワイプ検出 ───
-    if (deltaY > 0) {
-      // 上スワイプ（指が上方向）→ 前のフォント
-      _viewLockCurrentFontIndex = (_viewLockCurrentFontIndex - 1 + VIEW_LOCK_FONTS.length) % VIEW_LOCK_FONTS.length;
+    if (_vlRandomFontMode) {
+      // RANDOM START中：スワイプでフォントをランダムに変化
+      _viewLockCurrentFontIndex = Math.floor(Math.random() * VIEW_LOCK_FONTS.length);
     } else {
-      // 下スワイプ（指が下方向）→ 次のフォント
-      _viewLockCurrentFontIndex = (_viewLockCurrentFontIndex + 1) % VIEW_LOCK_FONTS.length;
+      // RANDOM STOP中：現在のフォントから順序良く変化
+      if (deltaY > 0) {
+        // 上スワイプ（指が上方向）→ 前のフォント
+        _viewLockCurrentFontIndex = (_viewLockCurrentFontIndex - 1 + VIEW_LOCK_FONTS.length) % VIEW_LOCK_FONTS.length;
+      } else {
+        // 下スワイプ（指が下方向）→ 次のフォント
+        _viewLockCurrentFontIndex = (_viewLockCurrentFontIndex + 1) % VIEW_LOCK_FONTS.length;
+      }
     }
     changeViewLockStyle("swipe");
   } else if (elapsed < 400 && absDeltaY <= 20 && absDeltaX <= 20) {
