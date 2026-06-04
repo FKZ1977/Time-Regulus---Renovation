@@ -1110,13 +1110,22 @@ function _updateViewLockClock() {
     
     clockEl.style.fontSize = finalPx + 'px';
     
-    // ★【はみ出し完全防止】フォントごとの文字幅の違い（特殊フォント対策）
-    // 実際にブラウザが計算した文字幅を取得し、画面幅（95%）を超えていたら縮小する
+    // ★【はみ出し完全防止】フォントごとの文字幅・高さの違い（複数行や特殊フォント対策）
+    // 実際にブラウザが計算した文字幅と高さを取得し、画面サイズを超えていたら縮小する
     const actualWidth = clockEl.offsetWidth;
+    const actualHeight = clockEl.offsetHeight;
     const targetMaxWidth = winW * 0.95;
+    const targetMaxHeight = winH * 0.95;
+    
+    let scaleDownRatio = 1;
     if (actualWidth > targetMaxWidth) {
-      // はみ出している割合に応じてフォントサイズを正確に縮小する
-      const scaleDownRatio = targetMaxWidth / actualWidth;
+      scaleDownRatio = Math.min(scaleDownRatio, targetMaxWidth / actualWidth);
+    }
+    if (actualHeight > targetMaxHeight) {
+      scaleDownRatio = Math.min(scaleDownRatio, targetMaxHeight / actualHeight);
+    }
+    
+    if (scaleDownRatio < 1) {
       finalPx = finalPx * scaleDownRatio;
       clockEl.style.fontSize = finalPx + 'px';
     }
