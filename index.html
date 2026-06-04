@@ -121,8 +121,9 @@
   <!-- 第2のおとり画面 (view_lock_screen) -->
   <div id="viewLockScreen" style="display:none;">
     <!-- ネオン時計 -->
-    <div class="view-lock-clock-wrap">
-      <div id="viewLockClock" class="view-lock-clock">--:--</div>
+    <div class="view-lock-clock-wrap" style="flex-direction: column;">
+      <div id="viewLockDate" class="view-lock-date" style="display:none;"></div>
+      <div id="viewLockClock" class="view-lock-clock">--:--:--</div>
     </div>
     
     <!-- 長押しプログレスリング -->
