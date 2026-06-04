@@ -1284,9 +1284,39 @@ function _vlEndHold(e) {
   }
 }
 
+// スワイプ中の指移動（touchmove / mousemove）ハンドラ：長押しをキャンセル
+function _vlMoveHold(e) {
+  if (!_vlPressStartTime) return;
+  const touch = e.touches ? e.touches[0] : e;
+  const moveY = touch.clientY;
+  const moveX = touch.clientX;
+  
+  // 開始位置から20px以上動いたら長押しをキャンセル（リングも消す）
+  if (Math.abs(moveY - _vlSwipeStartY) > 20 || Math.abs(moveX - _vlSwipeStartX) > 20) {
+    if (_viewLockHoldTimer) {
+      clearTimeout(_viewLockHoldTimer);
+      _viewLockHoldTimer = null;
+      const ring = document.getElementById("viewLockHoldRing");
+      const circle = document.getElementById("viewLockRingCircle");
+      if (ring) ring.style.opacity = "0";
+      if (circle) {
+        circle.style.transition = "stroke-dashoffset 0.1s linear";
+        circle.style.strokeDashoffset = "164";
+      }
+    }
+  }
+}
+
 // 指触れ（touchstart / mousedown）ハンドラ
 function _vlStartHold(e) {
   if (e.cancelable) e.preventDefault();
+  
+  // 連続スワイプ・マルチタッチ等によるタイマーの重複（孤児化）を防止
+  if (_viewLockHoldTimer) {
+    clearTimeout(_viewLockHoldTimer);
+    _viewLockHoldTimer = null;
+  }
+
   _vlIsLongPressSuccess = false;
   _vlPressStartTime = Date.now();
   const ring = document.getElementById("viewLockHoldRing");
@@ -1334,7 +1364,9 @@ function initViewLockHold() {
   // 同一関数参照を渡すことで removeEventListener が正確に機能する
   viewLock.removeEventListener('click',       _vlClickBlocker, true);
   viewLock.removeEventListener('mousedown',   _vlStartHold);
+  viewLock.removeEventListener('mousemove',   _vlMoveHold);
   viewLock.removeEventListener('touchstart',  _vlStartHold);
+  viewLock.removeEventListener('touchmove',   _vlMoveHold);
   viewLock.removeEventListener('mouseup',     _vlEndHold);
   viewLock.removeEventListener('mouseleave',  _vlEndHold);
   viewLock.removeEventListener('touchend',    _vlEndHold);
@@ -1349,7 +1381,9 @@ function initViewLockHold() {
   // リスナーを登録
   viewLock.addEventListener('click',       _vlClickBlocker, true);
   viewLock.addEventListener('mousedown',   _vlStartHold);
+  viewLock.addEventListener('mousemove',   _vlMoveHold);
   viewLock.addEventListener('touchstart',  _vlStartHold, { passive: false });
+  viewLock.addEventListener('touchmove',   _vlMoveHold, { passive: true });
   viewLock.addEventListener('mouseup',     _vlEndHold);
   viewLock.addEventListener('mouseleave',  _vlEndHold);
   viewLock.addEventListener('touchend',    _vlEndHold);
