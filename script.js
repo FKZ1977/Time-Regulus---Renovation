@@ -1351,6 +1351,7 @@ let _decoyHoldStarted = false;
 let _decoyClockPaused = false;
 let _decoyLastTapTime = 0;
 let _decoyDisplayMode = 0; // 0: 通常, 1: 24時間残り, 2: 日の出/日没
+let _decoySingleTapTimer = null;
 
 function showDecoyScreen() {
   // Google Analytics: ダミー画面への遷移をカウント（国別データなどもAnalytics上で確認可能）
@@ -1366,12 +1367,7 @@ function showDecoyScreen() {
   decoy.style.display = "block";
 
   const clockWrap = decoy.querySelector(".decoy-clock-wrap");
-  if (clockWrap) {
-    clockWrap.onclick = () => {
-      _decoyDisplayMode = (_decoyDisplayMode + 1) % 3;
-      _updateDecoyClock(); // 即時反映
-    };
-  }
+  // onclickハンドラは不要になりました（_decoyHoldEndで処理します）
 
   // アニメーションを確実に最初から再生させる（フェードイン・浮上）
   const title = decoy.querySelector(".anim-title-rise");
@@ -1602,6 +1598,9 @@ function _updateDecoyClock() {
 }
 
 function _decoyHoldStart(e) {
+  // ボタン類がタップされた場合は長押し判定やpreventDefaultを除外し、本来のclickを発火させる
+  if (e && e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button'))) return;
+
   if (e && e.cancelable) e.preventDefault(); // ghost click防止
   if (_decoyHoldStarted) return;
   _decoyHoldStarted = true;
@@ -1631,6 +1630,8 @@ function _decoyHoldStart(e) {
 }
 
 function _decoyHoldEnd(e) {
+  if (e && e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button'))) return;
+
   if (!_decoyHoldStarted) return;
   _decoyHoldStarted = false;
   clearTimeout(_decoyHoldTimer);
@@ -1647,16 +1648,29 @@ function _decoyHoldEnd(e) {
     circle.style.strokeDashoffset = "163";
   }
 
-  // ダブルタップ判定（長押しで戻る前に離した場合はタップとして扱う）
+  // タップ判定（長押しで戻る前に離した場合）
   const now = Date.now();
   if (_decoyLastTapTime > 0 && now - _decoyLastTapTime < 400) {
+    // ダブルタップ
     _decoyClockPaused = !_decoyClockPaused; // 停止/再開をトグル
     _decoyLastTapTime = 0;
+    if (_decoySingleTapTimer) {
+      clearTimeout(_decoySingleTapTimer);
+      _decoySingleTapTimer = null;
+    }
     if (!_decoyClockPaused) {
       _updateDecoyClock(); // 再開時は即座に1回更新
     }
   } else {
+    // シングルタップ
     _decoyLastTapTime = now;
+    if (_decoySingleTapTimer) clearTimeout(_decoySingleTapTimer);
+    _decoySingleTapTimer = setTimeout(() => {
+      _decoyLastTapTime = 0;
+      _decoySingleTapTimer = null;
+      _decoyDisplayMode = (_decoyDisplayMode + 1) % 3;
+      _updateDecoyClock(); // 即時反映
+    }, 400);
   }
 }
 
