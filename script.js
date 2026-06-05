@@ -787,15 +787,16 @@ const VIEW_LOCK_FONTS = [
   'Bellefair',         // 繊細でエレガントな細身の文字
 ];
 
-// 標準や全角の確率を上げ、時計としての読みやすさを確保（標準:8, 全角:4, 漢字系:6, ローマ:1）
+// 標準・全角・漢字・ローマ数字のバランス解決
+// 標準:8, 全角:4, 漢字系:9（各种3）, ローマ:3
 const VIEW_LOCK_FORMATS = [
   'standard', 'standard', 'standard', 'standard', 'standard', 'standard', 'standard', 'standard',
   'fullwidth', 'fullwidth', 'fullwidth', 'fullwidth',
-  'kanji', 'kanji',
-  'old_kanji',
-  'kanji_digit', 'kanji_digit',
-  'old_kanji_digit',
-  'roman'
+  'kanji', 'kanji', 'kanji',
+  'old_kanji', 'old_kanji', 'old_kanji',
+  'kanji_digit', 'kanji_digit', 'kanji_digit',
+  'old_kanji_digit', 'old_kanji_digit', 'old_kanji_digit',
+  'roman', 'roman', 'roman'
 ];
 
 function _toKanji(num) {
@@ -1072,14 +1073,20 @@ function _updateViewLockClock() {
 
     
     // 表示される文字列の長さに応じて、画面幅（vw）に対する最大フォントサイズを動的に計算する
+    // 日付表示時は日付文字列の幅も比較に含め、はみ出しを防ぐ
+    const refStr = (_viewLockShowDate && dateStr && dateStr.length > timeStr.length)
+      ? dateStr
+      : timeStr;
     let emWidth = 0;
-    for (let i = 0; i < timeStr.length; i++) {
-      if (timeStr.charCodeAt(i) > 255) {
+    for (let i = 0; i < refStr.length; i++) {
+      if (refStr.charCodeAt(i) > 255) {
         emWidth += 1.05;
       } else {
         emWidth += 0.65;
       }
     }
+    // 日付が0.6emで表示される場合、時刻より幅が広くなる影響も考慮する
+    // → dateStrが refStrに選ばれた場合は、実際に0.6倍の大きさなので逆算する必要はない（すでに小さい内側に嵌まるため）
     
     let maxVw = 95 / emWidth;
     let calculatedVw = maxVw * _viewLockScaleFactor;
