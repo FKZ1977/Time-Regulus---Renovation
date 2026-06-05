@@ -1,4 +1,4 @@
-const currentVersion = "3.10";
+const currentVersion = "3.1.1";
 let lastError = null;
 let hasCalculated = false;
 let reverseMode = "toStandard";
@@ -785,16 +785,6 @@ const VIEW_LOCK_FONTS = [
   // ── 個性的・エレガント系 ─────────────────────────────────
   'Diplomata SC',      // 古典的・彫刻のような重厚感のある文字
   'Bellefair',         // 繊細でエレガントな細身の文字
-  // ── システム内蔵フォント（フォールバック） ─────────────────
-  'Courier New', 'Helvetica Neue', 'Times New Roman', 'Georgia',
-  'Impact', 'Arial', 'Verdana', 'Trebuchet MS',
-  'Baskerville', 'Futura', 'Gill Sans', 'Optima',
-  'Papyrus', 'Monaco', 'Consolas', 'Roboto',
-  'Arial Black', 'Lucida Console', 'Tahoma', 'Garamond',
-  'Cambria', 'Calibri', 'Segoe UI', 'Menlo', 'PT Sans',
-  'Oswald', 'Open Sans', 'Lato', 'Montserrat', 'Raleway',
-  'Ubuntu', 'Playfair Display', 'Nunito', 'Rubik',
-  'Quicksand', 'Inconsolata', 'Josefin Sans', 'Anton', 'Dancing Script'
 ];
 
 // 標準や全角の確率を上げ、時計としての読みやすさを確保（標準:8, 全角:4, 漢字系:6, ローマ:1）
@@ -915,6 +905,9 @@ function _handleViewLockResize() {
   _viewLockResizeTimer = setTimeout(() => {
     const clockEl = document.getElementById("viewLockClock");
     if (!clockEl || clockEl.style.display === "none") return;
+    
+    // ★【バグ修正】画面の回転・リサイズに合わせてフォントサイズを再計算させる
+    _updateViewLockClock();
     
     const winW = window.innerWidth;
     const winH = window.innerHeight;
@@ -1248,7 +1241,7 @@ function _vlEndHold(e) {
   const absDeltaY = Math.abs(deltaY);
   const absDeltaX = Math.abs(endX - _vlSwipeStartX);
 
-  if (absDeltaY > 40 && absDeltaY > absDeltaX && elapsed < 700) {
+  if (absDeltaY > 25 && absDeltaY > absDeltaX && elapsed < 700) {
     // ─── 縦スワイプ検出 ───
     if (_vlRandomFontMode) {
       // RANDOM START中：スワイプでフォントをランダムに変化
@@ -1922,7 +1915,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 起動時のバージョンポップアップ
   if (localStorage.getItem("lastVersion") !== currentVersion) {
-    alert("タイムレグルスはV3.10にアップデートされました！");
+    alert("タイムレグルスがV3.1.1にアップデートされました！");
     localStorage.setItem("lastVersion", currentVersion);
   }
 
