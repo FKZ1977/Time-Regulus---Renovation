@@ -1893,20 +1893,68 @@ function _updateDecoyCountdown() {
     _decoyTimerInterval = null;
     if (display) display.textContent = "00:00.0";
     
-    // アラーム発動（ピンク色にしてバイブレーション）
+    // アラーム発動（ピンク色 + エンジン音 + バイブレーション）
     const decoyScreen = document.getElementById("decoyScreen");
     const ring = document.getElementById("decoyHoldRing");
     if (decoyScreen && !decoyScreen.classList.contains("decoy-alarm")) {
       decoyScreen.classList.add("decoy-alarm");
       if (ring) ring.classList.add("decoy-alarm");
       
-      // バイブレーション（Android用・iOSは制約あり）
-      if (navigator.vibrate) {
-        navigator.vibrate([500, 200, 500, 200]);
-        _decoyAlarmInterval = setInterval(() => {
-          if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200]);
-        }, 2000);
+      // ── バイクのエンジン音（Web Audio API合成 / iOSもAndroidも対応） ──
+      function _playEngineRoar() {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          
+          // 低音のエンジン唸り（オシレーター1：基音）
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = 'sawtooth';           // ノコギリ波（エンジン音っぽい倍音）
+          osc1.frequency.setValueAtTime(80, ctx.currentTime);
+          osc1.frequency.linearRampToValueAtTime(180, ctx.currentTime + 0.15); // 回転数が上がる
+          osc1.frequency.linearRampToValueAtTime(60,  ctx.currentTime + 0.7);  // 失速して下がる
+          gain1.gain.setValueAtTime(0.0, ctx.currentTime);
+          gain1.gain.linearRampToValueAtTime(0.6, ctx.currentTime + 0.05);
+          gain1.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.3);
+          gain1.gain.linearRampToValueAtTime(0.0, ctx.currentTime + 0.8);
+          osc1.connect(gain1);
+          gain1.connect(ctx.destination);
+          osc1.start(ctx.currentTime);
+          osc1.stop(ctx.currentTime + 0.8);
+          
+          // 中音域の歪み感（オシレーター2：高調波）
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'square';
+          osc2.frequency.setValueAtTime(160, ctx.currentTime);
+          osc2.frequency.linearRampToValueAtTime(360, ctx.currentTime + 0.15);
+          osc2.frequency.linearRampToValueAtTime(120, ctx.currentTime + 0.7);
+          gain2.gain.setValueAtTime(0.0, ctx.currentTime);
+          gain2.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05);
+          gain2.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.3);
+          gain2.gain.linearRampToValueAtTime(0.0, ctx.currentTime + 0.8);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start(ctx.currentTime);
+          osc2.stop(ctx.currentTime + 0.8);
+          
+          // コンテキストを自動クローズ（リソース解放）
+          setTimeout(() => ctx.close(), 1200);
+        } catch (e) {
+          // AudioContext非対応環境はサイレントに無視
+        }
       }
+      
+      // 即時1回鳴らす
+      _playEngineRoar();
+      
+      // その後2秒ごとに繰り返し（バイブも同時）
+      _decoyAlarmInterval = setInterval(() => {
+        _playEngineRoar();
+        if (navigator.vibrate) navigator.vibrate([400, 100, 400]);
+      }, 2000);
+      
+      // バイブレーション（Android用・最初の1回）
+      if (navigator.vibrate) navigator.vibrate([400, 100, 400]);
     }
   } else {
     // 残り時間描画
