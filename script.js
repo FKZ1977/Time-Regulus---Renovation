@@ -4206,6 +4206,8 @@ document.addEventListener("focusin", function(e) {
     toEl = null;
     toId = null;
 
+    // スワイプ前にページをトップへ戺す（getBoundingClientRectの安定化 & 完了後リセット時のガクっ防止）
+    window.scrollTo(0, 0);
     fromEl.style.transition = 'none';
 
   }, { passive: true });
@@ -4282,8 +4284,8 @@ document.addEventListener("focusin", function(e) {
       const initBase = dX > 0 ? -initW : initW;
       toEl.style.transition = 'none';
       toEl.style.position   = 'fixed';
-      // toElのtopをfromElの実際の上端位置に合わせて段差を解消
-      toEl.style.top        = fromEl.getBoundingClientRect().top + 'px';
+      // resultListPageは画面全体を覚うのでtop:0、それ以外は fromEl と同じ上端位置（scrollTo後なので安定）
+      toEl.style.top        = (toId === 'resultListPage') ? '0' : (fromEl.getBoundingClientRect().top + 'px');
       toEl.style.left       = '0';
       if (toId === 'resultListPage') {
         toEl.style.width      = '100%';
@@ -4356,6 +4358,9 @@ document.addEventListener("focusin", function(e) {
       fromEl = null; toEl = null; toId = null; currentId = null;
 
       setTimeout(() => {
+        // fixed→通常フローへのリセット後にガクっと跳ぶのを防ぐ：先にスクロールをトップへ
+        window.scrollTo(0, 0);
+
         // from 画面を完全に非表示＆リセット
         cFrom.style.display    = 'none';
         cFrom.style.transform  = '';
@@ -4365,7 +4370,6 @@ document.addEventListener("focusin", function(e) {
         cTo.style.position   = '';
         cTo.style.top        = '';
         cTo.style.left       = '';
-        // mode-cardはwidth/minHeight/backgroundを変更していないのでリセット不要
         // resultListPageのみリセット
         if (cTo.id === 'resultListPage') {
           cTo.style.width      = '';
@@ -4396,6 +4400,9 @@ document.addEventListener("focusin", function(e) {
       fromEl = null; toEl = null; toId = null; currentId = null;
 
       setTimeout(() => {
+        // fixed→通常フローへのリセット後にガクっと戺るのを防ぐ：スクロールをトップに戺す
+        window.scrollTo(0, 0);
+
         cFrom.style.transform  = '';
         cFrom.style.transition = '';
 
