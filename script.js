@@ -864,18 +864,18 @@ function changeViewLockStyle(reason = "tick") {
   if (reason === "init" || ((reason === "tick" || reason === "toggle") && _vlRandomFontMode)) {
     // ランダムモード時はサイコロタイムにランダムインデックスで選抟
     _viewLockCurrentFormatIndex = Math.floor(Math.random() * VIEW_LOCK_FORMATS.length);
-    const randomColor = VIEW_LOCK_COLORS[Math.floor(Math.random() * VIEW_LOCK_COLORS.length)];
-    _viewLockScaleFactor = 0.75 + Math.random() * 0.25; 
-    if (clockEl) {
-      clockEl.style.textShadow = `
-        0 0 10px rgba(${randomColor}, 0.8),
-        0 0 20px rgba(${randomColor}, 0.6),
-        0 0 40px rgba(${randomColor}, 0.4),
-        0 0 80px rgba(${randomColor}, 0.2)
-      `;
-    }
-  } else if (reason === "swipe") {
-    // スワイプ時はインデックスはスワイプハンドラー内で更新済み—色・スケールはそのまま維持
+    _vlCurrentGlowColor = VIEW_LOCK_COLORS[Math.floor(Math.random() * VIEW_LOCK_COLORS.length)];
+    _viewLockScaleFactor = 0.75 + Math.random() * 0.25;
+  }
+  // ネオン輝きを現在のカラーと強度で適用（初期・ティック・スワイプ全て共通）
+  if (clockEl) {
+    const g = _vlGlowIntensity;
+    clockEl.style.textShadow = `
+      0 0 10px rgba(${_vlCurrentGlowColor}, ${Math.min(1, 0.8 * g)}),
+      0 0 20px rgba(${_vlCurrentGlowColor}, ${Math.min(1, 0.6 * g)}),
+      0 0 40px rgba(${_vlCurrentGlowColor}, ${Math.min(1, 0.4 * g)}),
+      0 0 80px rgba(${_vlCurrentGlowColor}, ${Math.min(1, 0.2 * g)})
+    `;
   }
   _viewLockCurrentFormat = VIEW_LOCK_FORMATS[_viewLockCurrentFormatIndex];
   
@@ -1247,26 +1247,36 @@ function _vlEndHold(e) {
   const endY = touch ? touch.clientY : _vlSwipeStartY;
   const endX = touch ? touch.clientX : _vlSwipeStartX;
   const deltaY = _vlSwipeStartY - endY;      // 正: 上スワイプ（指が上）/ 負: 下スワイプ（指が下）
+  const deltaX = _vlSwipeStartX - endX;       // 正: 左スワイプ（指が左）/ 負: 右スワイプ（指が右）
   const absDeltaY = Math.abs(deltaY);
-  const absDeltaX = Math.abs(endX - _vlSwipeStartX);
+  const absDeltaX = Math.abs(deltaX);
 
-  if (absDeltaY > 25 && absDeltaY > absDeltaX && elapsed < 700) {
-    // ─── 縦スワイプ検出 ───
+  if (absDeltaX > 25 && absDeltaX > absDeltaY && elapsed < 700) {
+    // ─── 横スワイプ検出 — フォント＋フォーマット切替 ───
     if (_vlRandomFontMode) {
-      // RANDOM START中：スワイプでフォントとフォーマットをランダムに変化
       _viewLockCurrentFontIndex = Math.floor(Math.random() * VIEW_LOCK_FONTS.length);
       _viewLockCurrentFormatIndex = Math.floor(Math.random() * VIEW_LOCK_FORMATS.length);
     } else {
-      // RANDOM STOP中：現在のフォント・フォーマットから順序良く変化
-      if (deltaY > 0) {
-        // 上スワイプ（指が上方向）→ 前のフォント・フォーマット
+      if (deltaX > 0) {
+        // 左スワイプ → 前のフォント＋フォーマット
         _viewLockCurrentFontIndex = (_viewLockCurrentFontIndex - 1 + VIEW_LOCK_FONTS.length) % VIEW_LOCK_FONTS.length;
         _viewLockCurrentFormatIndex = (_viewLockCurrentFormatIndex - 1 + VIEW_LOCK_FORMATS.length) % VIEW_LOCK_FORMATS.length;
       } else {
-        // 下スワイプ（指が下方向）→ 次のフォント・フォーマット
+        // 右スワイプ → 次のフォント＋フォーマット
         _viewLockCurrentFontIndex = (_viewLockCurrentFontIndex + 1) % VIEW_LOCK_FONTS.length;
         _viewLockCurrentFormatIndex = (_viewLockCurrentFormatIndex + 1) % VIEW_LOCK_FORMATS.length;
       }
+    }
+    changeViewLockStyle("swipe");
+  } else if (absDeltaY > 25 && absDeltaY > absDeltaX && elapsed < 700) {
+    // ─── 縦スワイプ検出 — ネオン輝き強度の増減 ───
+    const step = 0.2;
+    if (deltaY > 0) {
+      // 上スワイプ → 輝き強く
+      _vlGlowIntensity = Math.min(2.0, _vlGlowIntensity + step);
+    } else {
+      // 下スワイプ → 輝き弱く
+      _vlGlowIntensity = Math.max(0.1, _vlGlowIntensity - step);
     }
     changeViewLockStyle("swipe");
   } else if (elapsed < 400 && absDeltaY <= 20 && absDeltaX <= 20) {
