@@ -787,15 +787,14 @@ const VIEW_LOCK_FONTS = [
   'Bellefair',         // 繊細でエレガントな細身の文字
 ];
 
-// 標準・全角・漢字・ローマ数字のバランス解決
-// 標準:8, 全角:4, 漢字系:9（各种3）, ローマ:3
+// 合計20パターン：標準:8, 全角:4, 漢字系各1（計4）, ローマ:3　※漢字系は出現頻度を絞る
 const VIEW_LOCK_FORMATS = [
   'standard', 'standard', 'standard', 'standard', 'standard', 'standard', 'standard', 'standard',
   'fullwidth', 'fullwidth', 'fullwidth', 'fullwidth',
-  'kanji', 'kanji', 'kanji',
-  'old_kanji', 'old_kanji', 'old_kanji',
-  'kanji_digit', 'kanji_digit', 'kanji_digit',
-  'old_kanji_digit', 'old_kanji_digit', 'old_kanji_digit',
+  'kanji',
+  'old_kanji',
+  'kanji_digit',
+  'old_kanji_digit',
   'roman', 'roman', 'roman'
 ];
 
