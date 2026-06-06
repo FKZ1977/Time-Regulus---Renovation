@@ -4281,10 +4281,13 @@ document.addEventListener("focusin", function(e) {
       const initW = window.innerWidth;
       const initBase = dX > 0 ? -initW : initW;
       toEl.style.transition = 'none';
-      toEl.style.position   = 'fixed';
-      // resultListPageは画面全体を覚うのでtop:0、それ以外は fromEl と同じ上端位置（scrollTo後なので安定）
-      toEl.style.top        = (toId === 'resultListPage') ? '0' : (fromEl.getBoundingClientRect().top + 'px');
+      // スワイプ中は absolute にすることでドキュメントの元の高さ(margin-top等)を維持する
+      toEl.style.position   = 'absolute';
+      toEl.style.top        = '0';
       toEl.style.left       = '0';
+      toEl.style.right      = '0';
+      toEl.style.marginLeft = 'auto';
+      toEl.style.marginRight= 'auto';
       if (toId === 'resultListPage') {
         toEl.style.width      = '100%';
         toEl.style.minHeight  = '100vh';
@@ -4365,6 +4368,9 @@ document.addEventListener("focusin", function(e) {
         cTo.style.position   = '';
         cTo.style.top        = '';
         cTo.style.left       = '';
+        cTo.style.right      = '';
+        cTo.style.marginLeft = '';
+        cTo.style.marginRight= '';
         // resultListPageのみリセット
         if (cTo.id === 'resultListPage') {
           cTo.style.width      = '';
@@ -4402,6 +4408,9 @@ document.addEventListener("focusin", function(e) {
         cTo.style.position   = '';
         cTo.style.top        = '';
         cTo.style.left       = '';
+        cTo.style.right      = '';
+        cTo.style.marginLeft = '';
+        cTo.style.marginRight= '';
         if (cTo.id === 'resultListPage') {
           cTo.style.width      = '';
           cTo.style.minHeight  = '';
