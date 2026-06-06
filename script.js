@@ -4207,6 +4207,11 @@ document.addEventListener("focusin", function(e) {
     toId = null;
 
     fromEl.style.transition = 'none';
+    // スワイプ中は fromEl も固定位置に引き上げ、toEl と高さを揃える（段差解消）
+    fromEl.style.position   = 'fixed';
+    fromEl.style.top        = '0';
+    fromEl.style.left       = '0';
+    fromEl.style.width      = '100%';
 
   }, { passive: true });
 
@@ -4310,7 +4315,14 @@ document.addEventListener("focusin", function(e) {
     isSwiping = false;
 
     if (axisLocked !== 'horizontal') {
-      if (fromEl) { fromEl.style.transition = ''; fromEl.style.transform = ''; }
+      if (fromEl) {
+        fromEl.style.transition = '';
+        fromEl.style.transform  = '';
+        fromEl.style.position   = '';
+        fromEl.style.top        = '';
+        fromEl.style.left       = '';
+        fromEl.style.width      = '';
+      }
       fromEl = null; toEl = null; toId = null; currentId = null;
       return;
     }
@@ -4325,7 +4337,14 @@ document.addEventListener("focusin", function(e) {
         fromEl.style.transition = 'transform 0.3s ease';
         fromEl.style.transform  = 'translateX(0)';
         const f = fromEl;
-        setTimeout(() => { f.style.transition = ''; f.style.transform = ''; }, 300);
+        setTimeout(() => {
+          f.style.transition = '';
+          f.style.transform  = '';
+          f.style.position   = '';
+          f.style.top        = '';
+          f.style.left       = '';
+          f.style.width      = '';
+        }, 300);
       }
       fromEl = null; toEl = null; toId = null; currentId = null;
       axisLocked = null;
@@ -4349,10 +4368,14 @@ document.addEventListener("focusin", function(e) {
       fromEl = null; toEl = null; toId = null; currentId = null;
 
       setTimeout(() => {
-        // from 画面を完全に非表示
+        // from 画面を完全に非表示＆リセット
         cFrom.style.display    = 'none';
         cFrom.style.transform  = '';
         cFrom.style.transition = '';
+        cFrom.style.position   = '';
+        cFrom.style.top        = '';
+        cFrom.style.left       = '';
+        cFrom.style.width      = '';
 
         // to 画面を通常フローへ戻す
         cTo.style.position   = '';
@@ -4391,6 +4414,10 @@ document.addEventListener("focusin", function(e) {
       setTimeout(() => {
         cFrom.style.transform  = '';
         cFrom.style.transition = '';
+        cFrom.style.position   = '';
+        cFrom.style.top        = '';
+        cFrom.style.left       = '';
+        cFrom.style.width      = '';
 
         cTo.style.display    = 'none';
         cTo.style.position   = '';
