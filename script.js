@@ -4206,8 +4206,6 @@ document.addEventListener("focusin", function(e) {
     toEl = null;
     toId = null;
 
-    // スワイプ前にページをトップへ戺す（getBoundingClientRectの安定化 & 完了後リセット時のガクっ防止）
-    window.scrollTo(0, 0);
     fromEl.style.transition = 'none';
 
   }, { passive: true });
@@ -4358,9 +4356,6 @@ document.addEventListener("focusin", function(e) {
       fromEl = null; toEl = null; toId = null; currentId = null;
 
       setTimeout(() => {
-        // fixed→通常フローへのリセット後にガクっと跳ぶのを防ぐ：先にスクロールをトップへ
-        window.scrollTo(0, 0);
-
         // from 画面を完全に非表示＆リセット
         cFrom.style.display    = 'none';
         cFrom.style.transform  = '';
@@ -4400,9 +4395,6 @@ document.addEventListener("focusin", function(e) {
       fromEl = null; toEl = null; toId = null; currentId = null;
 
       setTimeout(() => {
-        // fixed→通常フローへのリセット後にガクっと戺るのを防ぐ：スクロールをトップに戺す
-        window.scrollTo(0, 0);
-
         cFrom.style.transform  = '';
         cFrom.style.transition = '';
 
