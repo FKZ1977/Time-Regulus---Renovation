@@ -4207,11 +4207,6 @@ document.addEventListener("focusin", function(e) {
     toId = null;
 
     fromEl.style.transition = 'none';
-    // スワイプ中は fromEl も固定位置に引き上げ、toEl と高さを揃える（段差解消）
-    fromEl.style.position   = 'fixed';
-    fromEl.style.top        = '0';
-    fromEl.style.left       = '0';
-    fromEl.style.width      = '100%';
 
   }, { passive: true });
 
@@ -4287,7 +4282,8 @@ document.addEventListener("focusin", function(e) {
       const initBase = dX > 0 ? -initW : initW;
       toEl.style.transition = 'none';
       toEl.style.position   = 'fixed';
-      toEl.style.top        = '0';
+      // toElのtopをfromElの実際の上端位置に合わせて段差を解消
+      toEl.style.top        = fromEl.getBoundingClientRect().top + 'px';
       toEl.style.left       = '0';
       if (toId === 'resultListPage') {
         toEl.style.width      = '100%';
@@ -4318,10 +4314,6 @@ document.addEventListener("focusin", function(e) {
       if (fromEl) {
         fromEl.style.transition = '';
         fromEl.style.transform  = '';
-        fromEl.style.position   = '';
-        fromEl.style.top        = '';
-        fromEl.style.left       = '';
-        fromEl.style.width      = '';
       }
       fromEl = null; toEl = null; toId = null; currentId = null;
       return;
@@ -4340,10 +4332,6 @@ document.addEventListener("focusin", function(e) {
         setTimeout(() => {
           f.style.transition = '';
           f.style.transform  = '';
-          f.style.position   = '';
-          f.style.top        = '';
-          f.style.left       = '';
-          f.style.width      = '';
         }, 300);
       }
       fromEl = null; toEl = null; toId = null; currentId = null;
@@ -4372,10 +4360,6 @@ document.addEventListener("focusin", function(e) {
         cFrom.style.display    = 'none';
         cFrom.style.transform  = '';
         cFrom.style.transition = '';
-        cFrom.style.position   = '';
-        cFrom.style.top        = '';
-        cFrom.style.left       = '';
-        cFrom.style.width      = '';
 
         // to 画面を通常フローへ戻す
         cTo.style.position   = '';
@@ -4414,10 +4398,6 @@ document.addEventListener("focusin", function(e) {
       setTimeout(() => {
         cFrom.style.transform  = '';
         cFrom.style.transition = '';
-        cFrom.style.position   = '';
-        cFrom.style.top        = '';
-        cFrom.style.left       = '';
-        cFrom.style.width      = '';
 
         cTo.style.display    = 'none';
         cTo.style.position   = '';
