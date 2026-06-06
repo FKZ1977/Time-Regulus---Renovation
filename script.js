@@ -1283,6 +1283,29 @@ function _vlEndHold(e) {
         _vlSingleTapTimer = null;
         _viewLockShowDate = !_viewLockShowDate;
         _updateViewLockClock();
+        // 日付追加で要素が上に拡大しても画面外にはみ出さないよう位置を再クランプ
+        setTimeout(() => {
+          const clockEl = document.getElementById("viewLockClock");
+          if (!clockEl) return;
+          const winW = window.innerWidth;
+          const winH = window.innerHeight;
+          const transformStr = clockEl.style.transform;
+          let currentX = 0, currentY = 0;
+          if (transformStr) {
+            const match = transformStr.match(/translate\(([^p]+)px,\s*([^p]+)px\)/);
+            if (match) { currentX = parseFloat(match[1]); currentY = parseFloat(match[2]); }
+          }
+          if (isNaN(currentX) || isNaN(currentY)) return;
+          const w = clockEl.offsetWidth;
+          const h = clockEl.offsetHeight;
+          const maxX = Math.max(0, (winW - w) / 2);
+          const maxY = Math.max(0, (winH - h) / 2);
+          let cx = Math.max(-maxX, Math.min(maxX, currentX));
+          let cy = Math.max(-maxY, Math.min(maxY, currentY));
+          if (cx !== currentX || cy !== currentY) {
+            clockEl.style.transform = `translate(${cx}px, ${cy}px)`;
+          }
+        }, 50);
       }, 400);
     }
     // iOSのghost clickをブロック
