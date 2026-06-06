@@ -1,4 +1,4 @@
-const currentVersion = "3.1.1";
+const currentVersion = "3.1.2";
 let lastError = null;
 let hasCalculated = false;
 let reverseMode = "toStandard";
@@ -2136,7 +2136,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 起動時のバージョンポップアップ
   if (localStorage.getItem("lastVersion") !== currentVersion) {
-    alert("タイムレグルスがV3.1.1にアップデートされました！");
+    alert("タイムレグルスがv3.1.2にアップデートされました！");
     localStorage.setItem("lastVersion", currentVersion);
   }
 
