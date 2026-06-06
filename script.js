@@ -764,6 +764,7 @@ let _vlIsLongPressSuccess = false;
 let _vlBlockingClick = false;
 // スワイプ・ダブルタップ・フォント切り替え管理
 let _viewLockCurrentFontIndex = 0;   // 現在のフォントインデックス
+let _viewLockCurrentFormatIndex = 0; // 現在のフォーマットインデックス
 let _vlRandomFontMode = false;        // ランダムフォントモードのON/OFF
 let _vlLastTapTime = 0;              // ダブルタップ検出用：前回タップ時刻
 let _vlSwipeStartY = 0;              // スワイプ開始Y座標
@@ -861,10 +862,10 @@ function changeViewLockStyle(reason = "tick") {
   
   // 色・フォーマット・スケールの変更は、初期化時、またはランダムモードON時の自動更新/切り替え時のみ行う
   if (reason === "init" || ((reason === "tick" || reason === "toggle") && _vlRandomFontMode)) {
-    const randomFormat = VIEW_LOCK_FORMATS[Math.floor(Math.random() * VIEW_LOCK_FORMATS.length)];
+    // ランダムモード時はサイコロタイムにランダムインデックスで選抟
+    _viewLockCurrentFormatIndex = Math.floor(Math.random() * VIEW_LOCK_FORMATS.length);
     const randomColor = VIEW_LOCK_COLORS[Math.floor(Math.random() * VIEW_LOCK_COLORS.length)];
     _viewLockScaleFactor = 0.75 + Math.random() * 0.25; 
-    
     if (clockEl) {
       clockEl.style.textShadow = `
         0 0 10px rgba(${randomColor}, 0.8),
@@ -873,8 +874,10 @@ function changeViewLockStyle(reason = "tick") {
         0 0 80px rgba(${randomColor}, 0.2)
       `;
     }
-    _viewLockCurrentFormat = randomFormat;
+  } else if (reason === "swipe") {
+    // スワイプ時はインデックスはスワイプハンドラー内で更新済み—色・スケールはそのまま維持
   }
+  _viewLockCurrentFormat = VIEW_LOCK_FORMATS[_viewLockCurrentFormatIndex];
   
   _updateViewLockClock();
   
@@ -1250,16 +1253,19 @@ function _vlEndHold(e) {
   if (absDeltaY > 25 && absDeltaY > absDeltaX && elapsed < 700) {
     // ─── 縦スワイプ検出 ───
     if (_vlRandomFontMode) {
-      // RANDOM START中：スワイプでフォントをランダムに変化
+      // RANDOM START中：スワイプでフォントとフォーマットをランダムに変化
       _viewLockCurrentFontIndex = Math.floor(Math.random() * VIEW_LOCK_FONTS.length);
+      _viewLockCurrentFormatIndex = Math.floor(Math.random() * VIEW_LOCK_FORMATS.length);
     } else {
-      // RANDOM STOP中：現在のフォントから順序良く変化
+      // RANDOM STOP中：現在のフォント・フォーマットから順序良く変化
       if (deltaY > 0) {
-        // 上スワイプ（指が上方向）→ 前のフォント
+        // 上スワイプ（指が上方向）→ 前のフォント・フォーマット
         _viewLockCurrentFontIndex = (_viewLockCurrentFontIndex - 1 + VIEW_LOCK_FONTS.length) % VIEW_LOCK_FONTS.length;
+        _viewLockCurrentFormatIndex = (_viewLockCurrentFormatIndex - 1 + VIEW_LOCK_FORMATS.length) % VIEW_LOCK_FORMATS.length;
       } else {
-        // 下スワイプ（指が下方向）→ 次のフォント
+        // 下スワイプ（指が下方向）→ 次のフォント・フォーマット
         _viewLockCurrentFontIndex = (_viewLockCurrentFontIndex + 1) % VIEW_LOCK_FONTS.length;
+        _viewLockCurrentFormatIndex = (_viewLockCurrentFormatIndex + 1) % VIEW_LOCK_FORMATS.length;
       }
     }
     changeViewLockStyle("swipe");
