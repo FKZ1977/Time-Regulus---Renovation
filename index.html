@@ -16,7 +16,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-title" content="TimeRegulus✨">
+  <meta name="apple-mobile-web-app-title" content="TimeRegulus🦖">
   <link rel="apple-touch-icon" href="icon-192.png">
   <!-- 置時計用 Google Fonts（非ブロッキング非同期読み込み） -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -129,6 +129,63 @@
     <!-- 長押しプログレスリング -->
     <svg id="viewLockHoldRing" class="hold-ring" viewBox="0 0 60 60">
       <circle cx="30" cy="30" r="26" id="viewLockRingCircle"/>
+    </svg>
+  </div>
+
+  <!-- アナログ時計隠し画面 (analogLockScreen) -->
+  <div id="analogLockScreen" style="display:none;" class="analog-lock-screen info-state-0">
+    <div id="analogInfoContainer" class="analog-info-container">
+      <div id="analogDigitalClock" class="analog-digital-clock">00:00</div>
+      <div id="analogCalendarHeader" class="analog-calendar-header"></div>
+      <div id="analogCalendarGrid" class="analog-calendar-grid"></div>
+    </div>
+    <div class="analog-swipe-container" id="analogSwipeContainer">
+      <!-- 1. Regulus Core -->
+      <div class="analog-page">
+        <div class="clock-regulus">
+          <div class="clock-face" id="regulusFace">
+            <!-- JavaScriptで星の目盛りを動的に生成します -->
+            <div class="clock-hand hour-hand" id="regulusHour"></div>
+            <div class="clock-hand minute-hand" id="regulusMinute"></div>
+            <div class="clock-hand second-hand sweep-tail" id="regulusSecond"></div>
+            <div class="clock-center"></div>
+          </div>
+        </div>
+      </div>
+      <!-- 2. Neon Radar -->
+      <div class="analog-page">
+        <div class="clock-radar">
+          <div class="radar-grid"></div>
+          <div class="clock-face" id="radarFace">
+            <div class="clock-hand hour-hand" id="radarHour"></div>
+            <div class="clock-hand minute-hand" id="radarMinute"></div>
+            <div class="clock-hand second-hand sweep-radar" id="radarSecond"></div>
+            <div class="clock-center"></div>
+          </div>
+        </div>
+      </div>
+      <!-- 3. Eclipse -->
+      <div class="analog-page">
+        <div class="clock-eclipse">
+          <div class="clock-face" id="eclipseFace">
+            <div class="clock-hand hour-hand" id="eclipseHour"></div>
+            <div class="clock-hand minute-hand" id="eclipseMinute"></div>
+            <div class="clock-hand second-hand sweep-corona" id="eclipseSecond"></div>
+            <div class="eclipse-center"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="analog-pager" id="analogPager">
+      <span class="pager-dot active"></span>
+      <span class="pager-dot"></span>
+      <span class="pager-dot"></span>
+    </div>
+
+    <!-- 長押しプログレスリング -->
+    <svg id="analogHoldRing" class="hold-ring" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="26" id="analogRingCircle"/>
     </svg>
   </div>
 

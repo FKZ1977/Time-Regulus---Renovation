@@ -3156,5 +3156,352 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   transition: stroke-dashoffset 0.1s linear;
 }
 
+/* ============================================================
+   アナログ時計画面 (analogLockScreen)
+   ============================================================ */
+#analogLockScreen {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background-color: #000;
+  z-index: 1000;
+  overflow: hidden;
+  opacity: var(--analog-glow, 1.0);
+  transition: opacity 0.3s ease;
+  touch-action: none; /* スワイプ操作によるブラウザのデフォルト挙動を無効化 */
+}
 
+/* --- アナログ情報（デジタル・カレンダー）レイアウト --- */
+.analog-info-container {
+  position: absolute;
+  font-family: 'Courier New', Courier, monospace;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease, bottom 0.5s ease, right 0.5s ease, gap 0.5s ease, transform 2s ease-in-out;
+  z-index: 1005;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  
+  /* 縦置き時 (デフォルト): デジタルは下へ、アナログに寄せる */
+  bottom: 25vh;
+  left: 50%;
+  transform: translate(calc(-50% + var(--burn-shift-x, 0px)), var(--burn-shift-y, 0px));
+}
 
+.info-state-1 .analog-info-container,
+.info-state-2 .analog-info-container {
+  opacity: 1;
+}
+.info-state-2 .analog-info-container {
+  bottom: 12vh; /* カレンダー表示時はさらに下へ避けつつ、均等になるよう調整 */
+  gap: 0; /* カレンダーの年月とグリッドの隙間をなくす */
+}
+
+.analog-digital-clock {
+  font-size: 54px;
+  text-shadow: 0 0 10px rgba(0,255,128,0.8), 0 0 20px rgba(0,255,128,0.5);
+  transition: font-size 0.5s ease, margin-bottom 0.5s ease;
+  margin-bottom: 0;
+}
+
+.info-state-2 .analog-digital-clock {
+  font-size: 32px;
+  margin-bottom: 3vh; /* アナログとカレンダーの間にだけ隙間を作る */
+}
+
+.analog-calendar-header {
+  font-size: 14px;
+  text-shadow: 0 0 4px rgba(0,255,128,0.4);
+  margin-top: 0;
+  margin-bottom: 4px;
+  display: none;
+  font-weight: bold;
+}
+.analog-calendar-grid {
+  display: none;
+  grid-template-columns: repeat(7, 24px);
+  gap: 4px;
+  text-shadow: 0 0 4px rgba(0,255,128,0.4);
+  font-size: 12px;
+  line-height: 24px;
+}
+.info-state-2 .analog-calendar-header {
+  display: block;
+}
+.info-state-2 .analog-calendar-grid {
+  display: grid;
+}
+
+/* カレンダーの色指定 */
+.analog-calendar-grid .day-blue { color: #00ffff; }
+.analog-calendar-grid .day-red { color: #ff3366; }
+.analog-calendar-grid .today-circle {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  border: 1px solid rgba(255,255,255,0.8);
+  border-radius: 50%;
+  background-color: rgba(255,255,255,0.2);
+}
+
+/* アナログ時計のスライド・アニメーション */
+.analog-page > div {
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.info-state-1 .analog-page > div {
+  transform: translateY(-20vh); /* デジタルのみ */
+}
+.info-state-2 .analog-page > div {
+  transform: translateY(-25vh); /* カレンダー表示時はさらに上に避ける */
+}
+
+/* 横置き時のレイアウト変更 */
+@media (orientation: landscape) {
+  .analog-info-container {
+    bottom: auto;
+    left: auto;
+    right: 15vw;
+    top: 50%;
+    transform: translate(var(--burn-shift-x, 0px), calc(-50% + var(--burn-shift-y, 0px)));
+  }
+  .info-state-2 .analog-info-container {
+    right: 8vw; /* さらに右へ避ける */
+    gap: 0;
+  }
+  .info-state-2 .analog-digital-clock {
+    margin-bottom: 3vw;
+  }
+  .info-state-1 .analog-page > div {
+    transform: translateX(-20vw);
+  }
+  .info-state-2 .analog-page > div {
+    transform: translateX(-25vw); /* さらに左へ避ける */
+  }
+}
+
+/* スワイプコンテナ */
+.analog-swipe-container {
+  display: flex;
+  width: 300vw;
+  height: 100%;
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.analog-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* --- ページインジケーター --- */
+.analog-pager {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 1010;
+  transition: opacity 1s ease;
+}
+.analog-pager.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+.pager-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+  transition: background-color 0.3s, transform 0.3s;
+}
+.pager-dot.active {
+  background-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  transform: scale(1.5);
+}
+
+/* --- 長押しプログレスリング --- */
+#analogHoldRing {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  width: 120px; height: 120px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 9999;
+}
+#analogHoldRing circle {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-dasharray: 164;
+  stroke-dashoffset: 164;
+  filter: drop-shadow(0 0 8px var(--accent));
+  transition: stroke-dashoffset 0.1s linear;
+}
+
+/* --- 共通の時計盤・針設定 --- */
+.clock-face {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+}
+.clock-hand {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  transform-origin: bottom center;
+  will-change: transform;
+}
+.clock-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+
+/* 1. Regulus Core */
+.clock-regulus .clock-face {
+  /* 縁取り削除 */
+}
+.clock-regulus .star-marker {
+  position: absolute;
+  width: 4px; height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #fff;
+  top: 50%; left: 50%;
+  margin: -2px 0 0 -2px;
+}
+.clock-regulus .hour-hand {
+  width: 4px; height: 70px;
+  background: var(--toggle-bg);
+  box-shadow: 0 0 10px var(--toggle-bg);
+  border-radius: 2px;
+  margin-left: -2px;
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 40%, black 60%);
+  mask-image: linear-gradient(to top, transparent 0%, transparent 40%, black 60%);
+}
+.clock-regulus .minute-hand {
+  width: 2px; height: 100px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  border-radius: 1px;
+  margin-left: -1px;
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 30%, black 45%);
+  mask-image: linear-gradient(to top, transparent 0%, transparent 30%, black 45%);
+}
+.clock-regulus .sweep-tail {
+  width: 1px; height: 130px;
+  background: linear-gradient(to top, transparent 0%, transparent 25%, #fff 80%, #fff 100%);
+  margin-left: -0.5px;
+}
+.clock-regulus .clock-center {
+  display: none;
+}
+
+/* 2. Neon Radar */
+@keyframes neonBreathe {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(0,255,128,0.5));
+  }
+  50% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 2px rgba(0,255,128,0.1));
+  }
+}
+
+.clock-radar {
+  position: absolute;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  /* 背景と縁取り削除 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: neonBreathe 10s ease-in-out infinite;
+}
+.clock-radar .radar-grid {
+  display: none; /* グリッド線と外縁の非表示 */
+}
+
+.clock-radar .hour-hand {
+  width: 6px; height: 60px;
+  background: rgba(0,255,128,0.8);
+  margin-left: -3px;
+}
+.clock-radar .minute-hand {
+  width: 4px; height: 90px;
+  background: rgba(0,255,128,0.6);
+  margin-left: -2px;
+}
+.clock-radar .sweep-radar {
+  width: 2px; height: 140px;
+  background: #00ff80;
+  margin-left: -1px;
+  box-shadow: -6px 0 12px rgba(0,255,128,0.5); /* 疑似的な残像 */
+}
+.clock-radar .clock-center {
+  width: 8px; height: 8px;
+  background: #00ff80;
+  box-shadow: 0 0 10px #00ff80;
+}
+
+/* 3. Eclipse */
+.clock-eclipse .clock-face {
+  background: #000;
+  /* 光彩（コロナ外枠）削除 */
+}
+.clock-eclipse .hour-hand {
+  width: 4px; height: 88px;
+  background: rgba(255,255,255,0.4);
+  margin-left: -2px;
+}
+.clock-eclipse .minute-hand {
+  width: 2px; height: 110px;
+  background: rgba(255,255,255,0.6);
+  margin-left: -1px;
+}
+.clock-eclipse .sweep-corona {
+  width: 1px; height: 130px;
+  background: rgba(255,255,255,0.9);
+  margin-left: -0.5px;
+}
+@keyframes coronaBreathe {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(255,255,255,0.2), inset 0 0 10px rgba(0,0,0,1);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(255,255,255,0.08), inset 0 0 10px rgba(0,0,0,1);
+  }
+}
+
+.clock-eclipse .eclipse-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140px; height: 140px;
+  background: #000;
+  border-radius: 50%;
+  box-shadow: 0 0 30px rgba(255,255,255,0.2), inset 0 0 10px rgba(0,0,0,1);
+  animation: coronaBreathe 16s ease-in-out infinite;
+  z-index: 10;
+}
+.clock-eclipse .hour-hand,
+.clock-eclipse .minute-hand,
+.clock-eclipse .sweep-corona {
+  z-index: 5;
+}
