@@ -4847,7 +4847,24 @@ function initAnalogSwipe() {
   window.addEventListener("resize", () => {
     if (document.getElementById("analogLockScreen").style.display !== "none") {
       _analogContainerWidth = window.innerWidth;
+      const container = document.getElementById("analogSwipeContainer");
+      if (container) {
+        // 回転時のスライド見え（映り込み）を防ぐため、一時的にアニメーションを無効化
+        container.style.transition = "none";
+      }
+      
       _updateAnalogPager();
+      
+      if (container) {
+        // 再描画後にアニメーションを元に戻す
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (!_analogIsDragging) {
+              container.style.transition = "transform 2s ease-in-out, opacity 0.3s ease";
+            }
+          });
+        });
+      }
     }
   });
 }
