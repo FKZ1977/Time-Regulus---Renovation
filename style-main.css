@@ -3166,8 +3166,6 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   background-color: #000;
   z-index: 1000;
   overflow: hidden;
-  opacity: var(--analog-glow, 1.0);
-  transition: opacity 0.3s ease;
   touch-action: none; /* スワイプ操作によるブラウザのデフォルト挙動を無効化 */
 }
 
@@ -3194,11 +3192,11 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 
 .info-state-1 .analog-info-container,
 .info-state-2 .analog-info-container {
-  opacity: 1;
+  opacity: var(--analog-glow, 1.0);
 }
 .info-state-2 .analog-info-container {
   bottom: auto;
-  top: 60vh; /* アナログ時計に被らないギリギリまで中央に寄せる */
+  top: 65vh; /* アナログ時計に被らないギリギリまで中央に寄せる（少し下げました） */
   transform: translate(calc(-50% + var(--burn-shift-x, 0px)), calc(-50% + var(--burn-shift-y, 0px)));
   gap: 0; /* カレンダーの年月とグリッドの隙間をなくす */
 }
@@ -3273,10 +3271,10 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
     transform: translate(var(--burn-shift-x, 0px), calc(-50% + var(--burn-shift-y, 0px)));
   }
   .info-state-2 .analog-info-container {
-    right: auto;
-    left: 65vw; /* アナログ時計に被らないギリギリまで中央に寄せる */
-    top: 50%; /* 縦置き時の 60vh を上書きして中央に */
-    transform: translate(calc(-50% + var(--burn-shift-x, 0px)), calc(-50% + var(--burn-shift-y, 0px)));
+    left: auto;
+    right: 8vw; /* 以前の横の位置に戻す */
+    top: 50%; /* 高さの中央揃えは維持 */
+    transform: translate(var(--burn-shift-x, 0px), calc(-50% + var(--burn-shift-y, 0px)));
     gap: 0;
   }
   .info-state-2 .analog-digital-clock {
@@ -3295,7 +3293,8 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   display: flex;
   width: 300vw;
   height: 100%;
-  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease;
+  opacity: var(--analog-glow, 1.0);
 }
 
 .analog-page {
@@ -3317,6 +3316,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   gap: 12px;
   z-index: 1010;
   transition: opacity 1s ease;
+  opacity: var(--analog-glow, 1.0);
 }
 .analog-pager.fade-out {
   opacity: 0;
