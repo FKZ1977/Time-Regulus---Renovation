@@ -4794,7 +4794,7 @@ function initAnalogSwipe() {
     }
 
     const baseTranslate = -(_analogCurrentPage * _analogContainerWidth);
-    container.style.transform = `translateX(${baseTranslate + diffX}px)`;
+    container.style.transform = `translate(${baseTranslate + diffX}px, ${_analogShiftY}px)`;
   };
   
   const onEnd = (e) => {
@@ -4882,7 +4882,14 @@ function initAnalogHold() {
   const ring = document.getElementById("analogHoldRing");
   const circle = document.getElementById("analogRingCircle");
   
+  let _analogHoldStartX = 0;
+  let _analogHoldStartY = 0;
+  let _analogHoldIsTouch = false;
+
   const startHold = (e) => {
+    if (e.type === 'touchstart') _analogHoldIsTouch = true;
+    if (e.type === 'mousedown' && _analogHoldIsTouch) return; // ゴーストクリック防止
+    
     if (_analogIsDragging && Math.abs((e.touches ? e.touches[0].clientX : e.clientX) - _analogStartX) > 10) return;
     
     _analogPressStartTime = Date.now();
@@ -4890,6 +4897,10 @@ function initAnalogHold() {
     
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    _analogHoldStartX = clientX;
+    _analogHoldStartY = clientY;
+    
     ring.style.left = clientX + "px";
     ring.style.top = clientY + "px";
     ring.style.opacity = "1";
@@ -4916,6 +4927,11 @@ function initAnalogHold() {
   };
   
   const endHold = (e) => {
+    if (e.type === 'mouseup' && _analogHoldIsTouch) {
+      setTimeout(() => { _analogHoldIsTouch = false; }, 300);
+      return; // ゴーストクリック無視
+    }
+
     const elapsed = Date.now() - _analogPressStartTime;
     
     if (_analogHoldTimer) {
@@ -4925,8 +4941,12 @@ function initAnalogHold() {
     ring.style.opacity = "0";
     circle.style.strokeDashoffset = "164";
     
-    // 短時間のタップで、かつスワイプ中(ドラッグ中)でなければ状態をトグルする
-    if (elapsed < 300 && !_analogIsLongPressSuccess && !_analogIsDragging) {
+    const endX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    const endY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+    const dist = Math.hypot(endX - _analogHoldStartX, endY - _analogHoldStartY);
+    
+    // 短時間のタップで、かつ移動距離が10px未満の場合のみトグルする（スワイプ誤爆防止）
+    if (elapsed < 300 && !_analogIsLongPressSuccess && dist < 10) {
       _analogInfoState = (_analogInfoState + 1) % 3;
       analogScreen.className = "analog-lock-screen info-state-" + _analogInfoState;
     }
