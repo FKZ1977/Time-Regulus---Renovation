@@ -3198,7 +3198,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 }
 .info-state-2 .analog-info-container {
   bottom: auto;
-  top: 75vh; /* 下半分の中心に配置 */
+  top: 60vh; /* アナログ時計に被らないギリギリまで中央に寄せる */
   transform: translate(calc(-50% + var(--burn-shift-x, 0px)), calc(-50% + var(--burn-shift-y, 0px)));
   gap: 0; /* カレンダーの年月とグリッドの隙間をなくす */
 }
@@ -3274,8 +3274,8 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   }
   .info-state-2 .analog-info-container {
     right: auto;
-    left: 75vw; /* 右半分の中心に配置 */
-    top: 50%; /* 縦置き時の 75vh を上書きして中央に */
+    left: 65vw; /* アナログ時計に被らないギリギリまで中央に寄せる */
+    top: 50%; /* 縦置き時の 60vh を上書きして中央に */
     transform: translate(calc(-50% + var(--burn-shift-x, 0px)), calc(-50% + var(--burn-shift-y, 0px)));
     gap: 0;
   }
