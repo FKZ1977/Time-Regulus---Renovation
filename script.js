@@ -1167,6 +1167,9 @@ function restartLockScreenAnimation() {
   const lockScreen = document.getElementById('lockScreen');
   if (!lockScreen) return;
   
+  // lockScreen自体のレイアウトを強制的に計算させる（display:block直後に確実にレンダリングさせるため）
+  void lockScreen.offsetWidth;
+  
   // キーパッドのシャッフル・再生成を統合
   if (typeof generateKeypad === 'function') {
     generateKeypad();
@@ -1444,8 +1447,8 @@ function _vlStartHold(e) {
     _releaseWakeLock();
     if (viewLock) viewLock.style.display = "none";
     document.getElementById("lockScreen").style.display = "block";
-    // Bug①修正: 2フレーム待機してアニメーション確実再起動（display:blockの描画完了を待つ）
-    requestAnimationFrame(() => requestAnimationFrame(() => restartLockScreenAnimation()));
+    // レイアウト強制再計算により同期呼び出しで確実にアニメーション再起動
+    restartLockScreenAnimation();
     if (ring)   { ring.style.opacity = "0"; }
     if (circle) {
       circle.style.transition = "stroke-dashoffset 0.1s linear";
@@ -1609,8 +1612,8 @@ function hideDecoyScreen() {
   const err = document.getElementById("error");
   if (err) err.innerText = "";
   
-  // Bug修正: 2フレーム遅延呼び出し（display:blockの描画完了待ちによるアニメーション不発防止）
-  requestAnimationFrame(() => requestAnimationFrame(() => restartLockScreenAnimation()));
+  // Bug修正: レイアウト強制再計算により同期呼び出しで確実にアニメーション再起動
+  restartLockScreenAnimation();
 }
 
 // 日の出・日の入りの近似計算（東京の緯度経度をデフォルトとする）
@@ -4617,6 +4620,15 @@ let _analogInfoState = 0;
 let _analogLastCalendarMonth = "";
 let _analogStartY = 0;
 let _analogGlowIntensity = 1.0;
+let _analogShowSecondHand = true;
+
+let _analogIsSwapped = false;
+let _analogIs2FingerDragging = false;
+let _analog2FingerStartX = 0;
+let _analog2FingerStartY = 0;
+let _analogTargetBaseX = 0;
+let _analogTargetBaseY = 0;
+let _analogDragTarget = null;
 
 const _jp_holidays = new Set([
   "2024-01-01", "2024-01-08", "2024-02-11", "2024-02-12", "2024-02-23", "2024-03-20", "2024-04-29", "2024-05-03", "2024-05-04", "2024-05-05", "2024-05-06", "2024-07-15", "2024-08-11", "2024-08-12", "2024-09-16", "2024-09-22", "2024-09-23", "2024-10-14", "2024-11-03", "2024-11-04", "2024-11-23",
@@ -4742,7 +4754,11 @@ function _startAnalogClock() {
     const rS = document.getElementById("regulusSecond");
     if(rH) rH.style.transform = `rotate(${hourAngle}deg)`;
     if(rM) rM.style.transform = `rotate(${minAngle}deg)`;
-    if(rS) rS.style.transform = `rotate(${secAngle}deg)`;
+    if(rS) {
+      rS.style.transform = `rotate(${secAngle}deg)`;
+      rS.style.opacity = _analogShowSecondHand ? "1" : "0";
+      rS.style.transition = "opacity 0.3s ease";
+    }
 
     // Radar
     const radarH = document.getElementById("radarHour");
@@ -4750,7 +4766,11 @@ function _startAnalogClock() {
     const radarS = document.getElementById("radarSecond");
     if(radarH) radarH.style.transform = `rotate(${hourAngle}deg)`;
     if(radarM) radarM.style.transform = `rotate(${minAngle}deg)`;
-    if(radarS) radarS.style.transform = `rotate(${secAngle}deg)`;
+    if(radarS) {
+      radarS.style.transform = `rotate(${secAngle}deg)`;
+      radarS.style.opacity = _analogShowSecondHand ? "1" : "0";
+      radarS.style.transition = "opacity 0.3s ease";
+    }
     
     // Eclipse
     const eH = document.getElementById("eclipseHour");
@@ -4758,7 +4778,11 @@ function _startAnalogClock() {
     const eS = document.getElementById("eclipseSecond");
     if(eH) eH.style.transform = `rotate(${hourAngle}deg)`;
     if(eM) eM.style.transform = `rotate(${minAngle}deg)`;
-    if(eS) eS.style.transform = `rotate(${secAngle}deg)`;
+    if(eS) {
+      eS.style.transform = `rotate(${secAngle}deg)`;
+      eS.style.opacity = _analogShowSecondHand ? "1" : "0";
+      eS.style.transition = "opacity 0.3s ease";
+    }
 
     _analogAnimFrameId = requestAnimationFrame(updateHands);
   };
@@ -4771,7 +4795,38 @@ function initAnalogSwipe() {
   const analogScreen = document.getElementById("analogLockScreen");
   
   const onStart = (e) => {
+    if (e.touches && e.touches.length === 2) {
+      _analogIs2FingerDragging = true;
+      _analogIsDragging = false; // 1本指キャンセル
+      
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+      _analog2FingerStartX = midX;
+      _analog2FingerStartY = midY;
+      
+      const isLandscape = window.innerWidth > window.innerHeight;
+      let target = null;
+      
+      // タッチ開始位置で、どちらを掴んだか判定
+      if (isLandscape) {
+        target = (midX < window.innerWidth / 2) ? (_analogIsSwapped ? 'info' : 'analog') : (_analogIsSwapped ? 'analog' : 'info');
+      } else {
+        target = (midY < window.innerHeight / 2) ? (_analogIsSwapped ? 'info' : 'analog') : (_analogIsSwapped ? 'analog' : 'info');
+      }
+      _analogDragTarget = target;
+      
+      _analogTargetBaseX = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--drag-${target}-x`)) || 0;
+      _analogTargetBaseY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--drag-${target}-y`)) || 0;
+      
+      analogScreen.classList.add('analog-dragging-2finger');
+      return;
+    }
+    
     if (e.touches && e.touches.length > 1) return;
+    
+    _analogIs2FingerDragging = false;
     _analogIsDragging = true;
     _analogStartX = e.touches ? e.touches[0].clientX : e.clientX;
     _analogStartY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -4779,6 +4834,32 @@ function initAnalogSwipe() {
   };
   
   const onMove = (e) => {
+    if (_analogIs2FingerDragging && e.touches && e.touches.length === 2) {
+      if (_analogHoldTimer) {
+        cancelAnimationFrame(_analogHoldTimer);
+        _analogHoldTimer = null;
+        const ring = document.getElementById("analogHoldRing");
+        const circle = document.getElementById("analogRingCircle");
+        if(ring) ring.style.opacity = "0";
+        if(circle) circle.style.strokeDashoffset = "164";
+      }
+
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+      
+      const diffX = midX - _analog2FingerStartX;
+      const diffY = midY - _analog2FingerStartY;
+      
+      const newX = _analogTargetBaseX + diffX;
+      const newY = _analogTargetBaseY + diffY;
+      
+      document.documentElement.style.setProperty(`--drag-${_analogDragTarget}-x`, newX + 'px');
+      document.documentElement.style.setProperty(`--drag-${_analogDragTarget}-y`, newY + 'px');
+      return;
+    }
+
     if (!_analogIsDragging) return;
     const currentX = e.touches ? e.touches[0].clientX : e.clientX;
     const diffX = currentX - _analogStartX;
@@ -4798,6 +4879,53 @@ function initAnalogSwipe() {
   };
   
   const onEnd = (e) => {
+    if (_analogIs2FingerDragging) {
+      // 指が離れた時点でドラッグ終了（1本指が残っていても終了とみなす）
+      _analogIs2FingerDragging = false;
+      analogScreen.classList.remove('analog-dragging-2finger');
+      
+      const isLandscape = window.innerWidth > window.innerHeight;
+      let isInvading = false;
+      
+      const currentX = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--drag-${_analogDragTarget}-x`)) || 0;
+      const currentY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--drag-${_analogDragTarget}-y`)) || 0;
+      
+      // 画面サイズの約1/3を移動していれば、相手エリアに侵入したとみなして入れ替え
+      if (isLandscape) {
+        const threshold = window.innerWidth / 3;
+        if ((_analogDragTarget === 'analog' && !_analogIsSwapped && currentX > threshold) ||
+            (_analogDragTarget === 'info' && !_analogIsSwapped && currentX < -threshold) ||
+            (_analogDragTarget === 'analog' && _analogIsSwapped && currentX < -threshold) ||
+            (_analogDragTarget === 'info' && _analogIsSwapped && currentX > threshold)) {
+          isInvading = true;
+        }
+      } else {
+        const threshold = window.innerHeight / 3;
+        if ((_analogDragTarget === 'analog' && !_analogIsSwapped && currentY > threshold) ||
+            (_analogDragTarget === 'info' && !_analogIsSwapped && currentY < -threshold) ||
+            (_analogDragTarget === 'analog' && _analogIsSwapped && currentY < -threshold) ||
+            (_analogDragTarget === 'info' && _analogIsSwapped && currentY > threshold)) {
+          isInvading = true;
+        }
+      }
+      
+      if (isInvading) {
+        _analogIsSwapped = !_analogIsSwapped;
+        if (_analogIsSwapped) {
+          analogScreen.classList.add('analog-layout-swapped');
+        } else {
+          analogScreen.classList.remove('analog-layout-swapped');
+        }
+        
+        // 入れ替え成立時は自由配置のズレをリセット
+        document.documentElement.style.setProperty('--drag-analog-x', '0px');
+        document.documentElement.style.setProperty('--drag-analog-y', '0px');
+        document.documentElement.style.setProperty('--drag-info-x', '0px');
+        document.documentElement.style.setProperty('--drag-info-y', '0px');
+      }
+      return;
+    }
+
     if (!_analogIsDragging) return;
     _analogIsDragging = false;
     
@@ -4853,6 +4981,12 @@ function initAnalogSwipe() {
         container.style.transition = "none";
       }
       
+      // 画面回転時は任意位置の自由配置ズレのみリセット（入れ替え状態は維持）
+      document.documentElement.style.setProperty('--drag-analog-x', '0px');
+      document.documentElement.style.setProperty('--drag-analog-y', '0px');
+      document.documentElement.style.setProperty('--drag-info-x', '0px');
+      document.documentElement.style.setProperty('--drag-info-y', '0px');
+
       _updateAnalogPager();
       
       if (container) {
@@ -4902,6 +5036,8 @@ function initAnalogHold() {
   let _analogHoldStartX = 0;
   let _analogHoldStartY = 0;
   let _analogHoldIsTouch = false;
+  let _analogTapTimeout = null;
+  let _analogLastTapTime = 0;
 
   const startHold = (e) => {
     if (e.type === 'touchstart') _analogHoldIsTouch = true;
@@ -4962,10 +5098,23 @@ function initAnalogHold() {
     const endY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
     const dist = Math.hypot(endX - _analogHoldStartX, endY - _analogHoldStartY);
     
-    // 短時間のタップで、かつ移動距離が10px未満の場合のみトグルする（スワイプ誤爆防止）
+    // 短時間のタップで、かつ移動距離が10px未満の場合（スワイプ誤爆防止）
     if (elapsed < 300 && !_analogIsLongPressSuccess && dist < 10) {
-      _analogInfoState = (_analogInfoState + 1) % 3;
-      analogScreen.className = "analog-lock-screen info-state-" + _analogInfoState;
+      const now = Date.now();
+      if (now - _analogLastTapTime < 300) {
+        // ダブルタップ：デジタル時計・カレンダー表示の切り替え
+        clearTimeout(_analogTapTimeout);
+        _analogInfoState = (_analogInfoState + 1) % 3;
+        analogScreen.className = "analog-lock-screen info-state-" + _analogInfoState;
+        _analogLastTapTime = 0; // リセット
+      } else {
+        // シングルタップ：秒針の表示・非表示の切り替え（ダブルタップ待ちのため300ms遅延）
+        _analogLastTapTime = now;
+        _analogTapTimeout = setTimeout(() => {
+          _analogShowSecondHand = !_analogShowSecondHand;
+          _analogLastTapTime = 0;
+        }, 300);
+      }
     }
   };
   
@@ -4986,6 +5135,7 @@ function closeAnalogLockScreen() {
   }
   document.getElementById("analogLockScreen").style.display = "none";
   document.getElementById("lockScreen").style.display = "block";
+  restartLockScreenAnimation(); // アニメーション確実再起動
   const passcode = document.getElementById("passcode");
   if (passcode) {
     passcode.focus();
