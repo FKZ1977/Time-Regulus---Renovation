@@ -3192,7 +3192,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 
 .info-state-1 .analog-info-container,
 .info-state-2 .analog-info-container {
-  opacity: var(--analog-glow, 1.0);
+  opacity: var(--analog-base-opacity, 1.0);
 }
 .info-state-2 .analog-info-container {
   bottom: auto;
@@ -3204,7 +3204,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 .analog-layout-swapped.info-state-1 .analog-info-container,
 .analog-layout-swapped.info-state-2 .analog-info-container {
   bottom: auto;
-  top: 25vh; /* アナログ時計の上へ */
+  top: 35vh; /* 少し下げて中央寄りにし、頭が切れないように調整 */
   transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
 }
 
@@ -3216,7 +3216,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 
 .analog-digital-clock {
   font-size: 54px;
-  text-shadow: 0 0 10px rgba(0,255,128,0.8), 0 0 20px rgba(0,255,128,0.5);
+  text-shadow: 0 0 calc(10px * var(--analog-glow, 1.0)) rgba(0,255,128,0.8), 0 0 calc(20px * var(--analog-glow, 1.0)) rgba(0,255,128,0.5);
   transition: font-size 0.5s ease, margin-bottom 0.5s ease;
   margin-bottom: 0;
 }
@@ -3228,7 +3228,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 
 .analog-calendar-header {
   font-size: 14px;
-  text-shadow: 0 0 4px rgba(0,255,128,0.4);
+  text-shadow: 0 0 calc(4px * var(--analog-glow, 1.0)) rgba(0,255,128,0.4);
   margin-top: 0;
   margin-bottom: 4px;
   display: none;
@@ -3277,10 +3277,10 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 
 /* Portrait Swapped (縦置きの入れ替え状態) */
 .analog-layout-swapped.info-state-1 .analog-page > div {
-  transform: translate(var(--drag-analog-x, 0px), calc(20vh + var(--drag-analog-y, 0px)));
+  transform: translate(var(--drag-analog-x, 0px), calc(15vh + var(--drag-analog-y, 0px))); /* 移動量をマイルドに */
 }
 .analog-layout-swapped.info-state-2 .analog-page > div {
-  transform: translate(var(--drag-analog-x, 0px), calc(25vh + var(--drag-analog-y, 0px)));
+  transform: translate(var(--drag-analog-x, 0px), calc(18vh + var(--drag-analog-y, 0px)));
 }
 
 /* 横置き時のレイアウト変更 */
@@ -3303,7 +3303,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   .analog-layout-swapped.info-state-1 .analog-info-container,
   .analog-layout-swapped.info-state-2 .analog-info-container {
     right: auto;
-    left: 8vw; /* 左側へ入れ替え */
+    left: 12vw; /* 少し中央に寄せて、はみ出しを防止 */
     transform: translate(calc(var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
   }
   .info-state-2 .analog-digital-clock {
@@ -3318,10 +3318,10 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   
   /* Landscape Swapped (横置きの入れ替え状態) */
   .analog-layout-swapped.info-state-1 .analog-page > div {
-    transform: translate(calc(20vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px)); /* 右側へ入れ替え */
+    transform: translate(calc(15vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px)); /* 移動量をマイルドに */
   }
   .analog-layout-swapped.info-state-2 .analog-page > div {
-    transform: translate(calc(25vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px));
+    transform: translate(calc(20vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px));
   }
 }
 
@@ -3331,7 +3331,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   width: 300vw;
   height: 100%;
   transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease;
-  opacity: var(--analog-glow, 1.0);
+  opacity: var(--analog-base-opacity, 1.0);
 }
 
 .analog-page {
@@ -3353,7 +3353,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   gap: 12px;
   z-index: 1010;
   transition: opacity 1s ease;
-  opacity: var(--analog-glow, 1.0);
+  opacity: var(--analog-base-opacity, 1.0);
 }
 .analog-pager.fade-out {
   opacity: 0;
@@ -3368,7 +3368,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 }
 .pager-dot.active {
   background-color: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
+  box-shadow: 0 0 calc(8px * var(--analog-glow, 1.0)) var(--accent);
   transform: scale(1.5);
 }
 
@@ -3423,14 +3423,14 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   width: 4px; height: 4px;
   background: #fff;
   border-radius: 50%;
-  box-shadow: 0 0 6px #fff;
+  box-shadow: 0 0 calc(6px * var(--analog-glow, 1.0)) #fff;
   top: 50%; left: 50%;
   margin: -2px 0 0 -2px;
 }
 .clock-regulus .hour-hand {
   width: 4px; height: 70px;
   background: var(--toggle-bg);
-  box-shadow: 0 0 10px var(--toggle-bg);
+  box-shadow: 0 0 calc(10px * var(--analog-glow, 1.0)) var(--toggle-bg);
   border-radius: 2px;
   margin-left: -2px;
   -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 40%, black 60%);
@@ -3439,7 +3439,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 .clock-regulus .minute-hand {
   width: 2px; height: 100px;
   background: var(--accent);
-  box-shadow: 0 0 10px var(--accent);
+  box-shadow: 0 0 calc(10px * var(--analog-glow, 1.0)) var(--accent);
   border-radius: 1px;
   margin-left: -1px;
   -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 30%, black 45%);
@@ -3458,11 +3458,11 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 @keyframes neonBreathe {
   0%, 100% {
     opacity: 1;
-    filter: drop-shadow(0 0 8px rgba(0,255,128,0.5));
+    filter: drop-shadow(0 0 calc(8px * var(--analog-glow, 1.0)) rgba(0,255,128,0.5));
   }
   50% {
     opacity: 0.6;
-    filter: drop-shadow(0 0 2px rgba(0,255,128,0.1));
+    filter: drop-shadow(0 0 calc(2px * var(--analog-glow, 1.0)) rgba(0,255,128,0.1));
   }
 }
 
@@ -3494,12 +3494,12 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   width: 2px; height: 140px;
   background: #00ff80;
   margin-left: -1px;
-  box-shadow: -6px 0 12px rgba(0,255,128,0.5); /* 疑似的な残像 */
+  box-shadow: calc(-6px * var(--analog-glow, 1.0)) 0 calc(12px * var(--analog-glow, 1.0)) rgba(0,255,128,0.5); /* 疑似的な残像 */
 }
 .clock-radar .clock-center {
   width: 8px; height: 8px;
   background: #00ff80;
-  box-shadow: 0 0 10px #00ff80;
+  box-shadow: 0 0 calc(10px * var(--analog-glow, 1.0)) #00ff80;
 }
 
 /* 3. Eclipse */
@@ -3509,25 +3509,25 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 }
 .clock-eclipse .hour-hand {
   width: 4px; height: 88px;
-  background: rgba(255,255,255,0.4);
+  background: linear-gradient(to top, transparent 70px, rgba(255,255,255,0.4) 70px);
   margin-left: -2px;
 }
 .clock-eclipse .minute-hand {
   width: 2px; height: 110px;
-  background: rgba(255,255,255,0.6);
+  background: linear-gradient(to top, transparent 70px, rgba(255,255,255,0.6) 70px);
   margin-left: -1px;
 }
 .clock-eclipse .sweep-corona {
   width: 1px; height: 130px;
-  background: rgba(255,255,255,0.9);
+  background: linear-gradient(to top, transparent 70px, rgba(255,255,255,0.9) 70px);
   margin-left: -0.5px;
 }
 @keyframes coronaBreathe {
   0%, 100% {
-    box-shadow: 0 0 30px rgba(255,255,255,0.2), inset 0 0 10px rgba(0,0,0,1);
+    box-shadow: 0 0 calc(45px * var(--analog-glow, 1.0)) rgba(255,255,255,0.3), inset 0 0 15px rgba(0,0,0,1);
   }
   50% {
-    box-shadow: 0 0 10px rgba(255,255,255,0.08), inset 0 0 10px rgba(0,0,0,1);
+    box-shadow: 0 0 calc(20px * var(--analog-glow, 1.0)) rgba(255,255,255,0.15), inset 0 0 10px rgba(0,0,0,1);
   }
 }
 
@@ -3538,7 +3538,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   width: 140px; height: 140px;
   background: #000;
   border-radius: 50%;
-  box-shadow: 0 0 30px rgba(255,255,255,0.2), inset 0 0 10px rgba(0,0,0,1);
+  box-shadow: 0 0 calc(45px * var(--analog-glow, 1.0)) rgba(255,255,255,0.3), inset 0 0 15px rgba(0,0,0,1);
   animation: coronaBreathe 16s ease-in-out infinite;
   z-index: 10;
 }

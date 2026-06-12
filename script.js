@@ -4617,7 +4617,7 @@ let _analogShiftX = 0;
 let _analogShiftY = 0;
 
 let _analogInfoState = 0;
-let _analogLastCalendarMonth = "";
+let _analogLastCalendarDate = "";
 let _analogStartY = 0;
 let _analogGlowIntensity = 1.0;
 let _analogShowSecondHand = true;
@@ -4736,9 +4736,9 @@ function _startAnalogClock() {
       _analogLastMinute = m;
       _applyBurnInShift();
       
-      const currentMonthStr = `${now.getFullYear()}-${now.getMonth()}`;
-      if (_analogLastCalendarMonth !== currentMonthStr) {
-        _analogLastCalendarMonth = currentMonthStr;
+      const currentDateStr = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+      if (_analogLastCalendarDate !== currentDateStr) {
+        _analogLastCalendarDate = currentDateStr;
         _generateCalendar(now.getFullYear(), now.getMonth());
       }
     }
@@ -5036,8 +5036,8 @@ function initAnalogHold() {
   let _analogHoldStartX = 0;
   let _analogHoldStartY = 0;
   let _analogHoldIsTouch = false;
+  let _analogTapCount = 0;
   let _analogTapTimeout = null;
-  let _analogLastTapTime = 0;
 
   const startHold = (e) => {
     if (e.type === 'touchstart') _analogHoldIsTouch = true;
@@ -5100,21 +5100,29 @@ function initAnalogHold() {
     
     // 短時間のタップで、かつ移動距離が10px未満の場合（スワイプ誤爆防止）
     if (elapsed < 300 && !_analogIsLongPressSuccess && dist < 10) {
-      const now = Date.now();
-      if (now - _analogLastTapTime < 300) {
-        // ダブルタップ：デジタル時計・カレンダー表示の切り替え
-        clearTimeout(_analogTapTimeout);
-        _analogInfoState = (_analogInfoState + 1) % 3;
-        analogScreen.className = "analog-lock-screen info-state-" + _analogInfoState;
-        _analogLastTapTime = 0; // リセット
-      } else {
-        // シングルタップ：秒針の表示・非表示の切り替え（ダブルタップ待ちのため300ms遅延）
-        _analogLastTapTime = now;
-        _analogTapTimeout = setTimeout(() => {
+      _analogTapCount++;
+      clearTimeout(_analogTapTimeout);
+      
+      _analogTapTimeout = setTimeout(() => {
+        if (_analogTapCount === 1) {
+          // シングルタップ：秒針の表示・非表示の切り替え
           _analogShowSecondHand = !_analogShowSecondHand;
-          _analogLastTapTime = 0;
-        }, 300);
-      }
+        } else if (_analogTapCount === 2) {
+          // ダブルタップ：デジタル時計・カレンダー表示の切り替え
+          _analogInfoState = (_analogInfoState + 1) % 3;
+          analogScreen.className = "analog-lock-screen info-state-" + _analogInfoState;
+          if (_analogIsSwapped) {
+            analogScreen.classList.add('analog-layout-swapped');
+          }
+        } else if (_analogTapCount >= 3) {
+          // トリプルタップ：文字・針のベース明るさ（透明度）を5段階で切り替え
+          if (typeof _analogBaseOpacityStep === 'undefined') window._analogBaseOpacityStep = 0;
+          _analogBaseOpacityStep = (_analogBaseOpacityStep + 1) % 5;
+          const opacities = [1.0, 0.8, 0.6, 0.4, 0.2];
+          document.documentElement.style.setProperty('--analog-base-opacity', opacities[_analogBaseOpacityStep]);
+        }
+        _analogTapCount = 0; // リセット
+      }, 300);
     }
   };
   
