@@ -3204,7 +3204,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 .analog-layout-swapped.info-state-1 .analog-info-container,
 .analog-layout-swapped.info-state-2 .analog-info-container {
   bottom: auto;
-  top: 35vh; /* 少し下げて中央寄りにし、頭が切れないように調整 */
+  top: 25vh; /* カレンダーを少し上に上げて、時計とくっつきすぎないように調整 */
   transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
 }
 
@@ -3295,7 +3295,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   .info-state-2 .analog-info-container {
     left: auto;
     right: 8vw; /* 以前の横の位置に戻す */
-    top: 50%; /* 高さの中央揃えは維持 */
+    top: 45%; /* デジタル時計の大きさで視覚的に下がるため、少し上に引き上げて中央に見せる */
     transform: translate(calc(var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
     gap: 0;
   }
@@ -3304,6 +3304,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   .analog-layout-swapped.info-state-2 .analog-info-container {
     right: auto;
     left: 12vw; /* 少し中央に寄せて、はみ出しを防止 */
+    top: 45%; /* 同様に少し上に引き上げる */
     transform: translate(calc(var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
   }
   .info-state-2 .analog-digital-clock {
