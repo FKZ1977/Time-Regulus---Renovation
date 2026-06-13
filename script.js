@@ -4897,15 +4897,19 @@ if(ring) ring.style.opacity = "0";
       if(circle) circle.style.strokeDashoffset = "164";
     }
 
+    if (_analogSwipeDirection) {
+      if (e.cancelable) e.preventDefault();
+    }
+
     if (_analogSwipeDirection === "horizontal") {
       // 横スワイプ: ページを水平スライド（縦ブレは完全無視）
       const baseTranslate = -(_analogCurrentPage * _analogContainerWidth);
       container.style.transform = `translate(${baseTranslate + diffX}px, ${_analogShiftY}px)`;
     } else {
       // 縦スワイプ: ネオン輝度リアルタイム調整（横ブレは完全無視）
-      const step = 0.05;
+      const step = Math.abs(diffY) * 0.03;
       if (diffY < 0) {
-        _analogGlowIntensity = Math.min(5.0, _analogGlowIntensity + step);
+        _analogGlowIntensity = Math.min(30.0, _analogGlowIntensity + step);
       } else {
         _analogGlowIntensity = Math.max(0.2, _analogGlowIntensity - step);
       }
