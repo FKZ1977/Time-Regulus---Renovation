@@ -4630,6 +4630,8 @@ let _analog2FingerStartY = 0;
 let _analogTargetBaseX = 0;
 let _analogTargetBaseY = 0;
 let _analogDragTarget = null;
+let _analog2FingerStartDist = 0;
+let _analogTargetBaseScale = 1.0;
 
 const _jp_holidays = new Set([
   "2024-01-01", "2024-01-08", "2024-02-11", "2024-02-12", "2024-02-23", "2024-03-20", "2024-04-29", "2024-05-03", "2024-05-04", "2024-05-05", "2024-05-06", "2024-07-15", "2024-08-11", "2024-08-12", "2024-09-16", "2024-09-22", "2024-09-23", "2024-10-14", "2024-11-03", "2024-11-04", "2024-11-23",
@@ -4821,6 +4823,9 @@ function initAnalogSwipe() {
       _analogTargetBaseX = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--drag-${target}-x`)) || 0;
       _analogTargetBaseY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--drag-${target}-y`)) || 0;
       
+      _analog2FingerStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY) || 1;
+      _analogTargetBaseScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--scale-${target}`)) || 1.0;
+      
       analogScreen.classList.add('analog-dragging-2finger');
       return;
     }
@@ -4857,8 +4862,13 @@ function initAnalogSwipe() {
       const newX = _analogTargetBaseX + diffX;
       const newY = _analogTargetBaseY + diffY;
       
+      const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      let newScale = _analogTargetBaseScale * (currentDist / _analog2FingerStartDist);
+      newScale = Math.min(Math.max(newScale, 0.5), 3.0); // 0.5倍～3.0倍に制限
+      
       document.documentElement.style.setProperty(`--drag-${_analogDragTarget}-x`, newX + 'px');
       document.documentElement.style.setProperty(`--drag-${_analogDragTarget}-y`, newY + 'px');
+      document.documentElement.style.setProperty(`--scale-${_analogDragTarget}`, newScale);
       return;
     }
 
@@ -5006,11 +5016,13 @@ function initAnalogSwipe() {
         container.style.transition = "none";
       }
       
-      // 画面回転時は任意位置の自由配置ズレのみリセット（入れ替え状態は維持）
+      // 画面回転時は任意位置の自由配置ズレとスケールをリセット（入れ替え状態は維持）
       document.documentElement.style.setProperty('--drag-analog-x', '0px');
       document.documentElement.style.setProperty('--drag-analog-y', '0px');
       document.documentElement.style.setProperty('--drag-info-x', '0px');
       document.documentElement.style.setProperty('--drag-info-y', '0px');
+      document.documentElement.style.setProperty('--scale-analog', '1.0');
+      document.documentElement.style.setProperty('--scale-info', '1.0');
 
       _updateAnalogPager();
       
