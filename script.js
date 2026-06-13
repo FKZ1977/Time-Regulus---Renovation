@@ -5361,6 +5361,8 @@ function initAnalogCalendarTouch() {
   let tapCount = 0, tapTimer = null;
   let isTouch = false;
 
+  let ignoreMouse = false;
+
   function getBlockW() {
     const rail = document.getElementById('analogCalendarRail');
     return (rail && rail.children[0] ? rail.children[0].offsetWidth : 0) || 192;
@@ -5369,6 +5371,9 @@ function initAnalogCalendarTouch() {
   function onStart(e) {
     if (_isAnimatingCalendar) return;
     const type = e.type;
+    if (type.includes('touch')) ignoreMouse = true;
+    if (ignoreMouse && type.includes('mouse')) return;
+
     isTouch = type.includes('touch');
     if (!isTouch && e.button !== 0) return;
     
@@ -5388,8 +5393,9 @@ function initAnalogCalendarTouch() {
 
   function onMove(e) {
     if (!isDragging) return;
-    
     const type = e.type;
+    if (ignoreMouse && type.includes('mouse')) return;
+    
     const currentIsTouch = type.includes('touch');
     // タッチ開始なのにマウス移動イベントが来た場合は無視
     if (isTouch && !currentIsTouch) return;
@@ -5415,6 +5421,8 @@ function initAnalogCalendarTouch() {
   }
 
   function onEnd(e) {
+    const type = e.type;
+    if (ignoreMouse && type.includes('mouse')) return;
     if (!isDragging) return;
     isDragging = false;
     

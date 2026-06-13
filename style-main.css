@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    オフライン対応フォント定義（置時計用 9種 - アプリ同梱フォント）
    ============================================================ */
 @font-face {
@@ -3588,16 +3588,13 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   width: 300px; height: 300px;
   pointer-events: none;
   z-index: 1;
-  mix-blend-mode: screen;
 }
 
 .corona-layer1 {
   fill: rgba(255, 255, 255, 0.45);
-  filter: blur(8px);
 }
 .corona-layer2 {
   fill: rgba(255, 255, 255, 0.25);
-  filter: blur(15px);
 }
 
 /* ============================================================
