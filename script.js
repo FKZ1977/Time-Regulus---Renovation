@@ -4893,7 +4893,7 @@ function initAnalogSwipe() {
       _analogHoldTimer = null;
       const ring = document.getElementById("analogHoldRing");
       const circle = document.getElementById("analogRingCircle");
-if(ring) ring.style.opacity = "0";
+      if(ring) ring.style.opacity = "0";
       if(circle) circle.style.strokeDashoffset = "164";
     }
 
@@ -4907,9 +4907,9 @@ if(ring) ring.style.opacity = "0";
       container.style.transform = `translate(${baseTranslate + diffX}px, ${_analogShiftY}px)`;
     } else {
       // 縦スワイプ: ネオン輝度リアルタイム調整（横ブレは完全無視）
-      const step = Math.abs(diffY) * 0.03;
+      const step = 0.05;
       if (diffY < 0) {
-        _analogGlowIntensity = Math.min(30.0, _analogGlowIntensity + step);
+        _analogGlowIntensity = Math.min(5.0, _analogGlowIntensity + step);
       } else {
         _analogGlowIntensity = Math.max(0.2, _analogGlowIntensity - step);
       }
@@ -5494,6 +5494,7 @@ let _eclipseCoronaAnimId = null;
 function initEclipseCorona() {
   const layer1 = document.querySelector('.corona-layer1');
   const layer2 = document.querySelector('.corona-layer2');
+  const layer3 = document.querySelector('.corona-layer3');
   if (!layer1 || !layer2) return;
 
   const numPoints = 12;
@@ -5501,6 +5502,7 @@ function initEclipseCorona() {
   const centerY = 150;
   const baseRadius1 = 80; 
   const baseRadius2 = 90;
+  const baseRadius3 = 100;
 
   let time = 0;
   
@@ -5508,6 +5510,8 @@ function initEclipseCorona() {
   let phases1_B = Array.from({length: numPoints}, () => Math.random() * Math.PI * 2);
   let phases2_A = Array.from({length: numPoints}, () => Math.random() * Math.PI * 2);
   let phases2_B = Array.from({length: numPoints}, () => Math.random() * Math.PI * 2);
+  let phases3_A = Array.from({length: numPoints}, () => Math.random() * Math.PI * 2);
+  let phases3_B = Array.from({length: numPoints}, () => Math.random() * Math.PI * 2);
 
   function getSmoothedRadii(base, var1, var2, phasesA, phasesB, speedA, speedB, t) {
     let raw = [];
@@ -5555,9 +5559,11 @@ function initEclipseCorona() {
     
     let current1 = getSmoothedRadii(baseRadius1, 8, 5, phases1_A, phases1_B, 3.5, 2.2, time);
     let current2 = getSmoothedRadii(baseRadius2, 14, 9, phases2_A, phases2_B, 2.0, 1.2, time);
+    let current3 = getSmoothedRadii(baseRadius3, 20, 14, phases3_A, phases3_B, 1.5, 0.8, time);
     
     layer1.setAttribute('d', generatePath(current1));
     layer2.setAttribute('d', generatePath(current2));
+    if(layer3) layer3.setAttribute('d', generatePath(current3));
 
     _eclipseCoronaAnimId = requestAnimationFrame(animate);
   }
