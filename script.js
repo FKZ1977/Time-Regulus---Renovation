@@ -4893,7 +4893,7 @@ function initAnalogSwipe() {
       _analogHoldTimer = null;
       const ring = document.getElementById("analogHoldRing");
       const circle = document.getElementById("analogRingCircle");
-      if(ring) ring.style.opacity = "0";
+if(ring) ring.style.opacity = "0";
       if(circle) circle.style.strokeDashoffset = "164";
     }
 
@@ -4905,7 +4905,7 @@ function initAnalogSwipe() {
       // 縦スワイプ: ネオン輝度リアルタイム調整（横ブレは完全無視）
       const step = 0.05;
       if (diffY < 0) {
-        _analogGlowIntensity = Math.min(2.0, _analogGlowIntensity + step);
+        _analogGlowIntensity = Math.min(5.0, _analogGlowIntensity + step);
       } else {
         _analogGlowIntensity = Math.max(0.2, _analogGlowIntensity - step);
       }
@@ -4923,7 +4923,6 @@ function initAnalogSwipe() {
   };
   const onEnd = (e) => {
     if (_analogIs2FingerDragging) {
-      // 指が離れた時点でドラッグ終了（1本指が残っていても終了とみなす）
       _analogIs2FingerDragging = false;
       analogScreen.classList.remove('analog-dragging-2finger');
       
@@ -4933,7 +4932,6 @@ function initAnalogSwipe() {
       const currentX = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--drag-${_analogDragTarget}-x`)) || 0;
       const currentY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--drag-${_analogDragTarget}-y`)) || 0;
       
-      // 画面サイズの約1/3を移動していれば、相手エリアに侵入したとみなして入れ替え
       if (isLandscape) {
         const threshold = window.innerWidth / 3;
         if ((_analogDragTarget === 'analog' && !_analogIsSwapped && currentX > threshold) ||
@@ -5286,6 +5284,72 @@ function _renderCalendar() {
     });
   });
 }
+let _isAnimatingCalendar = false;
+
+function _animateToCurrentMonth() {
+  const rail = document.getElementById('analogCalendarRail');
+  if (!rail || _calMonthOffset === 0) {
+    _calMonthOffset = 0;
+    _renderCalendar();
+    return;
+  }
+
+  _isAnimatingCalendar = true;
+  
+  const now = new Date();
+  const baseYear = now.getFullYear();
+  const baseMonth = now.getMonth();
+  const startOffset = _calMonthOffset;
+  const targetOffset = 0;
+  const diff = Math.abs(startOffset - targetOffset);
+  
+  rail.innerHTML = '';
+  rail.style.transition = 'none';
+  
+  const minOffset = Math.min(startOffset, targetOffset) - 1; 
+  const maxOffset = Math.max(startOffset, targetOffset) + (_calMode === 2 ? 1 : 0) + 1; 
+  
+  for (let offset = minOffset; offset <= maxOffset; offset++) {
+    rail.appendChild(_createMonthBlock(baseYear, baseMonth + offset));
+  }
+  
+  const blockW = (rail.children[0] ? rail.children[0].offsetWidth : 0) || 192;
+  const gap = 12;
+  
+  const startIndex = startOffset - minOffset;
+  const targetIndex = targetOffset - minOffset;
+  
+  const startTranslate = -(startIndex * (blockW + gap));
+  const targetTranslate = -(targetIndex * (blockW + gap));
+  
+  _calMonthOffset = 0;
+  
+  rail.style.transform = `translateX(${startTranslate}px)`;
+  rail.dataset.shift = startTranslate;
+  
+  void rail.offsetWidth;
+  
+  const duration = Math.min(0.5 + diff * 0.05, 1.5); 
+  rail.style.transition = `transform ${duration}s cubic-bezier(0.77, 0, 0.175, 1)`;
+  
+  rail.style.transform = `translateX(${targetTranslate}px)`;
+  rail.dataset.shift = targetTranslate;
+  
+  let transitionEnded = false;
+  const onTransitionEnd = () => {
+    if (transitionEnded) return;
+    transitionEnded = true;
+    rail.removeEventListener('transitionend', onTransitionEnd);
+    _renderCalendar();
+    _isAnimatingCalendar = false;
+  };
+  
+  rail.addEventListener('transitionend', onTransitionEnd);
+  
+  setTimeout(() => {
+    if (!transitionEnded) onTransitionEnd();
+  }, duration * 1000 + 50);
+}
 
 function initAnalogCalendarTouch() {
   const viewport = document.getElementById('analogCalendarViewport');
@@ -5303,6 +5367,7 @@ function initAnalogCalendarTouch() {
   }
 
   function onStart(e) {
+    if (_isAnimatingCalendar) return;
     const type = e.type;
     isTouch = type.includes('touch');
     if (!isTouch && e.button !== 0) return;
@@ -5387,8 +5452,12 @@ function initAnalogCalendarTouch() {
       if (tapTimer) clearTimeout(tapTimer);
       tapTimer = setTimeout(() => {
         if (tapCount === 1) {
-          _calMonthOffset = 0;
-          _renderCalendar();
+          if (_calMonthOffset !== 0) {
+            _animateToCurrentMonth();
+          } else {
+            _calMonthOffset = 0;
+            _renderCalendar();
+          }
         } else if (tapCount >= 2) {
           _calMode = _calMode === 1 ? 2 : 1;
           _renderCalendar();
@@ -5408,3 +5477,82 @@ function initAnalogCalendarTouch() {
   document.addEventListener('mouseup', onEnd, { passive: false });
   document.addEventListener('mouseleave', onEnd, { passive: false });
 }
+
+let _eclipseCoronaAnimId = null;
+
+function initEclipseCorona() {
+  const layer1 = document.querySelector('.corona-layer1');
+  const layer2 = document.querySelector('.corona-layer2');
+  if (!layer1 || !layer2) return;
+
+  const numPoints = 12;
+  const centerX = 150;
+  const centerY = 150;
+  const baseRadius1 = 80; 
+  const baseRadius2 = 90;
+
+  let time = 0;
+  
+  let phases1_A = Array.from({length: numPoints}, () => Math.random() * Math.PI * 2);
+  let phases1_B = Array.from({length: numPoints}, () => Math.random() * Math.PI * 2);
+  let phases2_A = Array.from({length: numPoints}, () => Math.random() * Math.PI * 2);
+  let phases2_B = Array.from({length: numPoints}, () => Math.random() * Math.PI * 2);
+
+  function getSmoothedRadii(base, var1, var2, phasesA, phasesB, speedA, speedB, t) {
+    let raw = [];
+    for (let i = 0; i < numPoints; i++) {
+      let r = base 
+            + Math.sin(t * speedA + phasesA[i]) * var1
+            + Math.sin(t * speedB + phasesB[i]) * var2;
+      raw.push(r);
+    }
+    let smoothed = [];
+    for (let i = 0; i < numPoints; i++) {
+      let prev = raw[(i - 1 + numPoints) % numPoints];
+      let next = raw[(i + 1) % numPoints];
+      smoothed.push((prev + raw[i] * 2 + next) / 4);
+    }
+    return smoothed;
+  }
+
+  function generatePath(points) {
+    const coords = points.map((r, i) => {
+      const angle = (i * Math.PI * 2) / numPoints - Math.PI / 2;
+      return { x: centerX + Math.cos(angle) * r, y: centerY + Math.sin(angle) * r };
+    });
+
+    let d = 'M ' + coords[0].x + ',' + coords[0].y + ' ';
+    const tension = 0.25;
+    for (let i = 0; i < numPoints; i++) {
+      let p0 = coords[(i - 1 + numPoints) % numPoints];
+      let p1 = coords[i];
+      let p2 = coords[(i + 1) % numPoints];
+      let p3 = coords[(i + 2) % numPoints];
+      
+      let cp1x = p1.x + (p2.x - p0.x) * tension;
+      let cp1y = p1.y + (p2.y - p0.y) * tension;
+      let cp2x = p2.x - (p3.x - p1.x) * tension;
+      let cp2y = p2.y - (p3.y - p1.y) * tension;
+      
+      d += 'C ' + cp1x + ',' + cp1y + ' ' + cp2x + ',' + cp2y + ' ' + p2.x + ',' + p2.y + ' ';
+    }
+    return d + 'Z';
+  }
+
+  function animate() {
+    time += 0.016;
+    
+    let current1 = getSmoothedRadii(baseRadius1, 8, 5, phases1_A, phases1_B, 3.5, 2.2, time);
+    let current2 = getSmoothedRadii(baseRadius2, 14, 9, phases2_A, phases2_B, 2.0, 1.2, time);
+    
+    layer1.setAttribute('d', generatePath(current1));
+    layer2.setAttribute('d', generatePath(current2));
+
+    _eclipseCoronaAnimId = requestAnimationFrame(animate);
+  }
+  
+  if (_eclipseCoronaAnimId) cancelAnimationFrame(_eclipseCoronaAnimId);
+  animate();
+}
+
+document.addEventListener("DOMContentLoaded", initEclipseCorona);

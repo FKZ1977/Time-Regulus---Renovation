@@ -3196,7 +3196,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 }
 .info-state-1 .analog-info-container {
   bottom: auto;
-  top: 75vh; /* アナログ時計と重ならないよう、下寄りの丁度良い位置に配置 */
+  top: 60vh; /* アナログ時計と重ならないよう、画面中央寄りの位置に配置 */
   transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
 }
 
@@ -3375,7 +3375,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 }
 .pager-dot.active {
   background-color: var(--accent);
-  box-shadow: 0 0 calc(8px * var(--analog-glow, 1.0)) var(--accent);
+  box-shadow: 0 0 calc(8px * min(var(--analog-glow, 1.0), 2.0)) var(--accent);
   transform: scale(1.5);
 }
 
@@ -3435,41 +3435,41 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   margin: -2px 0 0 -2px;
 }
 .clock-regulus .hour-hand {
-  width: 44px; height: 90px;
+  width: 160px; height: 90px;
   background: transparent;
-  margin-left: -22px;
+  margin-left: -80px;
   -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 30%, black 50%);
   mask-image: linear-gradient(to top, transparent 0%, transparent 30%, black 50%);
 }
 .clock-regulus .hour-hand::after {
   content: "";
   position: absolute;
-  bottom: 0; left: 20px;
+  bottom: 0; left: 78px;
   width: 4px; height: 70px;
   background: var(--toggle-bg);
   box-shadow: 0 0 calc(8px * var(--analog-glow, 1.0)) var(--toggle-bg);
   border-radius: 2px;
 }
 .clock-regulus .minute-hand {
-  width: 42px; height: 120px;
+  width: 160px; height: 120px;
   background: transparent;
-  margin-left: -21px;
+  margin-left: -80px;
   -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 25%, black 40%);
   mask-image: linear-gradient(to top, transparent 0%, transparent 25%, black 40%);
 }
 .clock-regulus .minute-hand::after {
   content: "";
   position: absolute;
-  bottom: 0; left: 20px;
+  bottom: 0; left: 79px;
   width: 2px; height: 100px;
   background: var(--accent);
   box-shadow: 0 0 calc(8px * var(--analog-glow, 1.0)) var(--accent);
   border-radius: 1px;
 }
 .clock-regulus .sweep-tail {
-  width: 41px; height: 150px; /* 先端の発光切り取りを防ぐため20px高く */
+  width: 161px; height: 150px; /* 先端の発光切り取りを防ぐため20px高く */
   background: transparent;
-  margin-left: -20.5px;
+  margin-left: -80.5px;
   overflow: visible;
   /* 元の透明度フェードを再現 */
   -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 22%, black 70%);
@@ -3478,7 +3478,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 .clock-regulus .sweep-tail::after {
   content: "";
   position: absolute;
-  bottom: 0; left: 20px;
+  bottom: 0; left: 80px;
   width: 1px; height: 130px;
   background: #fff;
   /* box-shadowのXオフセットをマイナスにすることで、時計回りの「後方」にのみ影を落とす。
@@ -3547,17 +3547,17 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   /* 光彩（コロナ外枠）削除 */
 }
 .clock-eclipse .hour-hand {
-  width: 4px; height: 88px;
+  width: 4px; height: 100px;
   background: linear-gradient(to top, transparent 70px, rgba(255,255,255,0.4) 70px);
   margin-left: -2px;
 }
 .clock-eclipse .minute-hand {
-  width: 2px; height: 110px;
+  width: 2px; height: 125px;
   background: linear-gradient(to top, transparent 70px, rgba(255,255,255,0.6) 70px);
   margin-left: -1px;
 }
 .clock-eclipse .sweep-corona {
-  width: 1px; height: 130px;
+  width: 1px; height: 145px;
   background: linear-gradient(to top, transparent 70px, rgba(255,255,255,0.9) 70px);
   margin-left: -0.5px;
   overflow: visible;
@@ -3579,6 +3579,25 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 .clock-eclipse .minute-hand,
 .clock-eclipse .sweep-corona {
   z-index: 5;
+}
+
+.eclipse-corona-svg {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px; height: 300px;
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: screen;
+}
+
+.corona-layer1 {
+  fill: rgba(255, 255, 255, 0.45);
+  filter: blur(8px);
+}
+.corona-layer2 {
+  fill: rgba(255, 255, 255, 0.25);
+  filter: blur(15px);
 }
 
 /* ============================================================
