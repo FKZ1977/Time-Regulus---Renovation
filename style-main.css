@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    オフライン対応フォント定義（置時計用 9種 - アプリ同梱フォント）
    ============================================================ */
 @font-face {
@@ -3187,7 +3187,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   /* 縦置き時 (デフォルト): デジタルは下へ、アナログに寄せる */
   bottom: 80px;
   left: 50%;
-  transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
+  transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(var(--burn-shift-y, 0px) + var(--drag-info-y, 0px))) scale(var(--scale-info, 1));
 }
 
 .info-state-1 .analog-info-container,
@@ -3197,13 +3197,13 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 .info-state-1 .analog-info-container {
   bottom: auto;
   top: 60vh; /* アナログ時計と重ならないよう、画面中央寄りの位置に配置 */
-  transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
+  transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px))) scale(var(--scale-info, 1));
 }
 
 .info-state-2 .analog-info-container {
   bottom: auto;
   top: 65vh; /* アナログ時計に被らないギリギリまで中央に寄せる（少し下げました） */
-  transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
+  transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px))) scale(var(--scale-info, 1));
   gap: 0; /* カレンダーの年月とグリッドの隙間をなくす */
 }
 
@@ -3211,7 +3211,7 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 .analog-layout-swapped.info-state-2 .analog-info-container {
   bottom: auto;
   top: 25vh; /* カレンダーを少し上に上げて、時計とくっつきすぎないように調整 */
-  transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
+  transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px))) scale(var(--scale-info, 1));
 }
 
 /* ドラッグ中のみトランジションを無効化して指に追従させる */
@@ -3271,22 +3271,22 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 /* アナログ時計のスライド・アニメーション */
 .analog-page > div {
   transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  transform: translate(var(--drag-analog-x, 0px), var(--drag-analog-y, 0px));
+  transform: translate(var(--drag-analog-x, 0px), var(--drag-analog-y, 0px)) scale(var(--scale-analog, 1));
 }
 
 .info-state-1 .analog-page > div {
-  transform: translate(var(--drag-analog-x, 0px), calc(-20vh + var(--drag-analog-y, 0px))); /* デジタルのみ */
+  transform: translate(var(--drag-analog-x, 0px), calc(-20vh + var(--drag-analog-y, 0px))) scale(var(--scale-analog, 1)); /* デジタルのみ */
 }
 .info-state-2 .analog-page > div {
-  transform: translate(var(--drag-analog-x, 0px), calc(-25vh + var(--drag-analog-y, 0px))); /* カレンダー表示時はさらに上に避ける */
+  transform: translate(var(--drag-analog-x, 0px), calc(-25vh + var(--drag-analog-y, 0px))) scale(var(--scale-analog, 1)); /* カレンダー表示時はさらに上に避ける */
 }
 
 /* Portrait Swapped (縦置きの入れ替え状態) */
 .analog-layout-swapped.info-state-1 .analog-page > div {
-  transform: translate(var(--drag-analog-x, 0px), calc(15vh + var(--drag-analog-y, 0px))); /* 移動量をマイルドに */
+  transform: translate(var(--drag-analog-x, 0px), calc(15vh + var(--drag-analog-y, 0px))) scale(var(--scale-analog, 1)); /* 移動量をマイルドに */
 }
 .analog-layout-swapped.info-state-2 .analog-page > div {
-  transform: translate(var(--drag-analog-x, 0px), calc(18vh + var(--drag-analog-y, 0px)));
+  transform: translate(var(--drag-analog-x, 0px), calc(18vh + var(--drag-analog-y, 0px))) scale(var(--scale-analog, 1));
 }
 
 /* 横置き時のレイアウト変更 */
@@ -3296,13 +3296,13 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
     left: auto;
     right: 15vw;
     top: 50%;
-    transform: translate(calc(var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
+    transform: translate(calc(var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px))) scale(var(--scale-info, 1));
   }
   .info-state-2 .analog-info-container {
     left: auto;
     right: 8vw; /* 以前の横の位置に戻す */
     top: 45%; /* デジタル時計の大きさで視覚的に下がるため、少し上に引き上げて中央に見せる */
-    transform: translate(calc(var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
+    transform: translate(calc(var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px))) scale(var(--scale-info, 1));
     gap: 0;
   }
   /* Landscape Swapped (横置きの入れ替え状態) */
@@ -3311,24 +3311,24 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
     right: auto;
     left: 12vw; /* 少し中央に寄せて、はみ出しを防止 */
     top: 45%; /* 同様に少し上に引き上げる */
-    transform: translate(calc(var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
+    transform: translate(calc(var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px))) scale(var(--scale-info, 1));
   }
   .info-state-2 .analog-digital-clock {
     margin-bottom: 3vw;
   }
   .info-state-1 .analog-page > div {
-    transform: translate(calc(-20vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px));
+    transform: translate(calc(-20vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px)) scale(var(--scale-analog, 1));
   }
   .info-state-2 .analog-page > div {
-    transform: translate(calc(-25vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px)); /* さらに左へ避ける */
+    transform: translate(calc(-25vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px)) scale(var(--scale-analog, 1)); /* さらに左へ避ける */
   }
   
   /* Landscape Swapped (横置きの入れ替え状態) */
   .analog-layout-swapped.info-state-1 .analog-page > div {
-    transform: translate(calc(15vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px)); /* 移動量をマイルドに */
+    transform: translate(calc(15vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px)) scale(var(--scale-analog, 1)); /* 移動量をマイルドに */
   }
   .analog-layout-swapped.info-state-2 .analog-page > div {
-    transform: translate(calc(20vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px));
+    transform: translate(calc(20vw + var(--drag-analog-x, 0px)), var(--drag-analog-y, 0px)) scale(var(--scale-analog, 1));
   }
 }
 
