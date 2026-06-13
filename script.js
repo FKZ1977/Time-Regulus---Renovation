@@ -5426,7 +5426,6 @@ function initAnalogCalendarTouch() {
     if (!isDragging) return;
     isDragging = false;
     
-    const type = e.type;
     const currentIsTouch = type.includes('touch');
     const ex = currentIsTouch ? e.changedTouches[0].clientX : e.clientX;
     const ey = currentIsTouch ? e.changedTouches[0].clientY : e.clientY;
