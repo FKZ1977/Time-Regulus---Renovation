@@ -4066,6 +4066,7 @@ function showAnalogLockScreen() {
   if (!analogScreen.dataset.swipeInited) {
     initAnalogSwipe();
     initAnalogHold();
+    initAnalogCalendarTouch();
     
     // バックグラウンドでの描画停止と復帰時の再開による省電力化
     document.addEventListener('visibilitychange', () => {
@@ -4739,7 +4740,7 @@ function _startAnalogClock() {
       const currentDateStr = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
       if (_analogLastCalendarDate !== currentDateStr) {
         _analogLastCalendarDate = currentDateStr;
-        _generateCalendar(now.getFullYear(), now.getMonth());
+        _renderCalendar();
       }
     }
     
@@ -4828,6 +4829,7 @@ function initAnalogSwipe() {
     
     _analogIs2FingerDragging = false;
     _analogIsDragging = true;
+    _analogSwipeDirection = null; // 方向をリセット
     _analogStartX = e.touches ? e.touches[0].clientX : e.clientX;
     _analogStartY = e.touches ? e.touches[0].clientY : e.clientY;
     container.style.transition = "none";
@@ -4862,10 +4864,21 @@ function initAnalogSwipe() {
 
     if (!_analogIsDragging) return;
     const currentX = e.touches ? e.touches[0].clientX : e.clientX;
+    const currentY = e.touches ? e.touches[0].clientY : e.clientY;
     const diffX = currentX - _analogStartX;
-    
+    const diffY = currentY - _analogStartY;
+
+    // 方向を確定（10px移動で一度だけロック）
+    if (!_analogSwipeDirection) {
+      if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+        _analogSwipeDirection = Math.abs(diffX) >= Math.abs(diffY) ? "horizontal" : "vertical";
+      } else {
+        return; // 方向が確定するまで何もしない
+      }
+    }
+
     // スワイプが開始されたらホールドをキャンセルする
-    if (Math.abs(diffX) > 10 && _analogHoldTimer) {
+    if (_analogHoldTimer) {
       cancelAnimationFrame(_analogHoldTimer);
       _analogHoldTimer = null;
       const ring = document.getElementById("analogHoldRing");
@@ -4874,10 +4887,30 @@ function initAnalogSwipe() {
       if(circle) circle.style.strokeDashoffset = "164";
     }
 
-    const baseTranslate = -(_analogCurrentPage * _analogContainerWidth);
-    container.style.transform = `translate(${baseTranslate + diffX}px, ${_analogShiftY}px)`;
+    if (_analogSwipeDirection === "horizontal") {
+      // 横スワイプ: ページを水平スライド（縦ブレは完全無視）
+      const baseTranslate = -(_analogCurrentPage * _analogContainerWidth);
+      container.style.transform = `translate(${baseTranslate + diffX}px, ${_analogShiftY}px)`;
+    } else {
+      // 縦スワイプ: ネオン輝度リアルタイム調整（横ブレは完全無視）
+      const step = 0.05;
+      if (diffY < 0) {
+        _analogGlowIntensity = Math.min(2.0, _analogGlowIntensity + step);
+      } else {
+        _analogGlowIntensity = Math.max(0.2, _analogGlowIntensity - step);
+      }
+      _analogStartY = currentY; // 連続変化のため更新
+      document.documentElement.style.setProperty("--analog-glow", _analogGlowIntensity);
+      document.documentElement.style.setProperty("--glow-2px",  (2  * _analogGlowIntensity) + "px");
+      document.documentElement.style.setProperty("--glow-4px",  (4  * _analogGlowIntensity) + "px");
+      document.documentElement.style.setProperty("--glow-6px",  (6  * _analogGlowIntensity) + "px");
+      document.documentElement.style.setProperty("--glow-8px",  (8  * _analogGlowIntensity) + "px");
+      document.documentElement.style.setProperty("--glow-10px", (10 * _analogGlowIntensity) + "px");
+      document.documentElement.style.setProperty("--glow-12px", (12 * _analogGlowIntensity) + "px");
+      document.documentElement.style.setProperty("--glow-20px", (20 * _analogGlowIntensity) + "px");
+      document.documentElement.style.setProperty("--glow-45px", (45 * _analogGlowIntensity) + "px");
+    }
   };
-  
   const onEnd = (e) => {
     if (_analogIs2FingerDragging) {
       // 指が離れた時点でドラッグ終了（1本指が残っていても終了とみなす）
@@ -4935,24 +4968,16 @@ function initAnalogSwipe() {
     const diffY = endY - _analogStartY;
     
     container.style.transition = "transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
-    
-    // 縦スワイプによるネオン輝度調整
-    if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 25) {
-      const step = 0.2;
-      if (diffY < 0) {
-        // 下スワイプ (endY < startY) → 明るく
-        _analogGlowIntensity = Math.min(2.0, _analogGlowIntensity + step);
-      } else {
-        // 上スワイプ (endY > startY) → 暗く
-        _analogGlowIntensity = Math.max(0.2, _analogGlowIntensity - step);
-      }
-      document.documentElement.style.setProperty('--analog-glow', _analogGlowIntensity);
-      
-      // 縦スワイプ時は横のページ遷移をキャンセルしてページャーを更新
+
+    if (_analogSwipeDirection === "vertical") {
+      // 縦スワイプ終了: 横ページ遷移は行わず現在ページをキープ
+      const baseTranslate = -(_analogCurrentPage * _analogContainerWidth);
+      container.style.transform = `translate(${baseTranslate}px, ${_analogShiftY}px)`;
       _updateAnalogPager();
       return;
     }
 
+    // 横スワイプ終了: ページ切り替え判定
     const threshold = _analogContainerWidth * 0.2; // 20%スワイプで切り替え
     
     if (diffX < -threshold && _analogCurrentPage < 2) {
@@ -5114,6 +5139,7 @@ function initAnalogHold() {
           if (_analogIsSwapped) {
             analogScreen.classList.add('analog-layout-swapped');
           }
+          if (_analogInfoState === 2) { _calMonthOffset = 0; _renderCalendar(); }
         } else if (_analogTapCount >= 3) {
           // トリプルタップ：文字・針のベース明るさ（透明度）を5段階で切り替え
           if (typeof _analogBaseOpacityStep === 'undefined') window._analogBaseOpacityStep = 0;
@@ -5148,4 +5174,225 @@ function closeAnalogLockScreen() {
   if (passcode) {
     passcode.focus();
   }
+}
+
+// ============================================================
+// カレンダーカルーセル機能
+// ============================================================
+let _calMonthOffset = 0;  // 0=今月, 1=来月, -1=先月...
+let _calMode = 1;          // 1=1ヶ月表示, 2=2ヶ月表示
+
+function _createMonthBlock(year, month) {
+  // monthが0未満や12以上になるケースを正規化
+  while (month < 0)  { month += 12; year--; }
+  while (month > 11) { month -= 12; year++; }
+
+  const block = document.createElement('div');
+  block.className = 'analog-calendar-block';
+
+  const header = document.createElement('div');
+  header.className = 'analog-calendar-header';
+  header.textContent = `${year} . ${(month + 1).toString().padStart(2,'0')}`;
+  block.appendChild(header);
+
+  const grid = document.createElement('div');
+  grid.className = 'analog-calendar-grid';
+
+  // 曜日ヘッダー
+  const days = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+  days.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.textContent = d;
+    if (i === 5) el.className = 'day-blue';
+    if (i === 6) el.className = 'day-red';
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+  const lastDate = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  const monthStr = (month + 1).toString().padStart(2, '0');
+
+  for (let i = 0; i < startOffset; i++) {
+    grid.appendChild(document.createElement('div'));
+  }
+  for (let d = 1; d <= lastDate; d++) {
+    const el = document.createElement('div');
+    el.className = 'day-cell';
+    const dateStr = `${year}-${monthStr}-${d.toString().padStart(2,'0')}`;
+    const colIndex = (startOffset + d - 1) % 7;
+    if (colIndex === 5) el.classList.add('day-blue');
+    if (colIndex === 6 || _jp_holidays.has(dateStr)) el.classList.add('day-red');
+    if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
+      const span = document.createElement('span');
+      span.className = 'today-circle';
+      span.textContent = d;
+      el.appendChild(span);
+    } else {
+      el.textContent = d;
+    }
+    grid.appendChild(el);
+  }
+  block.appendChild(grid);
+  return block;
+}
+
+function _renderCalendar() {
+  const rail = document.getElementById('analogCalendarRail');
+  const viewport = document.getElementById('analogCalendarViewport');
+  if (!rail || !viewport) return;
+
+  const now = new Date();
+  const baseYear = now.getFullYear();
+  const baseMonth = now.getMonth() + _calMonthOffset;
+
+  // レール: 前月 | 表示月 | (2ヶ月目) | 翌月(翌々月)  の合計3or4ブロック
+  rail.innerHTML = '';
+  rail.appendChild(_createMonthBlock(baseYear, baseMonth - 1));
+  rail.appendChild(_createMonthBlock(baseYear, baseMonth));
+  if (_calMode === 2) rail.appendChild(_createMonthBlock(baseYear, baseMonth + 1));
+  rail.appendChild(_createMonthBlock(baseYear, baseMonth + _calMode));
+
+  // アニメなしで初期位置へ
+  rail.style.transition = 'none';
+  requestAnimationFrame(() => {
+    const blockW = (rail.children[0] ? rail.children[0].offsetWidth : 0) || 192;
+    const gap = 12;
+    // 表示する最初のブロック(インデックス1)の左端がビューポート左端に合うようシフト
+    const initShift = -(blockW + gap);
+    rail.style.transform = `translateX(${initShift}px)`;
+    rail.dataset.shift = initShift;
+
+    // ビューポート幅 = 表示ブロック数 × blockW + gap * (mode-1)
+    const vpW = blockW * _calMode + gap * (_calMode - 1);
+    viewport.style.width = vpW + 'px';
+
+    // アニメ再設定
+    requestAnimationFrame(() => {
+      rail.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    });
+  });
+}
+
+function initAnalogCalendarTouch() {
+  const viewport = document.getElementById('analogCalendarViewport');
+  if (!viewport) return;
+
+  let startX = 0, startY = 0;
+  let isDragging = false;
+  let direction = null; // 'horizontal' | 'vertical' | null
+  let tapCount = 0, tapTimer = null;
+  let isTouch = false;
+
+  function getBlockW() {
+    const rail = document.getElementById('analogCalendarRail');
+    return (rail && rail.children[0] ? rail.children[0].offsetWidth : 0) || 192;
+  }
+
+  function onStart(e) {
+    const type = e.type;
+    isTouch = type.includes('touch');
+    if (!isTouch && e.button !== 0) return;
+    
+    // PCネイティブドラッグ防止
+    if (!isTouch && e.cancelable) e.preventDefault();
+
+    startX = isTouch ? e.touches[0].clientX : e.clientX;
+    startY = isTouch ? e.touches[0].clientY : e.clientY;
+    isDragging = true;
+    direction = null;
+
+    const rail = document.getElementById('analogCalendarRail');
+    if (rail) rail.style.transition = 'none';
+    
+    e.stopPropagation();
+  }
+
+  function onMove(e) {
+    if (!isDragging) return;
+    
+    const type = e.type;
+    const currentIsTouch = type.includes('touch');
+    // タッチ開始なのにマウス移動イベントが来た場合は無視
+    if (isTouch && !currentIsTouch) return;
+
+    const cx = currentIsTouch ? e.touches[0].clientX : e.clientX;
+    const cy = currentIsTouch ? e.touches[0].clientY : e.clientY;
+    const dx = cx - startX;
+    const dy = cy - startY;
+
+    if (!direction) {
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        direction = Math.abs(dx) >= Math.abs(dy) ? 'horizontal' : 'vertical';
+      } else return;
+    }
+
+    if (direction !== 'horizontal') return;
+    if (e.cancelable) e.preventDefault();
+
+    const rail = document.getElementById('analogCalendarRail');
+    if (!rail) return;
+    const baseShift = parseFloat(rail.dataset.shift || 0);
+    rail.style.transform = `translateX(${baseShift + dx}px)`;
+  }
+
+  function onEnd(e) {
+    if (!isDragging) return;
+    isDragging = false;
+    
+    const type = e.type;
+    const currentIsTouch = type.includes('touch');
+    const ex = currentIsTouch ? e.changedTouches[0].clientX : e.clientX;
+    const ey = currentIsTouch ? e.changedTouches[0].clientY : e.clientY;
+    
+    const dx = ex - startX;
+    const dy = ey - startY;
+    const dist = Math.hypot(dx, dy);
+
+    const rail = document.getElementById('analogCalendarRail');
+    if (rail) rail.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+
+    if (direction === 'horizontal') {
+      const threshold = 40;
+      if (dx < -threshold) {
+        _calMonthOffset++;
+        _renderCalendar();
+      } else if (dx > threshold) {
+        _calMonthOffset--;
+        _renderCalendar();
+      } else {
+        if (rail) {
+          const baseShift = parseFloat(rail.dataset.shift || 0);
+          rail.style.transform = `translateX(${baseShift}px)`;
+        }
+      }
+      return;
+    }
+
+    if (dist < 10) {
+      tapCount++;
+      if (tapTimer) clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => {
+        if (tapCount === 1) {
+          _calMonthOffset = 0;
+          _renderCalendar();
+        } else if (tapCount >= 2) {
+          _calMode = _calMode === 1 ? 2 : 1;
+          _renderCalendar();
+        }
+        tapCount = 0;
+      }, 280);
+    }
+  }
+
+  viewport.addEventListener('touchstart', onStart, { passive: false });
+  viewport.addEventListener('mousedown', onStart, { passive: false });
+  
+  // documentに対するイベントとして登録する
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mousemove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd, { passive: false });
+  document.addEventListener('mouseup', onEnd, { passive: false });
+  document.addEventListener('mouseleave', onEnd, { passive: false });
 }

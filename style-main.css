@@ -3194,6 +3194,12 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 .info-state-2 .analog-info-container {
   opacity: var(--analog-base-opacity, 1.0);
 }
+.info-state-1 .analog-info-container {
+  bottom: auto;
+  top: 75vh; /* アナログ時計と重ならないよう、下寄りの丁度良い位置に配置 */
+  transform: translate(calc(-50% + var(--burn-shift-x, 0px) + var(--drag-info-x, 0px)), calc(-50% + var(--burn-shift-y, 0px) + var(--drag-info-y, 0px)));
+}
+
 .info-state-2 .analog-info-container {
   bottom: auto;
   top: 65vh; /* アナログ時計に被らないギリギリまで中央に寄せる（少し下げました） */
@@ -3429,28 +3435,60 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   margin: -2px 0 0 -2px;
 }
 .clock-regulus .hour-hand {
+  width: 44px; height: 90px;
+  background: transparent;
+  margin-left: -22px;
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 30%, black 50%);
+  mask-image: linear-gradient(to top, transparent 0%, transparent 30%, black 50%);
+}
+.clock-regulus .hour-hand::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 20px;
   width: 4px; height: 70px;
   background: var(--toggle-bg);
-  box-shadow: 0 0 calc(10px * var(--analog-glow, 1.0)) var(--toggle-bg);
+  box-shadow: 0 0 calc(8px * var(--analog-glow, 1.0)) var(--toggle-bg);
   border-radius: 2px;
-  margin-left: -2px;
-  -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 40%, black 60%);
-  mask-image: linear-gradient(to top, transparent 0%, transparent 40%, black 60%);
 }
 .clock-regulus .minute-hand {
+  width: 42px; height: 120px;
+  background: transparent;
+  margin-left: -21px;
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 25%, black 40%);
+  mask-image: linear-gradient(to top, transparent 0%, transparent 25%, black 40%);
+}
+.clock-regulus .minute-hand::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 20px;
   width: 2px; height: 100px;
   background: var(--accent);
-  box-shadow: 0 0 calc(10px * var(--analog-glow, 1.0)) var(--accent);
+  box-shadow: 0 0 calc(8px * var(--analog-glow, 1.0)) var(--accent);
   border-radius: 1px;
-  margin-left: -1px;
-  -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 30%, black 45%);
-  mask-image: linear-gradient(to top, transparent 0%, transparent 30%, black 45%);
 }
 .clock-regulus .sweep-tail {
-  width: 1px; height: 130px;
-  background: linear-gradient(to top, transparent 0%, transparent 25%, #fff 80%, #fff 100%);
-  margin-left: -0.5px;
+  width: 41px; height: 150px; /* 先端の発光切り取りを防ぐため20px高く */
+  background: transparent;
+  margin-left: -20.5px;
+  overflow: visible;
+  /* 元の透明度フェードを再現 */
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 22%, black 70%);
+  mask-image: linear-gradient(to top, transparent 0%, transparent 22%, black 70%);
 }
+.clock-regulus .sweep-tail::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 20px;
+  width: 1px; height: 130px;
+  background: #fff;
+  /* box-shadowのXオフセットをマイナスにすることで、時計回りの「後方」にのみ影を落とす。
+     オフセットの絶対値とぼかし幅の半分を一致させる(-2pxに対して4pxぼかし)ことで、前方への光漏れを完全にゼロにする。 */
+  box-shadow: 
+    calc(-2px * var(--analog-glow, 1.0)) 0 calc(4px * var(--analog-glow, 1.0)) #fff,
+    calc(-6px * var(--analog-glow, 1.0)) 0 calc(12px * var(--analog-glow, 1.0)) rgba(255, 255, 255, 0.5);
+}
+
+
 .clock-regulus .clock-center {
   display: none;
 }
@@ -3522,15 +3560,9 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   width: 1px; height: 130px;
   background: linear-gradient(to top, transparent 70px, rgba(255,255,255,0.9) 70px);
   margin-left: -0.5px;
+  overflow: visible;
 }
-@keyframes coronaBreathe {
-  0%, 100% {
-    box-shadow: 0 0 calc(45px * var(--analog-glow, 1.0)) rgba(255,255,255,0.3), inset 0 0 15px rgba(0,0,0,1);
-  }
-  50% {
-    box-shadow: 0 0 calc(20px * var(--analog-glow, 1.0)) rgba(255,255,255,0.15), inset 0 0 10px rgba(0,0,0,1);
-  }
-}
+
 
 .clock-eclipse .eclipse-center {
   position: absolute;
@@ -3547,4 +3579,45 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 .clock-eclipse .minute-hand,
 .clock-eclipse .sweep-corona {
   z-index: 5;
+}
+
+/* ============================================================
+   カレンダーカルーセル構造 (Calendar Carousel)
+   ============================================================ */
+.analog-calendar-viewport {
+  display: none;
+  overflow: hidden;
+  position: relative;
+  /* 幅はJSで動的に設定 */
+}
+.info-state-2 .analog-calendar-viewport {
+  display: block;
+  pointer-events: auto; /* マウスやタッチのイベントを受け取るために必須 */
+}
+.analog-calendar-rail {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+  user-select: none;
+}
+/* 1カ月分のブロック */
+.analog-calendar-block {
+  flex-shrink: 0;
+}
+.analog-calendar-block .analog-calendar-header {
+  display: block;
+  font-size: 14px;
+  font-weight: bold;
+  text-shadow: 0 0 calc(4px * var(--analog-glow, 1.0)) rgba(0,255,128,0.4);
+  margin-bottom: 4px;
+}
+.analog-calendar-block .analog-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 24px);
+  gap: 4px;
+  text-shadow: 0 0 4px rgba(0,255,128,0.4);
+  font-size: 12px;
+  line-height: 24px;
 }
