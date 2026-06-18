@@ -4321,6 +4321,8 @@ if (document.readyState === "loading") {
 /* ==========================================================================
    テンキーキーボード表示時の自動スクロール（入力補助OFF時など）
    ========================================================================== */
+let isKeyboardLikelyOpen = false;
+
 document.addEventListener("focusin", function(e) {
   if (activeTimePickerGroup) return; // ピッカー起動中はキーボード用自動スクロールとの二重競合をシャットアウト！
   if (e.target.tagName === "INPUT" && 
@@ -4328,6 +4330,10 @@ document.addEventListener("focusin", function(e) {
       e.target.type !== "radio" && 
       e.target.type !== "button" && 
       e.target.type !== "date") {
+    
+    // すでにキーボードが開いている（連続入力中）場合はスクロールをキャンセルし、画面の上下ガタつきを防止
+    if (isKeyboardLikelyOpen) return;
+    isKeyboardLikelyOpen = true;
     
     // キーボード展開アニメーション完了を待ってからスクロール判定
     setTimeout(() => {
@@ -4344,6 +4350,15 @@ document.addEventListener("focusin", function(e) {
       }
     }, 400);
   }
+});
+
+document.addEventListener("focusout", function(e) {
+  // フォーカスが外れた後、別の入力枠に移動したか判定するための猶予を持たせる
+  setTimeout(() => {
+    if (document.activeElement && document.activeElement.tagName !== "INPUT") {
+      isKeyboardLikelyOpen = false;
+    }
+  }, 100);
 });
 
 
