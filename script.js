@@ -773,11 +773,19 @@ function checkPass() {
   const inputField = document.getElementById("passcode");
   const input = inputField.value;
   const correct = "164";
-  const DECOY_PASS = "12345"; // 元祖ダミー画面（タイマー機能付き）用パスワード
+  const DECOY_PASS = "8888"; // 元祖ダミー画面（タイマー機能付き）用パスワード
   const VIEW_LOCK_PASS = "7777"; // 新しいダミー時計画面（ネオン時計）用パスワード
   const ANALOG_LOCK_PASS = "4444"; // アナログ時計画面用パスワード
   const ALWAYS_ON_PASS = "112233445566778899"; // 常時点灯モード切り替え用特殊コード
   const errorMessage = document.getElementById("error");
+
+  if (input === '12345') {
+    inputField.value = '';
+    inputField.style.border = '';
+    errorMessage.innerText = '';
+    showReadmePage();
+    return;
+  }
 
   // ── 常時点灯モード トグル ──────────────────────────────
   if (input === ALWAYS_ON_PASS) {
@@ -1866,14 +1874,14 @@ function _decoyHoldStart(e) {
     circle.style.strokeDashoffset = "163";
     // 強制リフロー後にアニメーション開始
     void circle.getBoundingClientRect();
-    circle.style.transition = "stroke-dashoffset 3s linear";
+    circle.style.transition = "stroke-dashoffset 0.8s linear";
     circle.style.strokeDashoffset = "0";
   }
 
-  // 3秒後にロック画面へ戻る
+  // 0.8秒後にロック画面へ戻る
   _decoyHoldTimer = setTimeout(() => {
     hideDecoyScreen();
-  }, 3000);
+  }, 800);
 }
 
 function _decoyHoldEnd(e) {
@@ -5702,3 +5710,219 @@ function initEclipseCorona() {
 }
 
 document.addEventListener("DOMContentLoaded", initEclipseCorona);
+/* ============================================================
+   README ページ (12345) 用ロジック
+   ============================================================ */
+let _readmeHoldTimer = null;
+
+function showReadmePage() {
+  if (typeof gtag === 'function') { gtag('event', 'view_Copyright_info'); }
+  document.getElementById('lockScreen').style.display = 'none';
+  const page = document.getElementById('readmePage');
+  page.style.display = 'block';
+
+  const select = document.getElementById('readmeCountrySelect');
+  if (select && select.options.length > 0) {
+    select.selectedIndex = 0;
+    jumpToReadmeSection(select.value);
+  }
+}
+
+function returnToLockScreenFromHold() {
+  const pagesToHide = ['readmePage', 'informationPage', 'qrCodePage', 'modeSelect'];
+  pagesToHide.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const resetConfirm = document.getElementById('resetConfirmContainer');
+  if (resetConfirm) resetConfirm.style.display = 'none';
+
+  const lockScreen = document.getElementById('lockScreen');
+  if (lockScreen) {
+    lockScreen.style.display = 'block';
+    const animEls = lockScreen.querySelectorAll('.anim-title-rise, .anim-slow-fade');
+    animEls.forEach(el => {
+      el.classList.remove('anim-title-rise');
+      el.classList.remove('anim-slow-fade');
+      el.style.opacity = '1';
+      el.style.transform = 'none';
+    });
+  }
+  if (typeof generateKeypad === 'function') generateKeypad();
+}
+
+function jumpToReadmeSection(sectionId) {
+  const target = document.getElementById(sectionId);
+  const container = document.getElementById('readmeBody');
+  if (target && container) {
+    container.scrollTo({
+      top: target.offsetTop - container.offsetTop,
+      behavior: 'smooth'
+    });
+  }
+
+  const titleDict = {
+    'sec-ja': '著作権情報',
+    'sec-en': 'Copyright Info',
+    'sec-pt': 'Direitos Autorais',
+    'sec-es': 'Derechos de Autor',
+    'sec-fr': 'Droits d\'Auteur',
+    'sec-it': 'Diritti d\'Autore',
+    'sec-de': 'Urheberrecht',
+    'sec-uk': 'Авторське право',
+    'sec-hi': 'कॉपीराइट जानकारी',
+    'sec-ar': 'معلومات حقوق النشر',
+    'sec-ru': 'Авторские права',
+    'sec-id': 'Hak Cipta',
+    'sec-tr': 'Telif Hakkı Bilgisi',
+    'sec-zh': '版权信息',
+    'sec-ko': '저작권 정보'
+  };
+
+  const titleEl = document.getElementById('readmeTitle');
+  if (titleEl && titleDict[sectionId]) {
+    titleEl.innerText = titleDict[sectionId];
+  }
+}
+
+// 長押しで初期画面に戻る
+let _readmeHoldRaf = null;
+let _readmeHintRaf = null;
+
+function initHoldToReturn() {
+  const pagesToBind = ['readmePage', 'informationPage', 'qrCodePage', 'modeSelect'];
+  
+  const ringContainer = document.getElementById('readmeHoldRing');
+  const ring = document.getElementById('readmeRingCircle');
+  const hint = document.getElementById('readmeHoldHint');
+
+  let holdStartTime = 0;
+  let holdDuration = 800;
+  let isHolding = false;
+
+  const updateRing = () => {
+    if (!isHolding) return;
+    const now = Date.now();
+    const elapsed = now - holdStartTime;
+    let progress = elapsed / holdDuration;
+    
+    if (progress >= 1) {
+      progress = 1;
+      isHolding = false;
+      if (_readmeHoldRaf) cancelAnimationFrame(_readmeHoldRaf);
+      _readmeHoldRaf = null;
+      if (ringContainer) ringContainer.style.display = 'none';
+      if (hint) hint.style.display = 'none';
+      if (ring) {
+        ring.style.transition = 'none';
+        ring.style.strokeDashoffset = '163.4';
+      }
+      returnToLockScreenFromHold();
+      return;
+    }
+    
+    if (ring) {
+      const offset = 163.4 - (163.4 * progress);
+      ring.style.strokeDashoffset = offset;
+    }
+    _readmeHoldRaf = requestAnimationFrame(updateRing);
+  };
+
+  const startHold = (e) => {
+    if (e.target) {
+      const targetTag = e.target.tagName.toLowerCase();
+      if (['select', 'input', 'button', 'a'].includes(targetTag)) return;
+      if (e.target.closest && (e.target.closest('button') || e.target.closest('a'))) return;
+    }
+    
+    isHolding = true;
+    holdStartTime = Date.now();
+
+    let x, y;
+    if (e.touches && e.touches.length > 0) {
+      x = e.touches[0].clientX;
+      y = e.touches[0].clientY;
+    } else {
+      x = e.clientX;
+      y = e.clientY;
+    }
+
+    if (ringContainer) {
+      ringContainer.style.display = 'block';
+      ringContainer.style.left = x + 'px';
+      ringContainer.style.top = y + 'px';
+    }
+    if (ring) {
+      ring.style.transition = 'none';
+      ring.style.strokeDashoffset = '163.4';
+    }
+    if (hint) {
+      hint.style.transition = 'color 0.2s ease';
+      hint.style.display = 'block';
+      hint.style.left = x + 'px';
+      hint.style.top = (y - 80) + 'px';
+      hint.innerText = '長押しで戻る';
+      requestAnimationFrame(() => {
+        hint.style.color = 'rgba(0, 255, 224, 0.8)';
+      });
+    }
+
+    if (_readmeHoldRaf) cancelAnimationFrame(_readmeHoldRaf);
+    _readmeHoldRaf = requestAnimationFrame(updateRing);
+  };
+
+  const cancelHold = () => {
+    if (!isHolding) return;
+    isHolding = false;
+    if (_readmeHoldRaf) cancelAnimationFrame(_readmeHoldRaf);
+    _readmeHoldRaf = null;
+
+    if (ring) {
+      ring.style.transition = 'stroke-dashoffset 0.2s ease';
+      ring.style.strokeDashoffset = '163.4';
+      setTimeout(() => {
+        if (!isHolding && ringContainer) ringContainer.style.display = 'none';
+      }, 200);
+    }
+    if (hint) {
+      hint.style.color = 'rgba(255, 255, 255, 0)';
+      setTimeout(() => {
+        if (!isHolding) hint.style.display = 'none';
+      }, 200);
+    }
+  };
+
+  pagesToBind.forEach(id => {
+    const page = document.getElementById(id);
+    if (!page) return;
+    page.addEventListener('mousedown', startHold);
+    page.addEventListener('mouseup', cancelHold);
+    page.addEventListener('mouseleave', cancelHold);
+    page.addEventListener('touchstart', startHold, { passive: true });
+    page.addEventListener('touchend', cancelHold);
+    page.addEventListener('touchcancel', cancelHold);
+    
+    // 長押し時のネイティブコンテキストメニューや画像保存ポップアップを無効化（長押しのキャンセルを防ぐため）
+    page.addEventListener('contextmenu', (e) => {
+      if (e.target) {
+        const tag = e.target.tagName.toLowerCase();
+        if (['input', 'textarea', 'select'].includes(tag)) return;
+      }
+      e.preventDefault();
+    });
+  });
+  
+  window.addEventListener('scroll', cancelHold, { capture: true, passive: true });
+}
+
+// Force keypad generation on script execution
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof generateKeypad === 'function') generateKeypad();
+    initHoldToReturn();
+  });
+} else {
+  if (typeof generateKeypad === 'function') generateKeypad();
+  initHoldToReturn();
+}
+
