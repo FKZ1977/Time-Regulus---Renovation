@@ -5739,14 +5739,20 @@ function returnToLockScreenFromHold() {
 
   const lockScreen = document.getElementById('lockScreen');
   if (lockScreen) {
+    const passcode = document.getElementById('passcode');
+    if (passcode) passcode.value = '';
+    
     lockScreen.style.display = 'block';
+    
+    // アニメーション用のクラスを持つ要素のインラインスタイルをクリアして、CSSアニメーションが正しく動作するようにする
     const animEls = lockScreen.querySelectorAll('.anim-title-rise, .anim-slow-fade');
     animEls.forEach(el => {
-      el.classList.remove('anim-title-rise');
-      el.classList.remove('anim-slow-fade');
-      el.style.opacity = '1';
-      el.style.transform = 'none';
+      el.style.opacity = '';
+      el.style.transform = '';
     });
+    
+    // ロック画面のアニメーションを再起動してタイトル等を正しく表示する
+    restartLockScreenAnimation();
   }
   if (typeof generateKeypad === 'function') generateKeypad();
 }
