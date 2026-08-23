@@ -7294,8 +7294,9 @@ const TimeCalc = {
   splitTierGap: 1000,       // 傾斜配分の差額 (¥1,000)
 
   // 為替レート変換用ステート
-  currencyFrom: 'GBP',
+  currencyFrom: 'USD',
   currencyTo: 'JPY',
+  currencyActiveField: 'to',  // 'from' または 'to'
   currencyAmount: 0,
   currencyInputStr: '0',
   currencyRates: {
@@ -7465,10 +7466,12 @@ const TimeCalc = {
 
     // 5. レートキーパッド (keypadCurrency) の状態更新
     if (isCurr) {
+      const isFromActive = this.currencyActiveField === 'from';
       ['JPY', 'USD', 'EUR', 'GBP', 'AUD', 'CNY', 'KRW'].forEach(c => {
         const btn = document.getElementById(`currKey_${c}`);
         if (btn) {
-          if (c === this.currencyTo) btn.classList.add('calc-btn-active-field');
+          const activeCurr = isFromActive ? this.currencyFrom : this.currencyTo;
+          if (c === activeCurr) btn.classList.add('calc-btn-active-field');
           else btn.classList.remove('calc-btn-active-field');
         }
       });
@@ -7477,6 +7480,18 @@ const TimeCalc = {
       const toSel = document.getElementById('currencyToSelect');
       if (fromSel && fromSel.value !== this.currencyFrom) fromSel.value = this.currencyFrom;
       if (toSel && toSel.value !== this.currencyTo) toSel.value = this.currencyTo;
+
+      // From/Toラベルのアクティブ状態を更新
+      const fromFieldEl = document.getElementById('currencyFromField');
+      const toFieldEl = document.getElementById('currencyToField');
+      if (fromFieldEl) {
+        if (isFromActive) fromFieldEl.classList.add('active-field');
+        else fromFieldEl.classList.remove('active-field');
+      }
+      if (toFieldEl) {
+        if (!isFromActive) toFieldEl.classList.add('active-field');
+        else toFieldEl.classList.remove('active-field');
+      }
     }
   },
 
@@ -7547,12 +7562,35 @@ const TimeCalc = {
     this.updateDisplay();
   },
 
+  // 通貨ボタン押下: アクティブフィールド（From or To）に応じて変更
+  selectCurrency(curr) {
+    if (this.currencyActiveField === 'from') {
+      this.selectCurrencyFrom(curr);
+    } else {
+      this.selectCurrencyTo(curr);
+    }
+  },
+
+  selectCurrencyFrom(curr) {
+    this.currencyFrom = curr;
+    const fromSel = document.getElementById('currencyFromSelect');
+    if (fromSel) fromSel.value = curr;
+    this.syncEngineUI();
+    this.updateDisplay();
+  },
+
   selectCurrencyTo(curr) {
     this.currencyTo = curr;
     const toSel = document.getElementById('currencyToSelect');
     if (toSel) toSel.value = curr;
     this.syncEngineUI();
     this.updateDisplay();
+  },
+
+  // 通貨アクティブフィールド切り替え（From / To）
+  setCurrencyActiveField(field) {
+    this.currencyActiveField = field;
+    this.syncEngineUI();
   },
 
   // 為替通貨切り替え
@@ -7750,13 +7788,13 @@ const TimeCalc = {
   },
 
   handleCurrencyKey(key) {
-    if (key === 'MC') { this.selectCurrencyTo('JPY'); return; }
-    if (key === 'MR') { this.selectCurrencyTo('USD'); return; }
-    if (key === 'M-') { this.selectCurrencyTo('EUR'); return; }
-    if (key === 'M+') { this.selectCurrencyTo('GBP'); return; }
-    if (key === 'UNIT_H') { this.selectCurrencyTo('CNY'); return; }
-    if (key === 'UNIT_M') { this.selectCurrencyTo('KRW'); return; }
-    if (key === 'UNIT_S') { this.selectCurrencyTo('AUD'); return; }
+    if (key === 'MC') { this.selectCurrency('JPY'); return; }
+    if (key === 'MR') { this.selectCurrency('USD'); return; }
+    if (key === 'M-') { this.selectCurrency('EUR'); return; }
+    if (key === 'M+') { this.selectCurrency('GBP'); return; }
+    if (key === 'UNIT_H') { this.selectCurrency('CNY'); return; }
+    if (key === 'UNIT_M') { this.selectCurrency('KRW'); return; }
+    if (key === 'UNIT_S') { this.selectCurrency('AUD'); return; }
     if (key === '/') { this.swapCurrencies(); return; }
 
     if (key >= '0' && key <= '9') {
@@ -8340,8 +8378,8 @@ const TimeCalc = {
     }
 
     if (item.mode === 'currency' && item.state) {
-      this.currencyFrom = item.state.currencyFrom || 'JPY';
-      this.currencyTo = item.state.currencyTo || 'USD';
+      this.currencyFrom = item.state.currencyFrom || 'USD';
+      this.currencyTo = item.state.currencyTo || 'JPY';
       this.currencyAmount = item.state.currencyAmount || 0;
       this.currencyInputStr = String(this.currencyAmount);
       const fromSel = document.getElementById('currencyFromSelect');
