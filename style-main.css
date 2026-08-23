@@ -4879,57 +4879,54 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   gap: 8px;
 }
 
-/* FROM/TO フィールドラベル（クリッカブルなアクティブフィールド切り替え） */
-.currency-field-label {
+.currency-select-box {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  flex: 1;
-  gap: 2px;
-  padding: 4px 6px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 22, 36, 0.85);
+  border: 1.5px solid rgba(0, 255, 224, 0.25);
   border-radius: 8px;
-  border: 2px solid transparent;
+  padding: 4px 6px 5px;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
-  background: rgba(255, 255, 255, 0.03);
-  min-width: 0;
+  transition: all 0.2s ease;
 }
-.currency-field-label.active-field {
+
+.currency-select-box.active-field {
   border-color: var(--accent);
-  background: rgba(0, 255, 224, 0.07);
-  box-shadow: 0 0 8px rgba(0, 255, 224, 0.2);
+  background: rgba(0, 255, 224, 0.08);
+  box-shadow: 0 0 8px rgba(0, 255, 224, 0.35);
 }
-.currency-field-label:hover {
-  background: rgba(0, 255, 224, 0.05);
+
+.currency-box-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--text-sub);
+  margin-bottom: 2px;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
 }
-.currency-field-label .currency-select {
-  border: none;
-  padding: 2px 4px;
-  pointer-events: auto;
-  width: 100%;
-}
-.currency-field-indicator {
-  font-size: 9px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  color: rgba(180, 220, 255, 0.5);
-  text-align: center;
-  line-height: 1;
-}
-.currency-field-label.active-field .currency-field-indicator {
+
+.currency-select-box.active-field .currency-box-label {
   color: var(--accent);
+  text-shadow: 0 0 6px rgba(0, 255, 224, 0.5);
 }
 
 .currency-select {
-  flex: 1;
+  width: 100%;
   background: #0f1624;
-  border: 1px solid var(--accent);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: #fff;
   border-radius: 6px;
-  padding: 5px 8px;
-  font-size: 13px;
+  padding: 4px 4px;
+  font-size: 12px;
   font-weight: bold;
   cursor: pointer;
+  text-align: center;
+  text-align-last: center;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .currency-swap-btn {
@@ -4969,7 +4966,6 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   margin-bottom: 12px;
   position: relative;
   overflow: hidden;
-  touch-action: pan-x;
 }
 
 .time-calc-screen-top {
@@ -5003,17 +4999,16 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
 
 .time-calc-formula {
   flex: 1;
+  min-width: 0;
   text-align: right;
   font-size: 13px;
   color: rgba(224, 224, 255, 0.7);
   font-family: 'Consolas', 'Courier New', monospace;
   overflow-x: auto;
-  overflow-y: hidden;
   white-space: nowrap;
-  scrollbar-width: none;
   touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
+  scrollbar-width: none;
 }
 .time-calc-formula::-webkit-scrollbar {
   display: none;
@@ -5030,12 +5025,10 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   line-height: 1.2;
   margin: 6px 0;
   overflow-x: auto;
-  overflow-y: hidden;
   white-space: nowrap;
-  scrollbar-width: none;
   touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
+  scrollbar-width: none;
 }
 .time-calc-main-display::-webkit-scrollbar {
   display: none;
@@ -5059,23 +5052,16 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
+  flex-shrink: 0;
 }
 .time-calc-badge:active {
   background: var(--accent);
   color: #000;
 }
 
-.time-calc-sub-container {
+.time-calc-sub-display {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  position: relative;
-}
-
-.time-calc-sub-display {
-  width: 100%;
   font-size: 13px;
   color: #ff00aa;
   text-shadow: 0 0 8px rgba(255, 0, 170, 0.5);
@@ -5083,40 +5069,34 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   font-weight: bold;
   text-align: right;
   overflow-x: auto;
-  overflow-y: hidden;
   white-space: nowrap;
-  /* ネイティブスクロールバーは非表示にし、カスタムバーで統一 */
-  scrollbar-width: none;
   touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
+  /* デフォルトはスクロールバー非表示 */
+  scrollbar-width: none;
 }
 .time-calc-sub-display::-webkit-scrollbar {
   display: none;
 }
 
-/* スマホ・PC共通カスタムスライドバー */
-.time-calc-scroll-track {
-  width: 100%;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 3px;
-  margin-top: 3px;
-  position: relative;
-  overflow: hidden;
-  cursor: pointer;
-  touch-action: pan-x;
+/* 割り勘モード時はサブディスプレイにスクロールバーを表示 */
+.split-mode-active .time-calc-sub-display {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 0, 170, 0.6) rgba(255, 255, 255, 0.05);
+  padding-bottom: 4px;
 }
-
-.time-calc-scroll-thumb {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  min-width: 20px;
+.split-mode-active .time-calc-sub-display::-webkit-scrollbar {
+  display: block;
+  height: 5px;
   border-radius: 3px;
-  background: linear-gradient(90deg, #ff00aa, #00ffe0);
-  box-shadow: 0 0 6px rgba(255, 0, 170, 0.8);
+}
+.split-mode-active .time-calc-sub-display::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+.split-mode-active .time-calc-sub-display::-webkit-scrollbar-thumb {
+  background: rgba(255, 0, 170, 0.6);
+  border-radius: 3px;
 }
 
 /* レートクリック可能スタイル */

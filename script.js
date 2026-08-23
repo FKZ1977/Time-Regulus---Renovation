@@ -4585,17 +4585,6 @@ document.addEventListener("focusin", function(e) {
     if (e.touches.length > 1) return;
     if (typeof activeTimePickerGroup !== 'undefined' && activeTimePickerGroup) return;
 
-    // 電卓スクリーン（.time-calc-screen）や横スクロール可能エリア内でのタッチ時は全画面スワイプ遷移を除外
-    if (e.target && e.target.closest && (
-      e.target.closest('.time-calc-screen') ||
-      e.target.closest('.time-calc-history-drawer') ||
-      e.target.closest('#resultListContainer')
-    )) {
-      isSwiping = false;
-      fromEl = null;
-      return;
-    }
-
     // 現在の画面を確定（toElを表示する前のクリーンな状態で検出）
     currentId      = detectCurrentId();
     isLockedScreen = currentId ? LOCKED.includes(currentId) : false;
@@ -4618,6 +4607,13 @@ document.addEventListener("focusin", function(e) {
 
     // 画面端20px以内は除外（ブラウザの戻るジェスチャー対策）
     if (startX < 20 || startX > window.innerWidth - 20) {
+      isSwiping = false;
+      fromEl = null;
+      return;
+    }
+
+    // 電卓液晶画面（.time-calc-screen）内のタッチは横スクロールを優先するため画面切り替えスワイプを除外
+    if (e.target && e.target.closest && e.target.closest('.time-calc-screen')) {
       isSwiping = false;
       fromEl = null;
       return;
@@ -7307,7 +7303,7 @@ const TimeCalc = {
   // 為替レート変換用ステート
   currencyFrom: 'USD',
   currencyTo: 'JPY',
-  currencyActiveField: 'to',  // 'from' または 'to'
+  currencyActiveField: 'to',  // 'from' または 'to' : 通貨ボタンがどちらを変更するか
   currencyAmount: 0,
   currencyInputStr: '0',
   currencyRates: {
@@ -7356,7 +7352,7 @@ const TimeCalc = {
     this.setupDisplayDragScroll();
   },
 
-  // スマホのタッチスワイプおよびPCのマウスドラッグによる横スクロール機能＆スライドバー同期
+  // スマホのタッチスワイプおよびPCのマウスドラッグによる横スクロール機能
   setupDisplayDragScroll() {
     const ids = ['timeCalcSubDisplay', 'timeCalcMainDisplay', 'timeCalcFormula'];
     ids.forEach(id => {
@@ -7368,13 +7364,6 @@ const TimeCalc = {
       let startX = 0;
       let startScrollLeft = 0;
       let isDragging = false;
-
-      // スクロール時のスライドバー連動
-      if (id === 'timeCalcSubDisplay') {
-        el.addEventListener('scroll', () => {
-          this.updateSubDisplayScrollBar();
-        }, { passive: true });
-      }
 
       // タッチ操作（スマホでの横スワイプ）
       el.addEventListener('touchstart', (e) => {
@@ -7393,9 +7382,6 @@ const TimeCalc = {
           isDragging = true;
           if (el.scrollWidth > el.clientWidth) {
             el.scrollLeft = startScrollLeft - diffX;
-            if (id === 'timeCalcSubDisplay') {
-              this.updateSubDisplayScrollBar();
-            }
             if (e.cancelable) {
               e.preventDefault();
             }
@@ -7424,9 +7410,6 @@ const TimeCalc = {
           isDragging = true;
           if (el.scrollWidth > el.clientWidth) {
             el.scrollLeft = startScrollLeft - diffX;
-            if (id === 'timeCalcSubDisplay') {
-              this.updateSubDisplayScrollBar();
-            }
           }
         }
       });
@@ -7447,79 +7430,6 @@ const TimeCalc = {
         }
       }, true);
     });
-
-    // カスタムスライドバートラックのタッチ・ドラッグ・タップ操作
-    const subTrack = document.getElementById('timeCalcSubScrollTrack');
-    const subEl = document.getElementById('timeCalcSubDisplay');
-    if (subTrack && subEl && !subTrack._trackInitialized) {
-      subTrack._trackInitialized = true;
-
-      const handleTrackScroll = (clientX) => {
-        const rect = subTrack.getBoundingClientRect();
-        if (rect.width <= 0) return;
-        const clickX = clientX - rect.left;
-        const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-        const maxScroll = subEl.scrollWidth - subEl.clientWidth;
-        if (maxScroll > 0) {
-          subEl.scrollLeft = ratio * maxScroll;
-          this.updateSubDisplayScrollBar();
-        }
-      };
-
-      subTrack.addEventListener('touchstart', (e) => {
-        if (e.touches.length !== 1) return;
-        handleTrackScroll(e.touches[0].clientX);
-      }, { passive: true });
-
-      subTrack.addEventListener('touchmove', (e) => {
-        if (e.touches.length !== 1) return;
-        handleTrackScroll(e.touches[0].clientX);
-        if (e.cancelable) e.preventDefault();
-      }, { passive: false });
-
-      subTrack.addEventListener('mousedown', (e) => {
-        if (e.button !== 0) return;
-        handleTrackScroll(e.clientX);
-        const onMouseMove = (ev) => handleTrackScroll(ev.clientX);
-        const onMouseUp = () => {
-          window.removeEventListener('mousemove', onMouseMove);
-          window.removeEventListener('mouseup', onMouseUp);
-        };
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-      });
-    }
-
-    window.addEventListener('resize', () => {
-      this.updateSubDisplayScrollBar();
-    });
-  },
-
-  // サブディスプレイ（割り勘結果など）のカスタムスライドバーの表示・位置同期
-  updateSubDisplayScrollBar() {
-    const el = document.getElementById('timeCalcSubDisplay');
-    const track = document.getElementById('timeCalcSubScrollTrack');
-    const thumb = document.getElementById('timeCalcSubScrollThumb');
-    if (!el || !track || !thumb) return;
-
-    const scrollWidth = el.scrollWidth;
-    const clientWidth = el.clientWidth;
-
-    // 文字数が多くなって横にスライドできる時のみスライドバーを表示
-    if (scrollWidth > clientWidth + 2) {
-      track.style.display = 'block';
-      const ratio = clientWidth / scrollWidth;
-      const thumbWidthPercent = Math.max(15, Math.min(100, ratio * 100));
-      thumb.style.width = `${thumbWidthPercent}%`;
-
-      const maxScroll = scrollWidth - clientWidth;
-      const scrollPercent = maxScroll > 0 ? (el.scrollLeft / maxScroll) : 0;
-      const maxLeftPercent = 100 - thumbWidthPercent;
-      const leftPercent = Math.max(0, Math.min(maxLeftPercent, scrollPercent * maxLeftPercent));
-      thumb.style.left = `${leftPercent}%`;
-    } else {
-      track.style.display = 'none';
-    }
   },
 
   // 4連ナビゲーションタブによるモード設定
@@ -7644,12 +7554,14 @@ const TimeCalc = {
 
     // 5. レートキーパッド (keypadCurrency) の状態更新
     if (isCurr) {
-      const isFromActive = this.currencyActiveField === 'from';
       ['JPY', 'USD', 'EUR', 'GBP', 'AUD', 'CNY', 'KRW'].forEach(c => {
         const btn = document.getElementById(`currKey_${c}`);
         if (btn) {
-          const activeCurr = isFromActive ? this.currencyFrom : this.currencyTo;
-          if (c === activeCurr) btn.classList.add('calc-btn-active-field');
+          // アクティブフィールドに応じてどちらの通貨と一致するかハイライト
+          const isActive = this.currencyActiveField === 'from'
+            ? c === this.currencyFrom
+            : c === this.currencyTo;
+          if (isActive) btn.classList.add('calc-btn-active-field');
           else btn.classList.remove('calc-btn-active-field');
         }
       });
@@ -7659,16 +7571,16 @@ const TimeCalc = {
       if (fromSel && fromSel.value !== this.currencyFrom) fromSel.value = this.currencyFrom;
       if (toSel && toSel.value !== this.currencyTo) toSel.value = this.currencyTo;
 
-      // From/Toラベルのアクティブ状態を更新
-      const fromFieldEl = document.getElementById('currencyFromField');
-      const toFieldEl = document.getElementById('currencyToField');
-      if (fromFieldEl) {
-        if (isFromActive) fromFieldEl.classList.add('active-field');
-        else fromFieldEl.classList.remove('active-field');
+      // From/Toボックスのアクティブ枠を視覚的に切り替え
+      const fromBox = document.getElementById('currencyBoxFrom');
+      const toBox = document.getElementById('currencyBoxTo');
+      if (fromBox) {
+        if (this.currencyActiveField === 'from') fromBox.classList.add('active-field');
+        else fromBox.classList.remove('active-field');
       }
-      if (toFieldEl) {
-        if (!isFromActive) toFieldEl.classList.add('active-field');
-        else toFieldEl.classList.remove('active-field');
+      if (toBox) {
+        if (this.currencyActiveField === 'to') toBox.classList.add('active-field');
+        else toBox.classList.remove('active-field');
       }
     }
   },
@@ -7740,23 +7652,6 @@ const TimeCalc = {
     this.updateDisplay();
   },
 
-  // 通貨ボタン押下: アクティブフィールド（From or To）に応じて変更
-  selectCurrency(curr) {
-    if (this.currencyActiveField === 'from') {
-      this.selectCurrencyFrom(curr);
-    } else {
-      this.selectCurrencyTo(curr);
-    }
-  },
-
-  selectCurrencyFrom(curr) {
-    this.currencyFrom = curr;
-    const fromSel = document.getElementById('currencyFromSelect');
-    if (fromSel) fromSel.value = curr;
-    this.syncEngineUI();
-    this.updateDisplay();
-  },
-
   selectCurrencyTo(curr) {
     this.currencyTo = curr;
     const toSel = document.getElementById('currencyToSelect');
@@ -7765,7 +7660,46 @@ const TimeCalc = {
     this.updateDisplay();
   },
 
-  // 通貨アクティブフィールド切り替え（From / To）
+  // 通貨ボタン: アクティブフィールド(from/to)に応じて対応する通貨を変更
+  selectCurrency(curr) {
+    if (this.currencyActiveField === 'from') {
+      // from側を変更（toと同じになる場合はスワップ）
+      if (curr === this.currencyTo) {
+        // toと同じ通貨を選んだらスワップ
+        const temp = this.currencyFrom;
+        this.currencyFrom = curr;
+        this.currencyTo = temp;
+        const fromSel = document.getElementById('currencyFromSelect');
+        const toSel = document.getElementById('currencyToSelect');
+        if (fromSel) fromSel.value = this.currencyFrom;
+        if (toSel) toSel.value = this.currencyTo;
+      } else {
+        this.currencyFrom = curr;
+        const fromSel = document.getElementById('currencyFromSelect');
+        if (fromSel) fromSel.value = curr;
+      }
+    } else {
+      // to側を変更（fromと同じになる場合はスワップ）
+      if (curr === this.currencyFrom) {
+        // fromと同じ通貨を選んだらスワップ
+        const temp = this.currencyTo;
+        this.currencyTo = curr;
+        this.currencyFrom = temp;
+        const fromSel = document.getElementById('currencyFromSelect');
+        const toSel = document.getElementById('currencyToSelect');
+        if (fromSel) fromSel.value = this.currencyFrom;
+        if (toSel) toSel.value = this.currencyTo;
+      } else {
+        this.currencyTo = curr;
+        const toSel = document.getElementById('currencyToSelect');
+        if (toSel) toSel.value = curr;
+      }
+    }
+    this.syncEngineUI();
+    this.updateDisplay();
+  },
+
+  // From側セレクターをアクティブに設定
   setCurrencyActiveField(field) {
     this.currencyActiveField = field;
     this.syncEngineUI();
@@ -8364,7 +8298,6 @@ const TimeCalc = {
         }
       }
       if (memEl) memEl.style.visibility = 'hidden';
-      requestAnimationFrame(() => this.updateSubDisplayScrollBar());
       return;
     }
 
@@ -8393,7 +8326,6 @@ const TimeCalc = {
         subEl.innerHTML = `<span class="currency-rate-clickable" onclick="TimeCalc.openCustomRateModal()" title="タップしてレートを変更">1 ${this.currencyFrom} = ${rate.toFixed(4)} ${this.currencyTo}</span>${customBadge}`;
       }
       if (memEl) memEl.style.visibility = 'hidden';
-      requestAnimationFrame(() => this.updateSubDisplayScrollBar());
       return;
     }
 
@@ -8448,7 +8380,6 @@ const TimeCalc = {
     if (memEl) {
       memEl.style.visibility = (this.memory !== 0) ? 'visible' : 'hidden';
     }
-    requestAnimationFrame(() => this.updateSubDisplayScrollBar());
   },
 
   memoryAdd() {
@@ -8559,8 +8490,8 @@ const TimeCalc = {
     }
 
     if (item.mode === 'currency' && item.state) {
-      this.currencyFrom = item.state.currencyFrom || 'USD';
-      this.currencyTo = item.state.currencyTo || 'JPY';
+      this.currencyFrom = item.state.currencyFrom || 'JPY';
+      this.currencyTo = item.state.currencyTo || 'USD';
       this.currencyAmount = item.state.currencyAmount || 0;
       this.currencyInputStr = String(this.currencyAmount);
       const fromSel = document.getElementById('currencyFromSelect');
