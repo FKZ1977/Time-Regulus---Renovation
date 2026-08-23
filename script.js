@@ -7317,6 +7317,26 @@ const TimeCalc = {
     AUD: 'A$'
   },
 
+  // カスタムレート管理
+  // キー: 'FROM_TO' (例: 'GBP_JPY')  値: 上書きレート数値 (fromあたりのto)
+  customRates: {},
+
+  // デフォルトレート (変更しない基準値)
+  defaultCurrencyRates: {
+    USD: 1.0,
+    JPY: 155.0,
+    EUR: 0.92,
+    GBP: 0.79,
+    CNY: 7.24,
+    KRW: 1380.0,
+    AUD: 1.52
+  },
+
+  // ライブレートキャッシュ (Frankfurter API, ECBデータ)
+  // キー: 'FROM'  値: { rates: {TO: value, ...}, fetchedAt: timestamp }
+  _liveRateCache: {},
+  _liveRateCacheMs: 5 * 60 * 1000, // 5分間キャッシュ
+
   init() {
     this.syncEngineUI();
     this.updateDisplay();
@@ -7355,6 +7375,13 @@ const TimeCalc = {
     if (splitCtrl) splitCtrl.style.display = isSplit ? 'flex' : 'none';
     if (currCtrl) currCtrl.style.display = isCurr ? 'block' : 'none';
     if (formatBadge) formatBadge.style.display = isTime ? 'inline-block' : 'none';
+
+    // 割り勘モード時にスクリーンにクラスを付与（スクロールバー表示制御）
+    const screen = document.querySelector('.time-calc-screen');
+    if (screen) {
+      if (isSplit) screen.classList.add('split-mode-active');
+      else screen.classList.remove('split-mode-active');
+    }
 
     // 2. 3つの専用キーパッドの表示切替
     const kpTime = document.getElementById('keypadTime');
@@ -7761,12 +7788,16 @@ const TimeCalc = {
       this.currencyInputStr = '0';
       this.isNewInput = true;
     } else if (key === '=') {
+      const pairKey = `${this.currencyFrom}_${this.currencyTo}`;
       const fromRate = this.currencyRates[this.currencyFrom] || 1;
       const toRate = this.currencyRates[this.currencyTo] || 1;
-      const rate = toRate / fromRate;
+      const rate = (pairKey in this.customRates)
+        ? this.customRates[pairKey]
+        : (toRate / fromRate);
       const converted = this.currencyAmount * rate;
       const sym = this.currencySymbols[this.currencyTo] || '';
-      const formula = `${this.currencyAmount.toLocaleString()} ${this.currencyFrom} ➔ ${this.currencyTo}`;
+      const isCustom = pairKey in this.customRates;
+      const formula = `${this.currencyAmount.toLocaleString()} ${this.currencyFrom} ➔ ${this.currencyTo}${isCustom ? ' (手動レート)' : ''}`;
       const result = `${sym}${converted.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
       this.addHistory(formula, result, 'currency', {
         currencyFrom: this.currencyFrom,
@@ -8124,11 +8155,15 @@ const TimeCalc = {
     if (this.engineMode === 'currency') {
       const fromRate = this.currencyRates[this.currencyFrom] || 1;
       const toRate = this.currencyRates[this.currencyTo] || 1;
-      const rate = toRate / fromRate;
+      const pairKey = `${this.currencyFrom}_${this.currencyTo}`;
+      const rate = (pairKey in this.customRates)
+        ? this.customRates[pairKey]
+        : (toRate / fromRate);
       const amt = this.currencyAmount || 0;
       const converted = amt * rate;
       const toSym = this.currencySymbols[this.currencyTo] || '';
       const fromSym = this.currencySymbols[this.currencyFrom] || '';
+      const isCustomRate = pairKey in this.customRates;
 
       if (formulaEl) formulaEl.textContent = `${fromSym}${amt.toLocaleString()} (${this.currencyFrom}) ➔ ${this.currencyTo}`;
       if (opEl) opEl.textContent = '💱';
@@ -8137,7 +8172,8 @@ const TimeCalc = {
         mainEl.textContent = `${toSym}${converted.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: 4 })}`;
       }
       if (subEl) {
-        subEl.textContent = `1 ${this.currencyFrom} = ${rate.toFixed(4)} ${this.currencyTo}`;
+        const customBadge = isCustomRate ? '<span class="custom-rate-badge">手動</span>' : '';
+        subEl.innerHTML = `<span class="currency-rate-clickable" onclick="TimeCalc.openCustomRateModal()" title="タップしてレートを変更">1 ${this.currencyFrom} = ${rate.toFixed(4)} ${this.currencyTo}</span>${customBadge}`;
       }
       if (memEl) memEl.style.visibility = 'hidden';
       return;
@@ -8321,6 +8357,216 @@ const TimeCalc = {
     if (item.formula) this.formula = item.formula;
     this.isNewInput = true;
     this.updateDisplay();
+  },
+
+  // ===== カスタムレート入力モーダル =====
+
+  openCustomRateModal() {
+    const modal = document.getElementById('customRateModal');
+    if (!modal) return;
+    // ラベル更新
+    const fromLabel = document.getElementById('customRateFromLabel');
+    const toLabel = document.getElementById('customRateToLabel');
+    const titleEl = document.getElementById('customRateModalTitle');
+    if (fromLabel) fromLabel.textContent = `1 ${this.currencyFrom} =`;
+    if (toLabel) toLabel.textContent = this.currencyTo;
+    if (titleEl) titleEl.textContent = `💱 ${this.currencyFrom} → ${this.currencyTo} レートを入力`;
+
+    // 現在のレートを初期値として表示
+    const pairKey = `${this.currencyFrom}_${this.currencyTo}`;
+    const fromRate = this.currencyRates[this.currencyFrom] || 1;
+    const toRate = this.currencyRates[this.currencyTo] || 1;
+    const currentRate = (pairKey in this.customRates)
+      ? this.customRates[pairKey]
+      : (toRate / fromRate);
+
+    const input = document.getElementById('customRateInput');
+    if (input) {
+      input.value = currentRate.toFixed(4);
+      input.select();
+    }
+
+    // ライブレートボタンの状態リセット
+    this._setLiveRateStatus('idle');
+
+    modal.classList.add('active');
+    if (input) setTimeout(() => input.focus(), 100);
+  },
+
+  closeCustomRateModal() {
+    const modal = document.getElementById('customRateModal');
+    if (modal) modal.classList.remove('active');
+  },
+
+  applyCustomRate() {
+    const input = document.getElementById('customRateInput');
+    if (!input) return;
+    const val = parseFloat(input.value);
+    if (!isNaN(val) && val > 0) {
+      const pairKey = `${this.currencyFrom}_${this.currencyTo}`;
+      this.customRates[pairKey] = val;
+      this.updateDisplay();
+    }
+    this.closeCustomRateModal();
+  },
+
+  resetCustomRate() {
+    const pairKey = `${this.currencyFrom}_${this.currencyTo}`;
+    delete this.customRates[pairKey];
+    this.updateDisplay();
+    this.closeCustomRateModal();
+  },
+
+  // 入力欄のレートを FROM 通貨のデフォルト基準値として永続保存
+  // currencyRates と defaultCurrencyRates の両方を再計算して上書き
+  saveAsDefaultRate() {
+    const input = document.getElementById('customRateInput');
+    if (!input) return;
+    const val = parseFloat(input.value);
+    if (isNaN(val) || val <= 0) return;
+
+    const from = this.currencyFrom;
+    const to = this.currencyTo;
+
+    // 現在の FROM→USD レートを基準に全通貨レートを再計算
+    // val = 1 FROM あたりの TO 量
+    // currencyRates は USD=1 を基準とした各通貨の対USD量
+    // 新しい FROM の対USDレート = (TO の対USDレート) / val
+    const toUsd = this.currencyRates[to] || 1;  // 1 USD = toUsd [to]
+    // 1 FROM = val [to]  →  1 FROM = val/toUsd USD  →  1 USD = toUsd/val [from]
+    const newFromRate = toUsd / val;
+
+    this.currencyRates[from] = newFromRate;
+    this.defaultCurrencyRates[from] = newFromRate;
+
+    // customRates からこのペアを削除（デフォルト値で計算するように）
+    const pairKey = `${from}_${to}`;
+    delete this.customRates[pairKey];
+
+    // ライブレートキャッシュも無効化（staleになるため）
+    delete this._liveRateCache[from];
+
+    this.updateDisplay();
+
+    // 保存完了フィードバック
+    const btn = document.querySelector('.custom-rate-save-default-btn');
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = '✓ 保存しました';
+      btn.style.color = '#00e87a';
+      btn.style.borderColor = 'rgba(0, 220, 130, 0.6)';
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.style.color = '';
+        btn.style.borderColor = '';
+        this.closeCustomRateModal();
+      }, 900);
+    } else {
+      this.closeCustomRateModal();
+    }
+  },
+
+  // ライブレートステータス表示の更新
+  // state: 'idle' | 'loading' | 'success' | 'error'
+  _setLiveRateStatus(state, message) {
+    const btn = document.getElementById('liveRateBtn');
+    const status = document.getElementById('liveRateStatus');
+    if (!btn || !status) return;
+
+    btn.disabled = (state === 'loading');
+    btn.classList.toggle('loading', state === 'loading');
+
+    switch (state) {
+      case 'idle':
+        status.textContent = '';
+        status.className = 'live-rate-status';
+        btn.textContent = '🌐 現在のレートを取得';
+        break;
+      case 'loading':
+        status.textContent = '取得中...';
+        status.className = 'live-rate-status loading';
+        btn.textContent = '⏳ 取得中...';
+        break;
+      case 'success':
+        status.textContent = message || '✓ 取得完了';
+        status.className = 'live-rate-status success';
+        btn.textContent = '🌐 現在のレートを取得';
+        break;
+      case 'error':
+        status.textContent = message || '✗ 取得失敗';
+        status.className = 'live-rate-status error';
+        btn.textContent = '🌐 現在のレートを取得';
+        break;
+    }
+  },
+
+  // Frankfurter API (ECBデータ) でライブレートを取得してモーダルの入力欄へ設定
+  async fetchLiveRate() {
+    const from = this.currencyFrom;
+    const to = this.currencyTo;
+
+    // 同一通貨ペアはレート1
+    if (from === to) {
+      const input = document.getElementById('customRateInput');
+      if (input) { input.value = '1.0000'; input.select(); }
+      this._setLiveRateStatus('success', '✓ 同一通貨 (レート: 1)');
+      return;
+    }
+
+    this._setLiveRateStatus('loading');
+
+    try {
+      // キャッシュ確認 (5分以内ならAPIを叩かない)
+      const now = Date.now();
+      const cache = this._liveRateCache[from];
+      let rates;
+
+      if (cache && (now - cache.fetchedAt) < this._liveRateCacheMs) {
+        rates = cache.rates;
+      } else {
+        // ① まず Frankfurter API (ECB・無料・APIキー不要) を試みる
+        // KRWも含む主要通貨に対応 (USD/JPY/EUR/GBP/CNY/KRW/AUD)
+        try {
+          const resp = await fetch(`https://api.frankfurter.app/latest?from=${from}`);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const data = await resp.json();
+          rates = data.rates || {};
+        } catch (_) {
+          rates = {};
+        }
+
+        // ② Frankfurterでtoが取れなかった場合は open.er-api.com にフォールバック
+        if (rates[to] === undefined || rates[to] === null) {
+          const fbResp = await fetch(`https://open.er-api.com/v6/latest/${from}`);
+          if (!fbResp.ok) throw new Error(`HTTP ${fbResp.status}`);
+          const fbData = await fbResp.json();
+          rates = fbData.rates || {};
+        }
+
+        // キャッシュに保存
+        this._liveRateCache[from] = { rates, fetchedAt: now };
+      }
+
+      const liveRate = rates[to];
+      if (!liveRate) throw new Error('レートデータなし');
+
+      const input = document.getElementById('customRateInput');
+      if (input) {
+        input.value = liveRate.toFixed(4);
+        input.select();
+      }
+
+      // 取得日時を表示
+      const cacheEntry = this._liveRateCache[from];
+      const dateStr = cacheEntry
+        ? new Date(cacheEntry.fetchedAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+        : '';
+      this._setLiveRateStatus('success', `✓ 取得完了 (${dateStr} 時点)`);
+
+    } catch (err) {
+      console.warn('[TimeCalc] ライブレート取得失敗:', err);
+      this._setLiveRateStatus('error', '✗ 取得失敗 (接続を確認)');
+    }
   }
 };
 
