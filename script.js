@@ -4585,6 +4585,17 @@ document.addEventListener("focusin", function(e) {
     if (e.touches.length > 1) return;
     if (typeof activeTimePickerGroup !== 'undefined' && activeTimePickerGroup) return;
 
+    // 電卓スクリーン（.time-calc-screen）や横スクロール可能エリア内でのタッチ時は全画面スワイプ遷移を除外
+    if (e.target && e.target.closest && (
+      e.target.closest('.time-calc-screen') ||
+      e.target.closest('.time-calc-history-drawer') ||
+      e.target.closest('#resultListContainer')
+    )) {
+      isSwiping = false;
+      fromEl = null;
+      return;
+    }
+
     // 現在の画面を確定（toElを表示する前のクリーンな状態で検出）
     currentId      = detectCurrentId();
     isLockedScreen = currentId ? LOCKED.includes(currentId) : false;
@@ -7342,6 +7353,87 @@ const TimeCalc = {
     this.syncEngineUI();
     this.updateDisplay();
     this.renderHistory();
+    this.setupDisplayDragScroll();
+  },
+
+  // スマホのタッチスワイプおよびPCのマウスドラッグによる横スクロール機能
+  setupDisplayDragScroll() {
+    const ids = ['timeCalcSubDisplay', 'timeCalcMainDisplay', 'timeCalcFormula'];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el || el._dragScrollInitialized) return;
+      el._dragScrollInitialized = true;
+
+      let isDown = false;
+      let startX = 0;
+      let startScrollLeft = 0;
+      let isDragging = false;
+
+      // タッチ操作（スマホでの横スワイプ）
+      el.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        startX = e.touches[0].clientX;
+        startScrollLeft = el.scrollLeft;
+        isDragging = false;
+      }, { passive: true });
+
+      el.addEventListener('touchmove', (e) => {
+        if (e.touches.length !== 1) return;
+        const currentX = e.touches[0].clientX;
+        const diffX = currentX - startX;
+
+        if (Math.abs(diffX) > 2) {
+          isDragging = true;
+          if (el.scrollWidth > el.clientWidth) {
+            el.scrollLeft = startScrollLeft - diffX;
+            if (e.cancelable) {
+              e.preventDefault();
+            }
+          }
+        }
+      }, { passive: false });
+
+      el.addEventListener('touchend', () => {
+        setTimeout(() => { isDragging = false; }, 50);
+      });
+
+      // マウス操作（PCでのドラッグスライド）
+      el.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        isDown = true;
+        startX = e.clientX;
+        startScrollLeft = el.scrollLeft;
+        isDragging = false;
+        el.style.cursor = 'grabbing';
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        const diffX = e.clientX - startX;
+        if (Math.abs(diffX) > 2) {
+          isDragging = true;
+          if (el.scrollWidth > el.clientWidth) {
+            el.scrollLeft = startScrollLeft - diffX;
+          }
+        }
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isDown) {
+          isDown = false;
+          el.style.cursor = '';
+          setTimeout(() => { isDragging = false; }, 50);
+        }
+      });
+
+      // ドラッグ終了時のクリックイベント誤作動防止
+      el.addEventListener('click', (e) => {
+        if (isDragging) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }, true);
+    });
   },
 
   // 4連ナビゲーションタブによるモード設定

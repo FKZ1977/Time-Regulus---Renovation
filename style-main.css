@@ -4969,6 +4969,7 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   margin-bottom: 12px;
   position: relative;
   overflow: hidden;
+  touch-action: pan-x;
 }
 
 .time-calc-screen-top {
@@ -5007,8 +5008,12 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   color: rgba(224, 224, 255, 0.7);
   font-family: 'Consolas', 'Courier New', monospace;
   overflow-x: auto;
+  overflow-y: hidden;
   white-space: nowrap;
   scrollbar-width: none;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .time-calc-formula::-webkit-scrollbar {
   display: none;
@@ -5025,8 +5030,12 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   line-height: 1.2;
   margin: 6px 0;
   overflow-x: auto;
+  overflow-y: hidden;
   white-space: nowrap;
   scrollbar-width: none;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .time-calc-main-display::-webkit-scrollbar {
   display: none;
@@ -5064,9 +5073,13 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   font-weight: bold;
   text-align: right;
   overflow-x: auto;
+  overflow-y: hidden;
   white-space: nowrap;
   /* デフォルトはスクロールバー非表示 */
   scrollbar-width: none;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .time-calc-sub-display::-webkit-scrollbar {
   display: none;
@@ -5080,15 +5093,15 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
 }
 .split-mode-active .time-calc-sub-display::-webkit-scrollbar {
   display: block;
-  height: 5px;
+  height: 6px;
   border-radius: 3px;
 }
 .split-mode-active .time-calc-sub-display::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 3px;
 }
 .split-mode-active .time-calc-sub-display::-webkit-scrollbar-thumb {
-  background: rgba(255, 0, 170, 0.6);
+  background: rgba(255, 0, 170, 0.7);
   border-radius: 3px;
 }
 
