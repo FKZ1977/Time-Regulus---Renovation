@@ -7356,7 +7356,7 @@ const TimeCalc = {
     this.setupDisplayDragScroll();
   },
 
-  // スマホのタッチスワイプおよびPCのマウスドラッグによる横スクロール機能
+  // スマホのタッチスワイプおよびPCのマウスドラッグによる横スクロール機能＆スライドバー同期
   setupDisplayDragScroll() {
     const ids = ['timeCalcSubDisplay', 'timeCalcMainDisplay', 'timeCalcFormula'];
     ids.forEach(id => {
@@ -7368,6 +7368,13 @@ const TimeCalc = {
       let startX = 0;
       let startScrollLeft = 0;
       let isDragging = false;
+
+      // スクロール時のスライドバー連動
+      if (id === 'timeCalcSubDisplay') {
+        el.addEventListener('scroll', () => {
+          this.updateSubDisplayScrollBar();
+        }, { passive: true });
+      }
 
       // タッチ操作（スマホでの横スワイプ）
       el.addEventListener('touchstart', (e) => {
@@ -7386,6 +7393,9 @@ const TimeCalc = {
           isDragging = true;
           if (el.scrollWidth > el.clientWidth) {
             el.scrollLeft = startScrollLeft - diffX;
+            if (id === 'timeCalcSubDisplay') {
+              this.updateSubDisplayScrollBar();
+            }
             if (e.cancelable) {
               e.preventDefault();
             }
@@ -7414,6 +7424,9 @@ const TimeCalc = {
           isDragging = true;
           if (el.scrollWidth > el.clientWidth) {
             el.scrollLeft = startScrollLeft - diffX;
+            if (id === 'timeCalcSubDisplay') {
+              this.updateSubDisplayScrollBar();
+            }
           }
         }
       });
@@ -7434,6 +7447,79 @@ const TimeCalc = {
         }
       }, true);
     });
+
+    // カスタムスライドバートラックのタッチ・ドラッグ・タップ操作
+    const subTrack = document.getElementById('timeCalcSubScrollTrack');
+    const subEl = document.getElementById('timeCalcSubDisplay');
+    if (subTrack && subEl && !subTrack._trackInitialized) {
+      subTrack._trackInitialized = true;
+
+      const handleTrackScroll = (clientX) => {
+        const rect = subTrack.getBoundingClientRect();
+        if (rect.width <= 0) return;
+        const clickX = clientX - rect.left;
+        const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+        const maxScroll = subEl.scrollWidth - subEl.clientWidth;
+        if (maxScroll > 0) {
+          subEl.scrollLeft = ratio * maxScroll;
+          this.updateSubDisplayScrollBar();
+        }
+      };
+
+      subTrack.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        handleTrackScroll(e.touches[0].clientX);
+      }, { passive: true });
+
+      subTrack.addEventListener('touchmove', (e) => {
+        if (e.touches.length !== 1) return;
+        handleTrackScroll(e.touches[0].clientX);
+        if (e.cancelable) e.preventDefault();
+      }, { passive: false });
+
+      subTrack.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        handleTrackScroll(e.clientX);
+        const onMouseMove = (ev) => handleTrackScroll(ev.clientX);
+        const onMouseUp = () => {
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      this.updateSubDisplayScrollBar();
+    });
+  },
+
+  // サブディスプレイ（割り勘結果など）のカスタムスライドバーの表示・位置同期
+  updateSubDisplayScrollBar() {
+    const el = document.getElementById('timeCalcSubDisplay');
+    const track = document.getElementById('timeCalcSubScrollTrack');
+    const thumb = document.getElementById('timeCalcSubScrollThumb');
+    if (!el || !track || !thumb) return;
+
+    const scrollWidth = el.scrollWidth;
+    const clientWidth = el.clientWidth;
+
+    // 文字数が多くなって横にスライドできる時のみスライドバーを表示
+    if (scrollWidth > clientWidth + 2) {
+      track.style.display = 'block';
+      const ratio = clientWidth / scrollWidth;
+      const thumbWidthPercent = Math.max(15, Math.min(100, ratio * 100));
+      thumb.style.width = `${thumbWidthPercent}%`;
+
+      const maxScroll = scrollWidth - clientWidth;
+      const scrollPercent = maxScroll > 0 ? (el.scrollLeft / maxScroll) : 0;
+      const maxLeftPercent = 100 - thumbWidthPercent;
+      const leftPercent = Math.max(0, Math.min(maxLeftPercent, scrollPercent * maxLeftPercent));
+      thumb.style.left = `${leftPercent}%`;
+    } else {
+      track.style.display = 'none';
+    }
   },
 
   // 4連ナビゲーションタブによるモード設定
@@ -8278,6 +8364,7 @@ const TimeCalc = {
         }
       }
       if (memEl) memEl.style.visibility = 'hidden';
+      requestAnimationFrame(() => this.updateSubDisplayScrollBar());
       return;
     }
 
@@ -8306,6 +8393,7 @@ const TimeCalc = {
         subEl.innerHTML = `<span class="currency-rate-clickable" onclick="TimeCalc.openCustomRateModal()" title="タップしてレートを変更">1 ${this.currencyFrom} = ${rate.toFixed(4)} ${this.currencyTo}</span>${customBadge}`;
       }
       if (memEl) memEl.style.visibility = 'hidden';
+      requestAnimationFrame(() => this.updateSubDisplayScrollBar());
       return;
     }
 
@@ -8360,6 +8448,7 @@ const TimeCalc = {
     if (memEl) {
       memEl.style.visibility = (this.memory !== 0) ? 'visible' : 'hidden';
     }
+    requestAnimationFrame(() => this.updateSubDisplayScrollBar());
   },
 
   memoryAdd() {

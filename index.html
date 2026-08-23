@@ -662,7 +662,12 @@
       <div id="timeCalcMainDisplay" class="time-calc-main-display">00:00:00</div>
       <div class="time-calc-screen-bottom">
         <span id="timeCalcFormatBadge" class="time-calc-badge" onclick="TimeCalc.toggleFormatMode()">時分秒 ⇆ HH:MM:SS</span>
-        <div id="timeCalcSubDisplay" class="time-calc-sub-display">= 0.0000 h</div>
+        <div class="time-calc-sub-container">
+          <div id="timeCalcSubDisplay" class="time-calc-sub-display">= 0.0000 h</div>
+          <div id="timeCalcSubScrollTrack" class="time-calc-scroll-track" style="display:none;">
+            <div id="timeCalcSubScrollThumb" class="time-calc-scroll-thumb"></div>
+          </div>
+        </div>
       </div>
     </div>
 
