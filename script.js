@@ -7352,7 +7352,9 @@ const TimeCalc = {
     this.setupDisplayDragScroll();
   },
 
-  // スマホのタッチスワイプおよびPCのマウスドラッグによる横スクロール機能
+  // PCマウスドラッグによる横スクロール機能
+  // ※スマホのタッチ操作はCSSの overflow-x: auto / -webkit-overflow-scrolling: touch / touch-action: pan-x
+  //   によるブラウザネイティブ慣性スクロールに任せる（慣性・バウンス・スクロールバー自動フェードは全てOS任せ）
   setupDisplayDragScroll() {
     const ids = ['timeCalcSubDisplay', 'timeCalcMainDisplay', 'timeCalcFormula'];
     ids.forEach(id => {
@@ -7364,34 +7366,6 @@ const TimeCalc = {
       let startX = 0;
       let startScrollLeft = 0;
       let isDragging = false;
-
-      // タッチ操作（スマホでの横スワイプ）
-      el.addEventListener('touchstart', (e) => {
-        if (e.touches.length !== 1) return;
-        startX = e.touches[0].clientX;
-        startScrollLeft = el.scrollLeft;
-        isDragging = false;
-      }, { passive: true });
-
-      el.addEventListener('touchmove', (e) => {
-        if (e.touches.length !== 1) return;
-        const currentX = e.touches[0].clientX;
-        const diffX = currentX - startX;
-
-        if (Math.abs(diffX) > 2) {
-          isDragging = true;
-          if (el.scrollWidth > el.clientWidth) {
-            el.scrollLeft = startScrollLeft - diffX;
-            if (e.cancelable) {
-              e.preventDefault();
-            }
-          }
-        }
-      }, { passive: false });
-
-      el.addEventListener('touchend', () => {
-        setTimeout(() => { isDragging = false; }, 50);
-      });
 
       // マウス操作（PCでのドラッグスライド）
       el.addEventListener('mousedown', (e) => {
