@@ -6504,7 +6504,7 @@ function showAnalogLockScreen() {
   if (regulusFace && regulusFace.querySelectorAll('.regulus-tick').length === 0) {
     for (let i = 0; i < 60; i++) {
       const tick = document.createElement("div");
-      tick.className = "regulus-tick"; // ぼかし無しの専用クラス
+      tick.className = "regulus-tick";
       tick.style.position = "absolute";
       tick.style.top = "50%";
       tick.style.left = "50%";
@@ -6532,7 +6532,7 @@ function showAnalogLockScreen() {
   if (radarFace && radarFace.querySelectorAll('.star-marker').length === 0) {
     for (let i = 0; i < 60; i++) {
       const dot = document.createElement("div");
-      dot.className = "star-marker"; // クラス名を流用して二重生成を防止
+      dot.className = "star-marker";
       dot.style.position = "absolute";
       dot.style.top = "50%";
       dot.style.left = "50%";
@@ -6595,6 +6595,51 @@ function showAnalogLockScreen() {
   }
 }
 
+function hideAnalogLockScreen() {
+  if (_analogAnimFrameId) {
+    cancelAnimationFrame(_analogAnimFrameId);
+    _analogAnimFrameId = null;
+  }
+  if (_analogHoldTimer) {
+    clearTimeout(_analogHoldTimer);
+    _analogHoldTimer = null;
+  }
+  
+  if (typeof _releaseWakeLock === "function") {
+    _releaseWakeLock();
+  }
+  
+  const ring = document.getElementById("analogHoldRing");
+  const circle = document.getElementById("analogRingCircle");
+  if (ring) ring.style.opacity = "0";
+  if (circle) {
+    circle.style.transition = "none";
+    circle.style.strokeDashoffset = "164";
+  }
+  
+  const analogScreen = document.getElementById("analogLockScreen");
+  if (analogScreen) {
+    analogScreen.style.display = "none";
+  }
+  
+  const lockScreen = document.getElementById("lockScreen");
+  if (lockScreen) {
+    lockScreen.style.display = "block";
+  }
+  
+  const inputField = document.getElementById("passcode");
+  if (inputField) {
+    inputField.value = "";
+    inputField.style.border = "";
+  }
+  const errorMessage = document.getElementById("error");
+  if (errorMessage) {
+    errorMessage.innerText = "";
+  }
+  
+  restartLockScreenAnimation();
+}
+
 /* ============================================================
    アナログ時計画面 (analogLockScreen) ロジック
    ============================================================ */
@@ -6608,19 +6653,24 @@ let _analogIsDragging = false;
 let _analogSwipeDirection = null;
 let _analogContainerWidth = 0;
 
-// 長押し用
+// 長押し & タップ用
 let _analogPressStartTime = 0;
 let _analogIsLongPressSuccess = false;
 let _analogHoldTimer = null;
+let _analogLastTapTime = 0;
+let _analogTapCount = 0;
+let _analogSingleTapTimer = null;
 
 let _analogLastMinute = -1;
 let _analogShiftX = 0;
 let _analogShiftY = 0;
 
-let _analogInfoState = 0;
+let _analogInfoState = 0; // 0: なし, 1: デジタル, 2: カレンダー+デジタル
 let _analogLastCalendarDate = "";
 let _analogGlowIntensity = 1.0;
 let _analogShowSecondHand = true;
+
+let _analogCalendarMonthOffset = 0;
 
 let _analogIsSwapped = false;
 let _analogIs2FingerDragging = false;
@@ -6639,15 +6689,61 @@ const _jp_holidays = new Set([
   "2027-01-01", "2027-01-11", "2027-02-11", "2027-02-23", "2027-03-21", "2027-03-22", "2027-04-29", "2027-05-03", "2027-05-04", "2027-05-05", "2027-07-19", "2027-08-11", "2027-09-20", "2027-09-23", "2027-10-11", "2027-11-03", "2027-11-23"
 ]);
 
-function _generateCalendar(year, month) {
-  const header = document.getElementById("analogCalendarHeader");
-  const grid = document.getElementById("analogCalendarGrid");
-  if (!header || !grid) return;
+// コロナ時計（Eclipse）用の動的SVGパス生成（有機的に波打つ太陽光冠）
+function _generateCoronaPath(cx, cy, baseRadius, timeMs, seed) {
+  const points = [];
+  const count = 64;
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2;
+    const wave1 = Math.sin(angle * 3 + timeMs * 0.0018 + seed) * 14;
+    const wave2 = Math.sin(angle * 7 - timeMs * 0.0026 + seed * 2.5) * 9;
+    const wave3 = Math.cos(angle * 13 + timeMs * 0.0034) * 6;
+    const wave4 = Math.sin(angle * 5 + timeMs * 0.0012 + seed * 1.2) * 11;
+    const r = baseRadius + Math.max(2, wave1 + wave2 + wave3 + wave4);
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    points.push({ x, y });
+  }
+  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  for (let i = 0; i < count; i++) {
+    const p0 = points[(i - 1 + count) % count];
+    const p1 = points[i];
+    const p2 = points[(i + 1) % count];
+    const p3 = points[(i + 2) % count];
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  d += " Z";
+  return d;
+}
+
+function _updateAnalogPager() {
+  const dots = document.querySelectorAll("#analogPager .pager-dot");
+  dots.forEach((dot, index) => {
+    if (index === _analogCurrentPage) {
+      dot.classList.add("active");
+    } else {
+      dot.classList.remove("active");
+    }
+  });
+}
+
+function _generateCalendarBlock(year, month) {
+  const block = document.createElement("div");
+  block.className = "analog-calendar-block";
   
+  const header = document.createElement("div");
+  header.className = "analog-calendar-header";
   const monthStr = (month + 1).toString().padStart(2, '0');
   header.textContent = `${year} . ${monthStr}`;
+  block.appendChild(header);
   
-  grid.innerHTML = "";
+  const grid = document.createElement("div");
+  grid.className = "analog-calendar-grid";
+  
   const days = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
   days.forEach((d, i) => {
     const el = document.createElement("div");
@@ -6669,7 +6765,6 @@ function _generateCalendar(year, month) {
   for (let d = 1; d <= lastDate; d++) {
     const el = document.createElement("div");
     el.className = "day-cell";
-    
     const dateStr = `${year}-${monthStr}-${d.toString().padStart(2, '0')}`;
     const colIndex = (startOffset + d - 1) % 7;
     
@@ -6686,12 +6781,65 @@ function _generateCalendar(year, month) {
     }
     grid.appendChild(el);
   }
+  block.appendChild(grid);
+  return block;
+}
+
+function _renderCalendar() {
+  const rail = document.getElementById("analogCalendarRail");
+  if (!rail) return;
+  rail.innerHTML = "";
+  
+  const now = new Date();
+  for (let offset = -1; offset <= 1; offset++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + offset + _analogCalendarMonthOffset, 1);
+    const block = _generateCalendarBlock(d.getFullYear(), d.getMonth());
+    rail.appendChild(block);
+  }
+  
+  const blockWidth = 192;
+  const gap = 12;
+  const totalBlockWidth = blockWidth + gap;
+  const viewport = document.getElementById("analogCalendarViewport");
+  if (viewport) {
+    viewport.style.width = `${blockWidth}px`;
+  }
+  rail.style.transform = `translateX(-${totalBlockWidth}px)`;
+}
+
+function initAnalogCalendarTouch() {
+  const viewport = document.getElementById("analogCalendarViewport");
+  if (!viewport) return;
+  
+  let startX = 0;
+  let isDragging = false;
+  
+  viewport.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 1) {
+      startX = e.touches[0].clientX;
+      isDragging = true;
+    }
+  }, { passive: true });
+  
+  viewport.addEventListener("touchend", (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    const endX = e.changedTouches[0].clientX;
+    const diff = endX - startX;
+    if (diff > 40) {
+      _analogCalendarMonthOffset--;
+      _renderCalendar();
+    } else if (diff < -40) {
+      _analogCalendarMonthOffset++;
+      _renderCalendar();
+    }
+  }, { passive: true });
 }
 
 function _applyBurnInShift() {
   const isLandscape = window.innerWidth > window.innerHeight;
   const min = new Date().getMinutes();
-  const shiftPattern = [-4, -2, 0, 2, 4, 2, 0, -2]; // シフトするピクセル量
+  const shiftPattern = [-4, -2, 0, 2, 4, 2, 0, -2];
   const shiftVal = shiftPattern[min % shiftPattern.length];
   
   if (isLandscape) {
@@ -6711,7 +6859,6 @@ function _applyBurnInShift() {
     container.style.transform = `translate(${baseTranslate + _analogShiftX}px, ${_analogShiftY}px)`;
   }
   
-  // デジタル情報コンテナ用にもCSS変数を更新
   document.documentElement.style.setProperty('--burn-shift-x', _analogShiftX + 'px');
   document.documentElement.style.setProperty('--burn-shift-y', _analogShiftY + 'px');
 }
@@ -6719,12 +6866,15 @@ function _applyBurnInShift() {
 function _startAnalogClock() {
   if (_analogAnimFrameId) cancelAnimationFrame(_analogAnimFrameId);
   
+  _renderCalendar();
+  
   const updateHands = () => {
     const now = new Date();
     const ms = now.getMilliseconds();
     const s = now.getSeconds();
     const m = now.getMinutes();
     const h = now.getHours();
+    const timeMs = performance.now();
 
     // デジタル時計の更新
     const digitalClock = document.getElementById("analogDigitalClock");
@@ -6750,7 +6900,7 @@ function _startAnalogClock() {
     const minAngle = m * 6 + (s * 0.1);
     const hourAngle = (h % 12) * 30 + (m * 0.5);
     
-    // Regulus
+    // 1. Regulus
     const rH = document.getElementById("regulusHour");
     const rM = document.getElementById("regulusMinute");
     const rS = document.getElementById("regulusSecond");
@@ -6762,7 +6912,7 @@ function _startAnalogClock() {
       rS.style.transition = "opacity 0.3s ease";
     }
 
-    // Radar
+    // 2. Radar
     const radarH = document.getElementById("radarHour");
     const radarM = document.getElementById("radarMinute");
     const radarS = document.getElementById("radarSecond");
@@ -6774,7 +6924,7 @@ function _startAnalogClock() {
       radarS.style.transition = "opacity 0.3s ease";
     }
     
-    // Eclipse
+    // 3. Eclipse (コロナ時計)
     const eH = document.getElementById("eclipseHour");
     const eM = document.getElementById("eclipseMinute");
     const eS = document.getElementById("eclipseSecond");
@@ -6786,10 +6936,165 @@ function _startAnalogClock() {
       eS.style.transition = "opacity 0.3s ease";
     }
 
+    // コロナSVGパスのアニメーション更新
+    const c1 = document.querySelector(".corona-layer1");
+    const c2 = document.querySelector(".corona-layer2");
+    if (c1) {
+      c1.setAttribute("d", _generateCoronaPath(150, 150, 74, timeMs, 0));
+    }
+    if (c2) {
+      c2.setAttribute("d", _generateCoronaPath(150, 150, 80, timeMs, 35));
+    }
+
     _analogAnimFrameId = requestAnimationFrame(updateHands);
   };
   
   _analogAnimFrameId = requestAnimationFrame(updateHands);
+}
+
+function _setAnalogPage(pageIndex) {
+  _analogCurrentPage = Math.max(0, Math.min(2, pageIndex));
+  const container = document.getElementById("analogSwipeContainer");
+  if (container) {
+    container.style.transition = "transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+    const containerWidth = _analogContainerWidth || window.innerWidth;
+    const baseTranslate = -(_analogCurrentPage * containerWidth);
+    container.style.transform = `translate(${baseTranslate}px, ${_analogShiftY}px)`;
+  }
+  _updateAnalogPager();
+}
+
+function _updateAnalogPager() {
+  const dots = document.querySelectorAll("#analogPager .pager-dot");
+  dots.forEach((dot, index) => {
+    if (index === _analogCurrentPage) {
+      dot.classList.add("active");
+    } else {
+      dot.classList.remove("active");
+    }
+    if (!dot.dataset.inited) {
+      dot.dataset.inited = "true";
+      dot.style.cursor = "pointer";
+      dot.addEventListener("click", (e) => {
+        e.stopPropagation();
+        _setAnalogPage(index);
+      });
+    }
+  });
+}
+
+function initAnalogHold() {
+  const analogScreen = document.getElementById("analogLockScreen");
+  if (!analogScreen) return;
+  
+  const ring = document.getElementById("analogHoldRing");
+  const circle = document.getElementById("analogRingCircle");
+  
+  const cancelHold = () => {
+    if (_analogHoldTimer) {
+      clearTimeout(_analogHoldTimer);
+      _analogHoldTimer = null;
+    }
+    if (ring) ring.style.opacity = "0";
+    if (circle) {
+      circle.style.transition = "stroke-dashoffset 0.1s linear";
+      circle.style.strokeDashoffset = "164";
+    }
+  };
+
+  const onHoldStart = (e) => {
+    if (e.touches && e.touches.length > 1) return;
+    
+    _analogPressStartTime = Date.now();
+    _analogIsLongPressSuccess = false;
+    
+    const touch = e.touches ? e.touches[0] : e;
+    _analogStartX = touch.clientX;
+    _analogStartY = touch.clientY;
+    
+    if (ring) {
+      ring.style.left = touch.clientX + "px";
+      ring.style.top = touch.clientY + "px";
+      ring.style.opacity = "1";
+    }
+    if (circle) {
+      circle.style.transition = "stroke-dashoffset 1s linear";
+      requestAnimationFrame(() => { circle.style.strokeDashoffset = "0"; });
+    }
+    
+    if (_analogHoldTimer) clearTimeout(_analogHoldTimer);
+    _analogHoldTimer = setTimeout(() => {
+      _analogIsLongPressSuccess = true;
+      hideAnalogLockScreen();
+    }, 1000);
+  };
+  
+  const onHoldMove = (e) => {
+    if (!_analogPressStartTime) return;
+    const touch = e.touches ? e.touches[0] : e;
+    const diffX = touch.clientX - _analogStartX;
+    const diffY = touch.clientY - _analogStartY;
+    // 10px以上移動したら長押しを即座にキャンセル
+    if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+      cancelHold();
+    }
+  };
+
+  const onHoldEnd = (e) => {
+    cancelHold();
+    
+    if (_analogIsLongPressSuccess) return;
+    
+    const elapsed = Date.now() - _analogPressStartTime;
+    _analogPressStartTime = 0;
+    
+    // タップ判定（350ms以内でドラッグ移動なし）
+    if (elapsed < 350 && !_analogSwipeDirection && !_analogIs2FingerDragging) {
+      const now = Date.now();
+      if (_analogLastTapTime > 0 && now - _analogLastTapTime > 400) {
+        _analogTapCount = 0;
+      }
+      _analogLastTapTime = now;
+      _analogTapCount++;
+      
+      if (_analogSingleTapTimer) {
+        clearTimeout(_analogSingleTapTimer);
+        _analogSingleTapTimer = null;
+      }
+      
+      if (_analogTapCount === 2) {
+        // ダブルタップ: 上下/左右入れ替え
+        _analogTapCount = 0;
+        _analogLastTapTime = 0;
+        _analogIsSwapped = !_analogIsSwapped;
+        if (_analogIsSwapped) {
+          analogScreen.classList.add("analog-layout-swapped");
+        } else {
+          analogScreen.classList.remove("analog-layout-swapped");
+        }
+      } else {
+        _analogSingleTapTimer = setTimeout(() => {
+          const count = _analogTapCount;
+          _analogTapCount = 0;
+          _analogLastTapTime = 0;
+          if (count === 1) {
+            // シングルタップ: 情報ステート切替 (0:なし -> 1:デジタル -> 2:カレンダー+デジタル -> 0)
+            _analogInfoState = (_analogInfoState + 1) % 3;
+            analogScreen.classList.remove("info-state-0", "info-state-1", "info-state-2");
+            analogScreen.classList.add(`info-state-${_analogInfoState}`);
+          }
+        }, 350);
+      }
+    }
+  };
+  
+  analogScreen.addEventListener("touchstart", onHoldStart, { passive: true });
+  analogScreen.addEventListener("touchmove", onHoldMove, { passive: true });
+  analogScreen.addEventListener("touchend", onHoldEnd, { passive: true });
+  analogScreen.addEventListener("touchcancel", onHoldEnd, { passive: true });
+  analogScreen.addEventListener("mousedown", onHoldStart);
+  window.addEventListener("mousemove", onHoldMove);
+  window.addEventListener("mouseup", onHoldEnd);
 }
 
 function initAnalogSwipe() {
@@ -6799,7 +7104,7 @@ function initAnalogSwipe() {
   const onStart = (e) => {
     if (e.touches && e.touches.length === 2) {
       _analogIs2FingerDragging = true;
-      _analogIsDragging = false; // 1本指キャンセル
+      _analogIsDragging = false;
       
       const t1 = e.touches[0];
       const t2 = e.touches[1];
@@ -6811,7 +7116,6 @@ function initAnalogSwipe() {
       const isLandscape = window.innerWidth > window.innerHeight;
       let target = null;
       
-      // タッチ開始位置で、どちらを掴んだか判定
       if (isLandscape) {
         target = (midX < window.innerWidth / 2) ? (_analogIsSwapped ? 'info' : 'analog') : (_analogIsSwapped ? 'analog' : 'info');
       } else {
@@ -6833,23 +7137,15 @@ function initAnalogSwipe() {
     
     _analogIs2FingerDragging = false;
     _analogIsDragging = true;
-    _analogSwipeDirection = null; // 方向をリセット
+    _analogSwipeDirection = null;
     _analogStartX = e.touches ? e.touches[0].clientX : e.clientX;
     _analogStartY = e.touches ? e.touches[0].clientY : e.clientY;
-    container.style.transition = "none";
+    _analogContainerWidth = window.innerWidth;
+    if (container) container.style.transition = "none";
   };
   
   const onMove = (e) => {
     if (_analogIs2FingerDragging && e.touches && e.touches.length === 2) {
-      if (_analogHoldTimer) {
-        cancelAnimationFrame(_analogHoldTimer);
-        _analogHoldTimer = null;
-        const ring = document.getElementById("analogHoldRing");
-        const circle = document.getElementById("analogRingCircle");
-        if(ring) ring.style.opacity = "0";
-        if(circle) circle.style.strokeDashoffset = "164";
-      }
-
       const t1 = e.touches[0];
       const t2 = e.touches[1];
       const midX = (t1.clientX + t2.clientX) / 2;
@@ -6863,7 +7159,7 @@ function initAnalogSwipe() {
       
       const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       let newScale = _analogTargetBaseScale * (currentDist / _analog2FingerStartDist);
-      newScale = Math.min(Math.max(newScale, 0.5), 3.0); // 0.5倍～3.0倍に制限
+      newScale = Math.min(Math.max(newScale, 0.5), 3.0);
       
       document.documentElement.style.setProperty(`--drag-${_analogDragTarget}-x`, newX + 'px');
       document.documentElement.style.setProperty(`--drag-${_analogDragTarget}-y`, newY + 'px');
@@ -6877,23 +7173,12 @@ function initAnalogSwipe() {
     const diffX = currentX - _analogStartX;
     const diffY = currentY - _analogStartY;
 
-    // 方向を確定（10px移動で一度だけロック）
     if (!_analogSwipeDirection) {
       if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
         _analogSwipeDirection = Math.abs(diffX) >= Math.abs(diffY) ? "horizontal" : "vertical";
       } else {
-        return; // 方向が確定するまで何もしない
+        return;
       }
-    }
-
-    // スワイプが開始されたらホールドをキャンセルする
-    if (_analogHoldTimer) {
-      cancelAnimationFrame(_analogHoldTimer);
-      _analogHoldTimer = null;
-      const ring = document.getElementById("analogHoldRing");
-      const circle = document.getElementById("analogRingCircle");
-      if(ring) ring.style.opacity = "0";
-      if(circle) circle.style.strokeDashoffset = "164";
     }
 
     if (_analogSwipeDirection) {
@@ -6901,18 +7186,18 @@ function initAnalogSwipe() {
     }
 
     if (_analogSwipeDirection === "horizontal") {
-      // 横スワイプ: ページを水平スライド（縦ブレは完全無視）
       const baseTranslate = -(_analogCurrentPage * _analogContainerWidth);
-      container.style.transform = `translate(${baseTranslate + diffX}px, ${_analogShiftY}px)`;
+      if (container) {
+        container.style.transform = `translate(${baseTranslate + diffX}px, ${_analogShiftY}px)`;
+      }
     } else {
-      // 縦スワイプ: ネオン輝度リアルタイム調整（横ブレは完全無視）
       const step = 0.05;
       if (diffY < 0) {
         _analogGlowIntensity = Math.min(5.0, _analogGlowIntensity + step);
       } else {
         _analogGlowIntensity = Math.max(0.2, _analogGlowIntensity - step);
       }
-      _analogStartY = currentY; // 連続変化のため更新
+      _analogStartY = currentY;
       document.documentElement.style.setProperty("--analog-glow", _analogGlowIntensity);
       document.documentElement.style.setProperty("--glow-2px",  (2  * _analogGlowIntensity) + "px");
       document.documentElement.style.setProperty("--glow-4px",  (4  * _analogGlowIntensity) + "px");
@@ -6939,16 +7224,18 @@ function initAnalogSwipe() {
       const currentX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
       const diffX = currentX - _analogStartX;
       const containerWidth = container.offsetWidth || window.innerWidth;
-      const threshold = containerWidth * 0.2;
+      const threshold = containerWidth * 0.15;
 
-      if (diffX < -threshold && _analogCurrentPage === 0) {
-        _analogCurrentPage = 1;
-      } else if (diffX > threshold && _analogCurrentPage === 1) {
-        _analogCurrentPage = 0;
+      if (diffX < -threshold) {
+        if (_analogCurrentPage < 2) {
+          _analogCurrentPage++;
+        }
+      } else if (diffX > threshold) {
+        if (_analogCurrentPage > 0) {
+          _analogCurrentPage--;
+        }
       }
-      container.style.transition = "transform 0.3s ease-out";
-      const baseTranslate = -(_analogCurrentPage * containerWidth);
-      container.style.transform = `translate(${baseTranslate}px, ${_analogShiftY}px)`;
+      _setAnalogPage(_analogCurrentPage);
     }
     _analogSwipeDirection = null;
   };
@@ -6963,6 +7250,25 @@ function initAnalogSwipe() {
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onEnd);
   }
+
+  // キーボード操作サポート (左右矢印キーでページ切替)
+  window.addEventListener("keydown", (e) => {
+    if (analogScreen && analogScreen.style.display !== "none") {
+      if (e.key === "ArrowRight") {
+        if (_analogCurrentPage < 2) _setAnalogPage(_analogCurrentPage + 1);
+      } else if (e.key === "ArrowLeft") {
+        if (_analogCurrentPage > 0) _setAnalogPage(_analogCurrentPage - 1);
+      }
+    }
+  });
+
+  // リサイズ時の幅更新
+  window.addEventListener("resize", () => {
+    if (analogScreen && analogScreen.style.display !== "none") {
+      _analogContainerWidth = window.innerWidth;
+      _setAnalogPage(_analogCurrentPage);
+    }
+  });
 }
 
 const TimeCalc = {

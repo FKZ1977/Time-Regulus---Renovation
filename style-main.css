@@ -4479,6 +4479,15 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
 }
 
 
+@keyframes coronaBreathe {
+  0%, 100% {
+    box-shadow: 0 0 calc(45px * var(--analog-glow, 1.0)) rgba(255,255,255,0.35), inset 0 0 15px rgba(0,0,0,1);
+  }
+  50% {
+    box-shadow: 0 0 calc(25px * var(--analog-glow, 1.0)) rgba(255,255,255,0.18), inset 0 0 15px rgba(0,0,0,1);
+  }
+}
+
 .clock-eclipse .eclipse-center {
   position: absolute;
   top: 50%; left: 50%;
@@ -4486,7 +4495,7 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   width: 140px; height: 140px;
   background: #000;
   border-radius: 50%;
-  box-shadow: 0 0 calc(45px * var(--analog-glow, 1.0)) rgba(255,255,255,0.3), inset 0 0 15px rgba(0,0,0,1);
+  box-shadow: 0 0 calc(45px * var(--analog-glow, 1.0)) rgba(255,255,255,0.35), inset 0 0 15px rgba(0,0,0,1);
   animation: coronaBreathe 16s ease-in-out infinite;
   z-index: 10;
 }
