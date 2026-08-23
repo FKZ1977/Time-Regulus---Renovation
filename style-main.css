@@ -1,69 +1,69 @@
-﻿/* ============================================================
-   オフライン対応フォント定義（置時計用 9種 - アプリ同梱フォント）
-   ============================================================ */
-@font-face {
-  font-family: 'Orbitron';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('./fonts/Orbitron-Bold.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'VT323';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./fonts/VT323.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Share Tech Mono';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./fonts/ShareTechMono.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Sixtyfour';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./fonts/Sixtyfour.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Rubik Dirt';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./fonts/RubikDirt.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Moirai One';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./fonts/MoiraiOne.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Bungee Shade';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./fonts/BungeeShade.ttf') format('truetype');
-}
-@font-face {
-  font-family: 'Diplomata SC';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./fonts/DiplomataSC.ttf') format('truetype');
-}
-@font-face {
-  font-family: 'Bellefair';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./fonts/Bellefair.ttf') format('truetype');
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 * {
   box-sizing: border-box;
@@ -163,14 +163,14 @@ input, textarea {
     animation: fadeOut 0.5s ease-out forwards;
 }
 
-/* --- 置時計 RANDOM START/STOP フラッシュメッセージアニメーション --- */
-@keyframes vlFlashAnim {
-  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-  20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
-  35%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
-  75%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-}
+
+
+
+
+
+
+
+
 
 html, body {
   width: 100%;
@@ -473,8 +473,11 @@ input, select {
   flex-direction: row;
   gap: 6px;
   flex-wrap: nowrap; /* はみ出さずに綺麗に収まります */
-  overflow-x: hidden; /* 横スクロールバーを非表示に */
   margin-bottom: 24px;
+  overflow: visible; /* 枠の切れ目で光が切れないように修正 */
+  padding: 4px;
+  margin-left: -4px;
+  margin-right: -4px;
 }
 
 .unit-input {
@@ -522,6 +525,9 @@ input, select {
 
 #modeSelect {
   padding-top: 80px;
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 #errorMode, #correctionMode {
@@ -1039,6 +1045,7 @@ input:checked + .switch-slider:before {
 #correctionMode {
   padding: 10px 12px 14px 12px !important;
   margin-top: 10px !important;
+  overflow: visible !important;
 }
 #correctionMode h2 {
   margin-top: 4px !important;
@@ -1076,15 +1083,44 @@ input:checked + .switch-slider:before {
 #correctionMode .flex-wrap {
   margin-bottom: 6px !important;
   gap: 4px !important;
-  height: 32px !important; /* 誤差行コンテナの高さを32pxに完全強制固定 */
-  overflow: hidden !important; /* iOSでのインプット膨らみによる縦伸びを強制遮断 */
+  min-height: 32px !important;
+  height: auto !important;
+  overflow: visible !important; /* Changed to visible */
   align-items: center !important;
   box-sizing: border-box !important;
+  padding: 4px 2px !important;
 }
 #correctionMode .unit-input {
-  gap: 1px !important;
-  height: 32px !important;
+  gap: 2px !important;
+  min-height: 32px !important;
+  height: auto !important;
   align-items: center !important;
+  overflow: visible !important;
+}
+#correctionMode .error-days-wrapper {
+  flex: 2 1 0% !important;
+  min-width: 110px !important;
+  width: auto !important;
+}
+#correctionMode .direct-group-error-days {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 70px !important;
+}
+#correctionMode .direct-group-error-days input {
+  width: 100% !important;
+  min-width: 60px !important;
+  font-size: 15px !important;
+}
+#correctionMode .unit-capsule-wrapper {
+  flex: 0 0 auto !important;
+  width: auto !important;
+}
+#correctionMode .direct-group-error-time {
+  width: 30px !important;
+  max-width: 32px !important;
+  min-width: 26px !important;
+  padding: 0 1px !important;
 }
 #correctionMode .unit-input input,
 #correctionMode .unit-input select {
@@ -1129,8 +1165,9 @@ input:checked + .switch-slider:before {
   font-size: 12px !important;
 }
 
-/* 補正誤差・手入力用の時分繋がりグループ */
-.direct-group-error-time {
+/* 補正誤差・手入力用の時分繋がりグループおよび日数枠グループ */
+.direct-group-error-time,
+.direct-group-error-days {
   display: flex;
   align-items: center;
   width: 100%;
@@ -1142,20 +1179,31 @@ input:checked + .switch-slider:before {
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.direct-group-error-time:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
+.direct-group-error-time:focus-within,
+.direct-group-error-days:focus-within {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 8px var(--accent), 0 0 2px var(--accent) !important;
 }
-.direct-group-error-time input {
+.direct-group-error-time input,
+.direct-group-error-days input {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  outline: none !important;
   width: 100%;
   text-align: center;
   padding: 0 !important;
   height: 100% !important;
   color: var(--text-main);
   font-size: 14px !important;
+}
+
+.direct-group-error-time input:focus,
+.direct-group-error-days input:focus {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 .direct-group-error-time .delimiter {
   color: var(--text-sub);
@@ -1205,7 +1253,7 @@ input:checked + .switch-slider:before {
   margin-right: auto !important;
   padding: 0 !important;
   height: 38px !important; /* コンテナの高さを38pxに完全強制固定 */
-  overflow: hidden !important; /* iOSインプット膨らみによる縦伸びを強制遮断 */
+  overflow: visible !important; /* Changed to visible */
   max-width: 310px !important; /* 横幅を310pxに統一！ */
   align-items: center !important; /* 子要素を縦中央に揃える */
   box-sizing: border-box !important;
@@ -1342,8 +1390,9 @@ input:checked + .switch-slider:before {
   border-radius: 3px !important;
 }
 
-/* 補正誤差のhh, mm個別インプットのフォーカス時発光を排除し、外側のグループ全体だけが光るようにする設定 */
-#correctionMode .direct-group-error-time input:focus {
+/* 補正誤差のd, hh, mm個別インプットのフォーカス時発光を排除し、外側のグループ全体だけが光るようにする設定 */
+#correctionMode .direct-group-error-time input:focus,
+#correctionMode .direct-group-error-days input:focus {
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
@@ -1839,7 +1888,7 @@ select.seconds-fixed-00,
 #standardNowButton {
   position: absolute;
   top: -10px; /* 下枠と絶対に接しないようにさらに上に引き上げる（美しい隙間を確保！） */
-  left: 96px !important; /* 「標準時刻：」ラベルのすぐ右隣に完全固定！トグルON/OFFで一切動きません */
+  left: 125px !important; /* 「標準時刻：」「Standard Time:」どちらも収まる125px位置に固定 */
   margin-top: 0 !important;
   padding: 0 !important; /* 高さと文字を中央で一致させるため */
   font-size: 14px !important; /* トグルスイッチより一回り大きい、見やすく押しやすい極上サイズ */
@@ -1855,19 +1904,40 @@ select.seconds-fixed-00,
   box-shadow: 0 4px 10px rgba(0, 255, 224, 0.35) !important;
 }
 
+/* カプセルラッパーの共通スタイル */
+.time-capsule-wrapper, .direct-capsule-wrapper {
+  overflow: hidden !important; /* 子要素の角丸はみ出しをシャットアウト */
+  width: auto !important;
+  min-width: 0 !important;
+  /* flexもトランジション対象に追加 → 年月日ON/OFF時に自然にスライド */
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              border-color 0.2s ease,
+              box-shadow 0.2s ease !important;
+}
+
+#errorModeDisplayInputGroup.date-omitted .time-capsule-wrapper,
+#errorModeDisplayInputGroup.date-omitted .direct-capsule-wrapper,
+#errorModeStandardInputGroup.date-omitted .time-capsule-wrapper,
+#errorModeStandardInputGroup.date-omitted .direct-capsule-wrapper {
+  flex: 1.0 !important;
+  width: 100% !important;
+  transition-delay: 0s !important;
+}
+
 /* 入力枠の基本設定（トグルON/OFF時にサイズを維持したまま、滑らかにスライド移動させる transition） */
 #errorModeDisplayInputGroup .datetime-row,
 #errorModeDisplayInputGroup .datetime-direct-row,
 #errorModeStandardInputGroup .datetime-row,
 #errorModeStandardInputGroup .datetime-direct-row {
-  margin: 0 auto !important; /* 常に中央寄せで完全固定 */
+  margin-left: max(0px, calc(50% - 155px)) !important;
+  margin-right: 0 !important;
   width: 100%;
-  max-width: 310px; /* デフォルト（ON時）は310px幅 */
+  max-width: 310px;
+  overflow: hidden; /* アニメーション中に年月日枠が枠外に飛び出さないようクリップ */
+  box-sizing: border-box;
   transition: max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
               margin-left 0.25s cubic-bezier(0.25, 1, 0.5, 1);
-  /* ONのとき（右に戻るとき）：即座に移動 */
   transition-delay: 0s;
-  box-sizing: border-box;
 }
 
 /* 年月日省略時 (.date-omitted / 下がるとき) の入力枠スライド（コロンから5px離して上品な隙間＆右端ピッタリ！） */
@@ -1875,8 +1945,8 @@ select.seconds-fixed-00,
 #errorModeDisplayInputGroup.date-omitted .datetime-direct-row,
 #errorModeStandardInputGroup.date-omitted .datetime-row,
 #errorModeStandardInputGroup.date-omitted .datetime-direct-row {
-  max-width: 215px !important; /* 時分の横幅をスリムに潰さず、たっぷり215pxまで確保！ */
-  margin-left: 85px !important; /* コロン「：」からちょうど5px離した 85px に完全統一し、美しく整列！ */
+  max-width: 175px !important;
+  margin-left: max(0px, calc(var(--label-width, 90px) + 16px)) !important;
   transition-delay: 0s;
 }
 
@@ -1899,13 +1969,25 @@ select.seconds-fixed-00,
               visibility 0.22s ease,
               margin-right 0.25s ease,
               padding 0.25s ease;
-  transition-delay: 0.22s;
+  transition-delay: 0s; /* 即座に縮み始める */
 }
 
 /* 年月日省略時 (.date-omitted / 消えるとき)：カレンダーラッパーをごともろとも完全に消去！ */
 #errorModeDisplayInputGroup.date-omitted .date-input-wrapper,
 #errorModeStandardInputGroup.date-omitted .date-input-wrapper {
-  display: none !important;
+  flex: 0 !important;
+  max-width: 0 !important;
+  opacity: 0 !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  visibility: hidden !important;
+  overflow: hidden !important;
+  transition: flex 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.15s ease,
+              margin-right 0.22s ease !important;
+  transition-delay: 0s !important;
 }
 
 #errorModeDisplayInputGroup.date-omitted .date-input-wrapper input[type="date"],
@@ -1917,7 +1999,13 @@ select.seconds-fixed-00,
   padding: 0 !important;
   border: none !important;
   visibility: hidden !important;
-  overflow: hidden !important; /* 文字のはみ出しを完全シャットアウト！ */
+  overflow: hidden !important;
+  /* スムーズに縮んで消えるためのトランジション */
+  transition: flex 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.15s ease,
+              margin-right 0.22s ease !important;
+  transition-delay: 0s !important;
 }
 
 #errorModeDisplayInputGroup.date-omitted #displayDateGroup_direct,
@@ -1929,7 +2017,13 @@ select.seconds-fixed-00,
   padding: 0 !important;
   border: none !important;
   visibility: hidden !important;
-  overflow: hidden !important; /* 文字のはみ出しを完全シャットアウト！ */
+  overflow: hidden !important;
+  /* スムーズに縮んで消えるためのトランジション */
+  transition: flex 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.15s ease,
+              margin-right 0.22s ease !important;
+  transition-delay: 0s !important;
 }
 
 /* ==========================================================================
@@ -2088,14 +2182,49 @@ select.seconds-fixed-00,
 #correctionMode #reverseTimeBlock .datetime-row,
 #correctionMode #reverseTimeBlock .datetime-direct-row {
   flex: 1 !important;
-  width: auto !important;
-  max-width: 242px !important; /* 354px - 108px - 4px = 242px に拡張して右スペースを最適化！ */
+  width: 100% !important;
+  max-width: 242px !important;
   margin: 0 !important;
   height: 38px !important;
-  display: flex; /* !important を排除し、JSによるON/OFFの display 制御を正しく機能させる */
+  display: flex;
   align-items: center !important;
-  gap: 3px !important; /* 入力枠同士のgapを3pxに詰めて無駄な余白をカット */
+  gap: 3px !important;
   box-sizing: border-box !important;
+  transition: max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* --- 2. 時分秒を一体包囲する親カプセル（ラッパー）定義 --- */
+.time-capsule-wrapper,
+.direct-capsule-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  height: 38px !important; /* 標準の入力枠高さに完全同期 */
+  flex: 1.8 !important; /* 日付枠（1.6）と並んだときの美しい黄金比率 */
+  background-color: #1f1f2f !important; /* カプセル全体の美麗ディープネイビー背景 */
+  border-radius: 8px !important; /* 親自体に確実な角丸を適用してへこみを完全消滅！ */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important; /* 親カプセル自体に1枚のボーダーを適用 */
+  overflow: hidden !important; /* 子要素の角丸はみ出しをシャットアウト */
+  width: auto !important;
+  min-width: 0 !important;
+  /* flex・widthのアニメーションを追加して年月日ON/OFF時に自然にスライド */
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              border-color 0.2s ease,
+              box-shadow 0.2s ease !important;
+}
+
+/* 年月日省略時 (.date-omitted) のカプセルラッパーのサイズ拡張 */
+#errorModeDisplayInputGroup.date-omitted .time-capsule-wrapper,
+#errorModeDisplayInputGroup.date-omitted .direct-capsule-wrapper,
+#errorModeStandardInputGroup.date-omitted .time-capsule-wrapper,
+#errorModeStandardInputGroup.date-omitted .direct-capsule-wrapper {
+  flex: 1.0 !important;
+  width: 100% !important;
+  /* transition-delay なし（即座に、ただし滑らかに） */
+  transition-delay: 0s !important;
 }
 
 /* 年月日も計算ONの時（年月日枠あり）の、年月日枠の横幅設定
@@ -2203,7 +2332,13 @@ select.seconds-fixed-00,
   padding: 0 !important;
   border: none !important;
   visibility: hidden !important;
-  overflow: hidden !important; /* 文字のはみ出しを完全シャットアウト！ */
+  overflow: hidden !important;
+  /* スムーズに縮んで消えるためのトランジション */
+  transition: flex 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.15s ease,
+              margin-right 0.22s ease !important;
+  transition-delay: 0s !important;
 }
 
 #correctionMode #reverseTimeBlock .datetime-row.omit-date-active .time-input-wrapper,
@@ -2480,7 +2615,9 @@ body.picker-open-padding {
   overflow: hidden !important; /* 子要素の角丸はみ出しをシャットアウト */
   width: auto !important;
   min-width: 0 !important;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              border-color 0.2s ease,
+              box-shadow 0.2s ease !important;
 }
 
 /* 年月日省略時 (.date-omitted) のカプセルラッパーのサイズ拡張 (スライド不動性を絶対維持) */
@@ -2494,6 +2631,12 @@ body.picker-open-padding {
 
 /* 補正モードで年月日非表示のときのカプセルサイズ拡張 */
 #correctionMode #reverseTimeBlock .datetime-row.omit-date-active .time-capsule-wrapper,
+#correctionMode #reverseTimeBlock .datetime-row.omit-date-active,
+#correctionMode #reverseTimeBlock .datetime-direct-row.omit-date-active {
+  max-width: 175px !important;
+  transition: max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
 #correctionMode #reverseTimeBlock .datetime-direct-row.omit-date-active .direct-capsule-wrapper {
   flex: 1.0 !important;
   width: 100% !important;
@@ -2803,13 +2946,21 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 #reverseTimeBlock .datetime-row.omit-date-active #reverseDisplayDateWrapper,
 #reverseTimeBlock .datetime-direct-row.omit-date-active #reverseDisplayDateWrapper,
 #reverseTimeBlock .datetime-direct-row.omit-date-active #reverseDisplayDateGroup_direct {
-  display: none !important;
   flex: 0 !important;
   max-width: 0 !important;
   width: 0 !important;
   opacity: 0 !important;
   overflow: hidden !important;
   visibility: hidden !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  transition: flex 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              width 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.15s ease,
+              margin-right 0.22s ease !important;
+  transition-delay: 0s !important;
 }
 
 /* 4. 時分秒テンキー入力枠の３分割完全均等幅 (1:1:1) 強制化 */
@@ -2839,9 +2990,41 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 }
 
 /* 年月日も計算トグルがOFFのときに「日」の枠を見えなくする（スペースは維持して時分秒を動かさない） */
+/* 「日」の枠の基本スタイル（滑らかなスライドアニメーション用） */
+.error-days-wrapper {
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              width 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.22s ease,
+              visibility 0.22s ease,
+              margin-right 0.25s ease,
+              padding 0.25s ease !important;
+  overflow: hidden !important; /* アニメーション中の文字はみ出しを防ぐ */
+  max-width: 100px; /* 通常時の最大幅 */
+}
+
+/* 年月日計算トグルOFFのときに「日」の枠を滑らかに幅0に縮小して消去する */
 .omit-days-active {
+  flex: 0 !important;
+  max-width: 0 !important;
+  width: 0 !important;
+  opacity: 0 !important;
   visibility: hidden !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
+  border: none !important;
   pointer-events: none !important;
+  transition: flex 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              max-width 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              width 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.15s ease,
+              margin-right 0.22s ease !important;
+}
+
+/* 隣接する時分秒カプセルも滑らかに幅を広げる */
+.unit-capsule-wrapper {
+  transition: flex 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+              width 0.25s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 /* ==========================================================================
    スワイプアニメーション用クラス
@@ -2851,8 +3034,740 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ============================================================
-   ダミー画面（デコイ時計）スタイル
+   著作権情報ページ（readmePage）スタイル
+   ============================================================ */
+#readmePage {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg-dark, #0a0a12);
+  z-index: 9000;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+#readmePage[style*="block"],
+#readmePage[style*="flex"] {
+  display: flex !important;
+}
+
+/* ヘッダー固定 */
+#readmeHeader {
+  flex-shrink: 0;
+  padding: 18px 16px 10px;
+  background: var(--bg-dark, #0a0a12);
+  border-bottom: 1px solid rgba(0, 255, 224, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+#readmeTitle {
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: var(--accent, #00ffe0);
+  text-shadow: 0 0 12px rgba(0, 255, 224, 0.5);
+  margin: 0;
+}
+
+/* 国選択ドロップダウン */
+#readmeCountryBar {
+  width: 100%;
+  max-width: 340px;
+}
+#readmeCountrySelect {
+  width: 100%;
+  background-color: rgba(0, 255, 224, 0.06);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 24px;
+  border: 1px solid rgba(0, 255, 224, 0.3);
+  border-radius: 10px;
+  color: var(--text-main, #e0e0ff);
+  font-size: 16px;
+  padding: 10px 36px 10px 16px;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+#readmeCountrySelect:focus {
+  border-color: var(--accent, #00ffe0);
+  box-shadow: 0 0 8px rgba(0, 255, 224, 0.3);
+}
+
+/* スクロール本文 */
+#readmeBody {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+}
+
+/* 各言語セクション */
+.readme-section {
+  margin-bottom: 40px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 224, 0.1);
+  border-radius: 14px;
+  scroll-margin-top: 20px;
+}
+.readme-section[dir="rtl"] {
+  text-align: right;
+}
+.readme-flag {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+.readme-lang-title {
+  font-size: 16px;
+  color: var(--accent, #00ffe0);
+  text-shadow: 0 0 8px rgba(0, 255, 224, 0.4);
+  letter-spacing: 2px;
+  margin: 0 0 12px;
+  font-weight: bold;
+}
+.readme-section p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-main, #e0e0ff);
+  margin: 0 0 10px;
+}
+.readme-section ul {
+  margin: 4px 0 10px;
+  padding-left: 1.4em;
+}
+.readme-section[dir="rtl"] ul {
+  padding-left: 0;
+  padding-right: 1.4em;
+}
+.readme-section li {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(224, 224, 255, 0.85);
+  margin-bottom: 4px;
+}
+
+/* 長押しプログレスリング */
+#readmeHoldRing {
+  display: none;
+  pointer-events: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  height: 100px;
+  z-index: 9100;
+}
+#readmeHoldRing circle {
+  fill: none;
+  stroke: var(--accent, #00ffe0);
+  stroke-width: 4;
+  stroke-dasharray: 163.4;
+  stroke-dashoffset: 163.4;
+  stroke-linecap: butt;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 0 6px var(--accent));
+  transition: stroke-dashoffset 1.5s linear;
+}
+#readmeHoldHint {
+  position: fixed;
+  display: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: 16px; font-weight: bold; text-shadow: 0 0 4px rgba(0,0,0,0.8);;
+  color: rgba(255, 255, 255, 0);
+  letter-spacing: 1px;
+  pointer-events: none;
+  z-index: 9100;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================================
+   著作権情報ページ（readmePage）スタイル
+   ============================================================ */
+#readmePage {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg-dark, #0a0a12);
+  z-index: 9000;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+#readmePage[style*="block"],
+#readmePage[style*="flex"] {
+  display: flex !important;
+}
+
+/* ヘッダー固定 */
+#readmeHeader {
+  flex-shrink: 0;
+  padding: 18px 16px 10px;
+  background: var(--bg-dark, #0a0a12);
+  border-bottom: 1px solid rgba(0, 255, 224, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+#readmeTitle {
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: var(--accent, #00ffe0);
+  text-shadow: 0 0 12px rgba(0, 255, 224, 0.5);
+  margin: 0;
+}
+
+/* 国選択ドロップダウン */
+#readmeCountryBar {
+  width: 100%;
+  max-width: 340px;
+}
+#readmeCountrySelect {
+  width: 100%;
+  background-color: rgba(0, 255, 224, 0.06);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 24px;
+  border: 1px solid rgba(0, 255, 224, 0.3);
+  border-radius: 10px;
+  color: var(--text-main, #e0e0ff);
+  font-size: 16px;
+  padding: 10px 36px 10px 16px;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+#readmeCountrySelect:focus {
+  border-color: var(--accent, #00ffe0);
+  box-shadow: 0 0 8px rgba(0, 255, 224, 0.3);
+}
+
+/* スクロール本文 */
+#readmeBody {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+}
+
+/* 各言語セクション */
+.readme-section {
+  margin-bottom: 40px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 224, 0.1);
+  border-radius: 14px;
+  scroll-margin-top: 20px;
+}
+.readme-section[dir="rtl"] {
+  text-align: right;
+}
+.readme-flag {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+.readme-lang-title {
+  font-size: 16px;
+  color: var(--accent, #00ffe0);
+  text-shadow: 0 0 8px rgba(0, 255, 224, 0.4);
+  letter-spacing: 2px;
+  margin: 0 0 12px;
+  font-weight: bold;
+}
+.readme-section p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-main, #e0e0ff);
+  margin: 0 0 10px;
+}
+.readme-section ul {
+  margin: 4px 0 10px;
+  padding-left: 1.4em;
+}
+.readme-section[dir="rtl"] ul {
+  padding-left: 0;
+  padding-right: 1.4em;
+}
+.readme-section li {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(224, 224, 255, 0.85);
+  margin-bottom: 4px;
+}
+
+/* 長押しプログレスリング */
+#readmeHoldRing {
+  display: none;
+  pointer-events: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  height: 100px;
+  z-index: 9100;
+}
+#readmeHoldRing circle {
+  fill: none;
+  stroke: var(--accent, #00ffe0);
+  stroke-width: 4;
+  stroke-dasharray: 163.4;
+  stroke-dashoffset: 163.4;
+  stroke-linecap: butt;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 0 6px var(--accent));
+  transition: stroke-dashoffset 1.5s linear;
+}
+#readmeHoldHint {
+  position: fixed;
+  display: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: 16px; font-weight: bold; text-shadow: 0 0 4px rgba(0,0,0,0.8);;
+  color: rgba(255, 255, 255, 0);
+  letter-spacing: 1px;
+  pointer-events: none;
+  z-index: 9100;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+/* 多言語特有の文字被り防止（レイアウトを維持したまま、特定の長いラベルだけを縮小する） */
+body.lang-de label[data-i18n="display_time"],
+body.lang-uk label[data-i18n="display_time"],
+body.lang-uk label[data-i18n="standard_time"],
+body.lang-ru label[data-i18n="standard_time"] {
+  font-size: 13px !important;
+  letter-spacing: -0.5px !important;
+}
+
+/* Real Timeトグルの動的位置追従（時分秒枠全体の中央を常にキープ） */
+.real-time-toggle-dynamic {
+  width: 64.28% !important; /* 年月日ON時（時分秒が全体の約64.28%を占める） */
+}
+.date-omitted .real-time-toggle-dynamic {
+  width: 100% !important; /* 年月日OFF時（時分秒が全体の100%を占める） */
+}
+
+/* 年月日も計算のトグルを右端に揃える */
+.helper-toggle-wrapper {
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+.correction-date-toggle-wrapper {
+  justify-content: flex-end !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* --- 15. 多言語化対応（フォントサイズの最適化） --- */
+/* 日本語など、短くて太い文字の場合は大きめに表示し、入力枠とのセット感を強調 */
+body.lang-ja .input-group > label,
+body.lang-zh .input-group > label,
+body.lang-ko .input-group > label,
+body.lang-ja #reverseTimeLabel,
+body.lang-zh #reverseTimeLabel,
+body.lang-ko #reverseTimeLabel {
+  font-size: 14.5px !important;
+}
+
+/* 欧州言語など、横に長くなりやすい言語の場合はフォントサイズを縮小し、重なりを防止 */
+body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .input-group > label,
+body:not(.lang-ja):not(.lang-zh):not(.lang-ko) #reverseTimeLabel {
+  font-size: 11.5px !important;
+  letter-spacing: -0.5px !important;
+}
+
+
+/* 長すぎる黄色のエラーメッセージを1行に収めるための多言語対応 */
+body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
+  font-size: 10.5px !important;
+  letter-spacing: -0.5px !important;
+  white-space: nowrap !important;
+  transform: scale(0.9) !important;
+}
+
    ============================================================ */
 #decoyScreen {
   text-align: center;
@@ -3807,3 +4722,553 @@ body.input-helper-off-mode #reverseDisplayDateGroup_direct {
   transition: color 0.2s;
   white-space: nowrap;
 }
+
+/* ==========================================================================
+   時間電卓 / 精密電卓 / 割り勘 / レート (4-in-1 Multi Calculator) - Time Regulus Neon UI
+   ========================================================================== */
+.time-calc-card {
+  width: 94%;
+  max-width: 393px;
+  margin: 20px auto 0;
+  padding: 16px 14px 20px;
+}
+
+.time-calc-topbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* 4連常設ナビゲーションタブ (⏰ 🔢 💸 💱) */
+.calc-nav-tabs {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 12px;
+  background: rgba(10, 15, 25, 0.75);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 255, 224, 0.2);
+}
+
+.calc-nav-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-sub, #8899aa);
+  border-radius: 8px;
+  padding: 6px 2px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.calc-nav-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.calc-nav-text {
+  font-size: 11px;
+}
+
+.calc-nav-tab:hover {
+  color: var(--text-main, #ffffff);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.calc-nav-tab.active {
+  background: rgba(0, 255, 224, 0.18);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 10px rgba(0, 255, 224, 0.35);
+}
+
+.calc-nav-tab:active {
+  transform: scale(0.95);
+}
+
+/* 割り勘・レート変換用コントロール */
+.split-controls, .currency-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.split-field-row, .currency-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(15, 22, 36, 0.8);
+  border: 1.5px solid rgba(0, 255, 224, 0.25);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.split-field-row.active-field, .currency-field-row.active-field {
+  border-color: var(--accent);
+  background: rgba(0, 255, 224, 0.08);
+  box-shadow: 0 0 8px rgba(0, 255, 224, 0.35);
+}
+
+.split-field-label, .currency-field-label {
+  font-size: 12px;
+  color: var(--text-sub);
+  font-weight: bold;
+}
+
+.split-field-val, .currency-field-val {
+  font-size: 15px;
+  font-weight: bold;
+  color: #fff;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.split-round-pills {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.split-pill {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-sub);
+  border-radius: 6px;
+  padding: 4px 2px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.split-pill.active {
+  background: rgba(0, 255, 224, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 6px rgba(0, 255, 224, 0.3);
+}
+
+.currency-select-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.currency-select {
+  flex: 1;
+  background: #0f1624;
+  border: 1px solid var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.currency-swap-btn {
+  background: rgba(0, 255, 224, 0.15);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.currency-swap-btn:active {
+  transform: scale(0.9) rotate(180deg);
+  background: var(--accent);
+  color: #000;
+}
+
+.calc-engine-badge {
+  font-size: 11px;
+  font-weight: bold;
+  color: rgba(224, 224, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 3px 8px;
+  letter-spacing: 0.5px;
+}
+
+/* 電卓スクリーン */
+.time-calc-screen {
+  background: radial-gradient(circle at 50% 30%, #151d2a 0%, #0c1018 100%);
+  border: 1.5px solid rgba(0, 255, 224, 0.4);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: inset 0 0 18px rgba(0, 255, 224, 0.12), 0 6px 20px rgba(0, 0, 0, 0.6);
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.time-calc-screen-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 22px;
+  margin-bottom: 4px;
+}
+
+.time-calc-indicator {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(0, 255, 224, 0.2);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.time-calc-op-indicator {
+  background: rgba(255, 0, 170, 0.2);
+  color: var(--toggle-bg);
+  border-color: var(--toggle-bg);
+  box-shadow: 0 0 6px var(--toggle-bg);
+  font-size: 13px;
+  padding: 0 6px;
+}
+
+.time-calc-formula {
+  flex: 1;
+  text-align: right;
+  font-size: 13px;
+  color: rgba(224, 224, 255, 0.7);
+  font-family: 'Consolas', 'Courier New', monospace;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+.time-calc-formula::-webkit-scrollbar {
+  display: none;
+}
+
+.time-calc-main-display {
+  font-size: 32px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(0, 255, 224, 0.7), 0 0 24px rgba(0, 255, 224, 0.3);
+  font-family: 'Consolas', 'Courier New', monospace;
+  text-align: right;
+  letter-spacing: 1px;
+  line-height: 1.2;
+  margin: 6px 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+.time-calc-main-display::-webkit-scrollbar {
+  display: none;
+}
+
+.time-calc-screen-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.time-calc-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(0, 255, 224, 0.12);
+  border: 1px solid rgba(0, 255, 224, 0.5);
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.time-calc-badge:active {
+  background: var(--accent);
+  color: #000;
+}
+
+.time-calc-sub-display {
+  font-size: 13px;
+  color: #ff00aa;
+  text-shadow: 0 0 8px rgba(255, 0, 170, 0.5);
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-weight: bold;
+  text-align: right;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* 履歴ドロワー */
+.time-calc-history-drawer {
+  background: rgba(14, 18, 28, 0.95);
+  border: 1.5px solid rgba(0, 255, 224, 0.35);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  max-height: 160px;
+  overflow-y: auto;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  animation: riseInShort 0.3s ease-out;
+}
+
+.time-calc-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--accent);
+  border-bottom: 1px solid rgba(0, 255, 224, 0.2);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.time-calc-history-clear-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 77, 77, 0.6);
+  color: #ff6666;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.time-calc-history-clear-btn:active {
+  background: #ff4d4d;
+  color: #fff;
+}
+
+.time-calc-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.time-calc-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 255, 224, 0.12);
+  font-size: 12px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.time-calc-history-item:hover {
+  background: rgba(0, 255, 224, 0.1);
+  border-color: var(--accent);
+}
+.time-calc-history-item .hist-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+.time-calc-history-item .hist-formula {
+  color: #a0aec0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+.time-calc-history-item .hist-result {
+  color: #00ffe0;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.time-calc-history-item .hist-del-btn {
+  background: transparent;
+  border: none;
+  color: #ff5577;
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px 6px;
+  margin-left: 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.time-calc-history-item .hist-del-btn:hover {
+  background: rgba(255, 85, 119, 0.25);
+  color: #ff0044;
+  transform: scale(1.2);
+}
+.time-calc-history-empty {
+  text-align: center;
+  color: #667;
+  font-size: 12px;
+  padding: 10px 0;
+}
+
+/* ボタングリッド */
+.time-calc-keypad {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.calc-btn-active-field {
+  background: rgba(0, 255, 224, 0.28) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 224, 0.5) !important;
+  color: #fff !important;
+}
+
+.calc-btn {
+  height: 48px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.calc-btn:active {
+  transform: scale(0.93);
+}
+
+/* 各種ボタンスタイル */
+.calc-btn-num {
+  background: rgba(30, 36, 52, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f0f4f8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.calc-btn-num:active {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.calc-btn-unit {
+  background: rgba(0, 255, 224, 0.12);
+  border: 1px solid rgba(0, 255, 224, 0.6);
+  color: #00ffe0;
+  box-shadow: 0 0 8px rgba(0, 255, 224, 0.2);
+}
+.calc-btn-unit:active {
+  background: var(--accent);
+  color: #050b14;
+  box-shadow: 0 0 16px var(--accent);
+}
+
+.calc-btn-op {
+  background: rgba(255, 0, 170, 0.12);
+  border: 1px solid rgba(255, 0, 170, 0.6);
+  color: #ff00aa;
+  font-size: 18px;
+  box-shadow: 0 0 8px rgba(255, 0, 170, 0.2);
+}
+.calc-btn-op:active {
+  background: #ff00aa;
+  color: #fff;
+  box-shadow: 0 0 16px #ff00aa;
+}
+
+.calc-btn-mem {
+  background: rgba(138, 92, 246, 0.15);
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  color: #c4b5fd;
+  font-size: 13px;
+  box-shadow: 0 0 6px rgba(138, 92, 246, 0.15);
+}
+.calc-btn-mem:active {
+  background: #a78bfa;
+  color: #0f0a1e;
+  box-shadow: 0 0 12px #a78bfa;
+}
+
+.calc-btn-clear {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  color: #fbbf24;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.2);
+}
+.calc-btn-clear:active {
+  background: #fbbf24;
+  color: #000;
+  box-shadow: 0 0 14px #fbbf24;
+}
+
+.calc-btn-allclear {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1.5px solid rgba(239, 68, 68, 0.7);
+  color: #f87171;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.25);
+}
+.calc-btn-allclear:active {
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 0 16px #ef4444;
+}
+
+.calc-btn-del {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #e2e8f0;
+  font-size: 16px;
+}
+.calc-btn-del:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.calc-btn-eq {
+  background: linear-gradient(135deg, #00ffe0 0%, #00b4d8 100%);
+  border: none;
+  color: #041018;
+  font-size: 22px;
+  font-weight: 900;
+  box-shadow: 0 0 14px rgba(0, 255, 224, 0.5);
+}
+.calc-btn-eq:active {
+  box-shadow: 0 0 24px rgba(0, 255, 224, 0.9);
+  transform: scale(0.94);
+}
+
+/* レスポンシブ微調整 */
+@media (max-width: 360px) {
+  .calc-btn {
+    height: 42px;
+    font-size: 14px;
+  }
+  .time-calc-main-display {
+    font-size: 26px;
+  }
+  .time-calc-keypad {
+    gap: 5px;
+  }
+}
+
