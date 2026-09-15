@@ -4392,6 +4392,9 @@ if (document.readyState === "loading") {
    テンキーキーボード表示時の自動スクロール（入力補助OFF時など）
    ========================================================================== */
 let _lastTextInputBlurTime = 0;
+// キーパッド入力のタップ前スクロール位置を記録（iOSの自動スクロールを後で正確に打ち消すため）
+let _scrollYBeforeFocus = 0;
+
 document.addEventListener("focusout", function(e) {
   if (e.target && e.target.tagName === "INPUT" && 
       e.target.type !== "checkbox" && 
@@ -4400,6 +4403,18 @@ document.addEventListener("focusout", function(e) {
     _lastTextInputBlurTime = Date.now();
   }
 });
+
+// タップ前のスクロール位置を記録（iOSが自動スクロールする前の値）
+document.addEventListener("touchstart", function(e) {
+  if (!activeTimePickerGroup &&
+      e.target && e.target.tagName === "INPUT" &&
+      e.target.type !== "checkbox" &&
+      e.target.type !== "radio" &&
+      e.target.type !== "button" &&
+      e.target.type !== "date") {
+    _scrollYBeforeFocus = window.scrollY;
+  }
+}, { passive: true });
 
 document.addEventListener("focusin", function(e) {
   if (activeTimePickerGroup) return; // ピッカー起動中はキーボード用自動スクロールとの二重競合をシャットアウト！
@@ -4417,25 +4432,29 @@ document.addEventListener("focusin", function(e) {
       return;
     }
     
-    // キーボード展開完了を待って、iOSの自動スクロールを打ち消してから
-    // ドラムロール（openTimePicker）と同じ基準でスクロール位置を正確に再設定する
+    // タップ前のスクロール位置を確定（touchstartで記録した値）
+    const savedScrollY = _scrollYBeforeFocus;
+
+    // キーボード展開完了を待ってから処理
     setTimeout(() => {
       const isErrorMode = document.getElementById("errorMode").style.display !== "none";
       const targetResultId = isErrorMode ? "result" : "reverseResult";
       const targetEl = document.getElementById(targetResultId);
       
       if (targetEl) {
-        // ① まずiOSの自動スクロール分を打ち消して現在のscrollYを基準にリセット
-        //    （iOSが勝手に上げた量を一旦戻す）
-        const currentScrollY = window.scrollY;
-        window.scrollTo({ top: currentScrollY, behavior: "instant" });
+        // ① iOSの自動スクロールを完全に打ち消す
+        //    （touchstartで記録したタップ前の位置に即時リセット）
+        window.scrollTo(0, savedScrollY);
 
-        // ② ドラムロールのopenTimePicker()と同じ基準（pickerHeight=390）で再スクロール
-        const rect = targetEl.getBoundingClientRect();
-        const pickerHeight = 390; // ドラムロール開時と同一値に統一
-        if (rect.bottom > window.innerHeight - pickerHeight) {
-          window.scrollBy({ top: rect.bottom - (window.innerHeight - pickerHeight), behavior: "smooth" });
-        }
+        // ② ドラムロールのopenTimePicker()と全く同じ計算式でスクロール
+        //    （rAFでDOM再描画後にBoundingRectを正確に取得）
+        requestAnimationFrame(() => {
+          const rect = targetEl.getBoundingClientRect();
+          const pickerHeight = 390; // ドラムロール開時と同一値
+          if (rect.bottom > window.innerHeight - pickerHeight) {
+            window.scrollBy({ top: rect.bottom - (window.innerHeight - pickerHeight), behavior: "smooth" });
+          }
+        });
       }
     }, 400);
   }
