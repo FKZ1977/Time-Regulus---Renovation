@@ -1,4 +1,4 @@
-const currentVersion = "3.3.0";
+const currentVersion = "3.3.1";
 let lastError = null;
 let hasCalculated = false;
 let reverseMode = "toStandard";
@@ -773,49 +773,30 @@ function checkPass() {
   const inputField = document.getElementById("passcode");
   const input = inputField.value;
   const correct = "164";
-  // ★ 12345 は将来の機能用に予約済み（現在は未割り当て）
   const errorMessage = document.getElementById("error");
-  const DECOY_PASS = '8888';
+  const PRECISION_CLOCK_PASS = '12345'; // 精密時計（＆カウントダウンタイマー）※旧8888から変更
   const VIEW_LOCK_PASS = '7777';
   const ANALOG_LOCK_PASS = '4444';
   const ALWAYS_ON_PASS = '112233445566778899';
   if (input === ALWAYS_ON_PASS) { inputField.value = ''; inputField.style.border = ''; errorMessage.innerText = ''; const nowOn = _toggleAlwaysOnMode(); const msg = nowOn ? 'ON' : 'OFF'; errorMessage.style.color = nowOn ? '#00ffcc' : '#aaaaaa'; errorMessage.innerText = msg; setTimeout(() => { errorMessage.innerText = ''; errorMessage.style.color = ''; }, 2500); inputField.focus(); return; }
-  if (input === DECOY_PASS) { inputField.value = ''; inputField.style.border = ''; errorMessage.innerText = ''; showDecoyScreen(); return; }
-  if (input === VIEW_LOCK_PASS) { inputField.value = ''; inputField.style.border = ''; errorMessage.innerText = ''; showViewLockScreen(); return; }
-  if (input === ANALOG_LOCK_PASS) { inputField.value = ''; inputField.style.border = ''; errorMessage.innerText = ''; showAnalogLockScreen(); return; }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  if (input === '12345') {
+  if (input === PRECISION_CLOCK_PASS) {
     inputField.value = '';
     inputField.style.border = '';
     errorMessage.innerText = '';
-    // Analytics: 12345コードが入力されたことを記録
     if (typeof gtag === 'function') { gtag('event', '12345_code'); }
-    showReadmePage();
+    showDecoyScreen();
     return;
   }
+  if (input === VIEW_LOCK_PASS) { inputField.value = ''; inputField.style.border = ''; errorMessage.innerText = ''; showViewLockScreen(); return; }
+  if (input === ANALOG_LOCK_PASS) { inputField.value = ''; inputField.style.border = ''; errorMessage.innerText = ''; showAnalogLockScreen(); return; }
 
   if (input === correct) {
     document.getElementById("lockScreen").style.display = "none";
     document.getElementById("modeSelect").style.display = "block";
+    // モードボタンラベルを確実に多言語化
+    if (typeof applyTranslations === 'function') {
+      setTimeout(() => applyTranslations(), 50);
+    }
     inputField.blur();
     inputField.style.border = "";
     errorMessage.innerText = "";
@@ -2230,37 +2211,54 @@ function restartLockScreenAnimation() {
 
 
 
-function generateKeypad() {
+function generateKeypad(initialDelay = 120) {
   const keypad = document.getElementById("keypad");
+  if (!keypad) return;
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const shuffled = numbers.sort(() => Math.random() - 0.5);
-  keypad.innerHTML = "";
 
-  shuffled.forEach(num => {
-    const btn = document.createElement("button");
-    btn.innerText = num;
+  let buttons = keypad.querySelectorAll("button");
+  if (buttons.length !== 9) {
+    keypad.innerHTML = "";
+    for (let i = 0; i < 9; i++) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.innerHTML = "&nbsp;";
+      keypad.appendChild(btn);
+    }
+    buttons = keypad.querySelectorAll("button");
+  } else {
+    // 既存の枠を維持しつつ、中身を一旦クリア
+    buttons.forEach(btn => {
+      btn.innerHTML = "&nbsp;";
+      btn.classList.remove("sparkle-btn-anim");
+    });
+  }
+
+  buttons.forEach((btn, index) => {
+    const num = shuffled[index];
     btn.onclick = () => {
       const input = document.getElementById("passcode");
-      input.value += num;
+      if (input) input.value += num;
     };
-    keypad.appendChild(btn);
 
-    // 星の瞬き（チカチカ明滅）アニメーションをランダムディレイ（0〜250ms）で付与
-    const randomDelay = Math.random() * 250;
+    // ① ランダムテンキーの瞬き演出
+    // 9つの枠が表示された後、initialDelay後にキラキラ明滅＆数字高速ルーレットを開始
+    const randomDelay = initialDelay + Math.random() * 150;
     setTimeout(() => {
       btn.classList.add("sparkle-btn-anim");
       
-      // 明滅している間、表示する数字を高速ランダム変化させる（60msごとに1〜9のランダム数値）
+      // 明滅している間、表示する数字を高速ランダム変化（50msごとに1〜9のランダム数値）
       const changeInterval = setInterval(() => {
         btn.innerText = Math.floor(Math.random() * 9) + 1;
-      }, 60);
+      }, 50);
 
-      // 瞬き（0.25s * 2回 = 500ms）完了後に自動的にクラスを剥がし、本来の確定数字を再セット
+      // 瞬き（約500ms）完了後に確定数字をセット
       setTimeout(() => {
         clearInterval(changeInterval);
         btn.innerText = num;
         btn.classList.remove("sparkle-btn-anim");
-      }, 500);
+      }, 450);
     }, randomDelay);
   });
 }
@@ -2273,12 +2271,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 起動時のバージョンポップアップ
   if (localStorage.getItem("lastVersion") !== currentVersion) {
-    alert("タイムレグルスがv3.3.0にアップデートされました！");
+    alert("タイムレグルスがv3.3.1にアップデートされました！");
     localStorage.setItem("lastVersion", currentVersion);
   }
 
   // 暗証番号入力欄のフォーカス& Enterキー対応
-  if (typeof generateKeypad === 'function') { generateKeypad(); }
   const passInput = document.getElementById("passcode");
   if (passInput) {
     passInput.focus();
@@ -2289,8 +2286,10 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // ロック画面のアニメーション再始動
-  restartLockScreenAnimation();
+  // ★【起動時演出①】テンキーの枠を表示した状態から瞬きアニメーションをスタート（120ms遅延）
+  if (typeof generateKeypad === 'function') {
+    generateKeypad(120);
+  }
 
   // =====================================================================
   // ■ フェーズ2：メイン機能の遅延初期化
@@ -2850,21 +2849,13 @@ function toggleRealTime(checked) {
         el.style.opacity = '0.7';
       }
     });
-    // RealTime ON で秒の00固定を解除。以降はOFFにしても秒を自由入力可能にする（フラグを立てる）
+    // RealTime ON で秒の00固定解除フラグを立てる（以降はOFFにしても秒を自由入力可能にする）
     _standardSecUnlocked = true;
-    const sS = document.getElementById('standardSec_direct');
-    if (sS) {
-      sS.disabled = false;
-      sS.readOnly = false;
-      sS.style.opacity = '';
-      sS.style.pointerEvents = 'auto';
-      sS.classList.remove('seconds-fixed-00');
-    }
-    // ドラム（standardSeconds）も解除
+    // ドラム（standardSeconds）もロック
     const sSel = document.getElementById('standardSeconds');
     if (sSel) {
-      sSel.disabled = false;
-      sSel.style.pointerEvents = 'auto';
+      sSel.disabled = true;
+      sSel.style.pointerEvents = 'none';
       sSel.classList.remove('seconds-fixed-00');
     }
     // 即時反映
@@ -2946,6 +2937,29 @@ function _applyRealTimeToStandard() {
   syncAllPlaceholderColors();
 }
 
+// モード選択画面の惑星ボタントランジションアニメーション (ヒロさん仕様)
+function triggerModeTransition(modeKey, callback) {
+  if (navigator.vibrate) {
+    try { navigator.vibrate(20); } catch(e){}
+  }
+
+  // ボタンを押した瞬間に長押し判定を即座に破棄・無効化
+  if (typeof window._cancelHoldToReturn === 'function') {
+    window._cancelHoldToReturn();
+  }
+  window._isModeTransitioning = true;
+  
+  const btn = document.querySelector(`.btn-calc-${modeKey}`);
+  if (btn) btn.classList.add('is-pressed');
+
+  setTimeout(() => {
+    if (btn) btn.classList.remove('is-pressed');
+    if (typeof callback === 'function') {
+      callback();
+    }
+  }, 220);
+}
+
 function showErrorMode() {
   // モード選択から遷移するたびに RealTime を必ず OFF にリセット
   const realTimeCb = document.getElementById('realTimeCheckbox');
@@ -2966,6 +2980,7 @@ function showErrorMode() {
   } else {
     document.getElementById("modeSelect").style.display = "none";
     document.getElementById("errorMode").style.display = "block";
+    window._isModeTransitioning = false;
 
     if (typeof window.updateLabelWidths === 'function') {
       window.updateLabelWidths();
@@ -3001,6 +3016,7 @@ function showCorrectionMode() {
   } else {
     document.getElementById("modeSelect").style.display = "none"; 
     document.getElementById("correctionMode").style.display = "block";
+    window._isModeTransitioning = false;
     if (lastError) { 
       applyLastErrorToReverseInputs();
     }
@@ -3022,6 +3038,10 @@ function showCorrectionMode() {
 
 function showTimeCalcMode() {
   disableRealTimeIfActive();
+  // GA: マルチ電卓画面を開いた
+  if (typeof gtag === 'function') {
+    gtag('event', 'multi_calc_open');
+  }
   if (window.slideTransition && document.getElementById("modeSelect").style.display !== "none") {
     window.slideTransition("modeSelect", "timeCalcMode", "right", () => {
       if (typeof TimeCalc !== 'undefined' && typeof TimeCalc.init === 'function') {
@@ -3031,6 +3051,7 @@ function showTimeCalcMode() {
   } else {
     document.getElementById("modeSelect").style.display = "none";
     document.getElementById("timeCalcMode").style.display = "block";
+    window._isModeTransitioning = false;
     if (typeof TimeCalc !== 'undefined' && typeof TimeCalc.init === 'function') {
       TimeCalc.init();
     }
@@ -3080,7 +3101,8 @@ function backToModeSelect() {
     const tcMode = document.getElementById("timeCalcMode");
     if (tcMode) tcMode.style.display = "none";
     document.getElementById("modeSelect").style.display = "block";
-    document.getElementById("resetConfirmContainer").style.display = "none"; 
+    document.getElementById("resetConfirmContainer").style.display = "none";
+    window._isModeTransitioning = false;
   }
 }
 
@@ -3264,6 +3286,25 @@ function swapErrorModeInputs() {
       nowButton.style.display = "none";
       const realTimeRow = document.getElementById('realTimeCheckboxRow');
       if (realTimeRow) realTimeRow.style.display = 'flex';
+      // RealTimeが動作中なら停止・リセット
+      if (realTimeInterval) { clearInterval(realTimeInterval); realTimeInterval = null; }
+      const realTimeCheckbox = document.getElementById('realTimeCheckbox');
+      if (realTimeCheckbox) realTimeCheckbox.checked = false;
+
+      // 時・分・年月日のロックを解除（秒以外は通常入力可能）
+      const normalFields = [
+        'standardYear_direct', 'standardMonth_direct', 'standardDay_direct',
+        'standardHour_direct', 'standardMin_direct'
+      ];
+      normalFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.readOnly = false;
+          el.style.pointerEvents = 'auto';
+          el.style.opacity = '';
+        }
+      });
+
       if (standardSecDirect) {
         standardSecDirect.value = "00";
         standardSecDirect.disabled = true;
@@ -3289,6 +3330,21 @@ function swapErrorModeInputs() {
       if (realTimeCheckbox) realTimeCheckbox.checked = false;
       const realTimeRow = document.getElementById('realTimeCheckboxRow');
       if (realTimeRow) realTimeRow.style.display = 'none';
+
+      // 全フィールド（年月日、時、分、秒）のロックを完全に解除
+      const allFields = [
+        'standardYear_direct', 'standardMonth_direct', 'standardDay_direct',
+        'standardHour_direct', 'standardMin_direct', 'standardSec_direct'
+      ];
+      allFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.readOnly = false;
+          el.style.pointerEvents = 'auto';
+          el.style.opacity = '';
+        }
+      });
+
       if (standardSecDirect) {
         standardSecDirect.readOnly = false;
         standardSecDirect.style.opacity = '';
@@ -3296,6 +3352,12 @@ function swapErrorModeInputs() {
         standardSecDirect.style.pointerEvents = 'auto';
         standardSecDirect.classList.remove('seconds-fixed-00');
         // swap時に秒数をクリアせず、直前の秒（Real Timeまたは00固定）を保持する
+      }
+      const standardSecsDrum = document.getElementById('standardSeconds');
+      if (standardSecsDrum) {
+        standardSecsDrum.disabled = false;
+        standardSecsDrum.style.pointerEvents = 'auto';
+        standardSecsDrum.classList.remove('seconds-fixed-00');
       }
     }
 
@@ -4355,24 +4417,29 @@ document.addEventListener("focusin", function(e) {
       return;
     }
     
-    // キーボード展開アニメーション完了を待ってからスクロール判定
+    // キーボード展開完了を待って、iOSの自動スクロールを打ち消してから
+    // ドラムロール（openTimePicker）と同じ基準でスクロール位置を正確に再設定する
     setTimeout(() => {
       const isErrorMode = document.getElementById("errorMode").style.display !== "none";
       const targetResultId = isErrorMode ? "result" : "reverseResult";
       const targetEl = document.getElementById(targetResultId);
       
       if (targetEl) {
+        // ① まずiOSの自動スクロール分を打ち消して現在のscrollYを基準にリセット
+        //    （iOSが勝手に上げた量を一旦戻す）
+        const currentScrollY = window.scrollY;
+        window.scrollTo({ top: currentScrollY, behavior: "instant" });
+
+        // ② ドラムロールのopenTimePicker()と同じ基準（pickerHeight=390）で再スクロール
         const rect = targetEl.getBoundingClientRect();
-        const keyboardHeight = 350; // iOS/Androidの一般的なキーボード高さ + 余白
-        if (rect.bottom > window.innerHeight - keyboardHeight) {
-          window.scrollBy({ top: rect.bottom - (window.innerHeight - keyboardHeight), behavior: "smooth" });
+        const pickerHeight = 390; // ドラムロール開時と同一値に統一
+        if (rect.bottom > window.innerHeight - pickerHeight) {
+          window.scrollBy({ top: rect.bottom - (window.innerHeight - pickerHeight), behavior: "smooth" });
         }
       }
     }, 400);
   }
 });
-
-
 
 
 
@@ -4428,11 +4495,25 @@ document.addEventListener("focusin", function(e) {
   }
 
   // 左スワイプ(dX<0)=進む(右隣へ), 右スワイプ(dX>0)=戻る(左隣へ)
-  // 配置: [時間電卓] ⇄ [モード選択] ⇄ [誤差の計算] ⇄ [補正時刻の計算] ⇄ [結果一覧]
+  // 配置: [レート] ⇄ [割り勘] ⇄ [電卓] ⇄ [時間電卓] ⇄ [モード選択] ⇄ [誤差の計算] ⇄ [補正時刻の計算] ⇄ [結果一覧]
+  // '__MULTI_TAB__' = timeCalcMode内のタブ切り替え（画面遷移なし）
+  const MULTI_TAB_ORDER = ['currency', 'split', 'precision', 'time'];
   function getDestId(srcId, dX) {
+    if (srcId === 'timeCalcMode') {
+      const mode = (typeof TimeCalc !== 'undefined') ? TimeCalc.engineMode : 'time';
+      const idx  = MULTI_TAB_ORDER.indexOf(mode);
+      if (dX < 0) {
+        // 左スワイプ: タブ右へ。time(最右)のときだけmodeSelectへ進む
+        if (idx < MULTI_TAB_ORDER.length - 1) return '__MULTI_TAB__';
+        return 'modeSelect';
+      } else {
+        // 右スワイプ: タブ左へ。currency(最左)のときは行き先なし
+        if (idx > 0) return '__MULTI_TAB__';
+        return null;
+      }
+    }
     if (dX < 0) {
       // 左スワイプ → 右隣の画面へ進む
-      if (srcId === 'timeCalcMode')   return 'modeSelect';
       if (srcId === 'modeSelect')     return 'errorMode';
       if (srcId === 'errorMode')      return 'correctionMode';
       if (srcId === 'correctionMode') return 'resultListPage';
@@ -4477,6 +4558,10 @@ document.addEventListener("focusin", function(e) {
       if (srcId === 'errorMode' && typeof disableRealTimeIfActive === 'function') {
         disableRealTimeIfActive();
       }
+      // モード選択ボタンのラベルを確実に多言語化
+      if (typeof applyTranslations === 'function') {
+        setTimeout(() => applyTranslations(), 50);
+      }
     }
     // 誤差の計算モードから補正時刻の計算モードに来た場合、計算結果を反映
     if (destId === 'correctionMode' && srcId === 'errorMode') {
@@ -4500,6 +4585,9 @@ document.addEventListener("focusin", function(e) {
 
   // ボタン押下時などのプログラム遷移用スライドアニメーション関数
   window.slideTransition = function(fromId, toId, direction, onPrepare, onComplete) {
+    if (typeof window._cancelHoldToReturn === 'function') {
+      window._cancelHoldToReturn();
+    }
     if (isTransitioning) return;
     const fEl = getEl(fromId);
     const tEl = getEl(toId);
@@ -4509,6 +4597,7 @@ document.addEventListener("focusin", function(e) {
       if (typeof onPrepare === 'function') onPrepare();
       if (typeof onComplete === 'function') onComplete();
       afterSwipe(toId, fromId);
+      window._isModeTransitioning = false;
       return;
     }
 
@@ -4565,7 +4654,10 @@ document.addEventListener("focusin", function(e) {
 
       afterSwipe(toId, fromId);
       if (typeof onComplete === 'function') onComplete();
-      setTimeout(() => { isTransitioning = false; }, 50);
+      setTimeout(() => {
+        isTransitioning = false;
+        window._isModeTransitioning = false;
+      }, 50);
     }, 300);
   };
 
@@ -4659,6 +4751,8 @@ document.addEventListener("focusin", function(e) {
       } else {
         // 水平スワイプ確定時のみtransitionを解除（タップ時のDOM操作によるフォーカス消失バグ回避）
         fromEl.style.transition = 'none';
+        // ボタンの :active 視覚効果を抑制（長押し誤判定防止）
+        document.body.classList.add('is-swiping');
       }
     }
 
@@ -4670,6 +4764,14 @@ document.addEventListener("focusin", function(e) {
     if (!destId) {
       // 行き先なし: 少しだけ引っ張られる感触
       fromEl.style.transform = `translateX(${dX * 0.15}px)`;
+      return;
+    }
+
+    // マルチ電卓タブ切り替え: toElなしでdamped pullのみ
+    if (destId === '__MULTI_TAB__') {
+      toId = '__MULTI_TAB__';
+      toEl = null;
+      fromEl.style.transform = `translateX(${dX * 0.3}px)`;
       return;
     }
 
@@ -4739,6 +4841,27 @@ document.addEventListener("focusin", function(e) {
     const w         = window.innerWidth;
     const threshold = w * 0.25;
 
+    // __MULTI_TAB__は !toEl より先に判定（toEl=nullのため）
+    if (toId === '__MULTI_TAB__') {
+      fromEl.style.transition = 'transform 0.2s ease';
+      fromEl.style.transform  = 'translateX(0)';
+      const f = fromEl;
+      fromEl = null; toEl = null; toId = null; currentId = null;
+      setTimeout(() => { f.style.transform = ''; f.style.transition = ''; }, 200);
+      // しきい値以上ならタブ切り替え
+      if (Math.abs(dX) > threshold && typeof TimeCalc !== 'undefined') {
+        const mode = TimeCalc.engineMode;
+        const idx  = MULTI_TAB_ORDER.indexOf(mode);
+        const nextIdx = dX < 0
+          ? Math.min(idx + 1, MULTI_TAB_ORDER.length - 1)
+          : Math.max(idx - 1, 0);
+        if (nextIdx !== idx) TimeCalc.setEngineMode(MULTI_TAB_ORDER[nextIdx]);
+      }
+      axisLocked = null;
+      document.body.classList.remove('is-swiping');
+      return;
+    }
+
     if (!toEl) {
       // 行き先なし: 元に戻す
       if (fromEl) {
@@ -4757,6 +4880,40 @@ document.addEventListener("focusin", function(e) {
 
     if (Math.abs(dX) > threshold) {
       // ===== 遷移確定 =====
+
+      // マルチ電卓タブ切り替え（画面遷移なし）
+      if (toId === '__MULTI_TAB__') {
+        // toElのスタイルをリセット
+        if (toEl) {
+          toEl.style.display    = 'none';
+          toEl.style.position   = '';
+          toEl.style.zIndex     = '';
+          toEl.style.transform  = '';
+          toEl.style.transition = '';
+        }
+        // fromElを元の位置に戻す
+        fromEl.style.transition = 'transform 0.2s ease';
+        fromEl.style.transform  = 'translateX(0)';
+        const f = fromEl;
+        fromEl = null; toEl = null; toId = null; currentId = null;
+        setTimeout(() => {
+          f.style.transform  = '';
+          f.style.transition = '';
+        }, 200);
+        // タブを切り替える
+        if (typeof TimeCalc !== 'undefined') {
+          const mode = TimeCalc.engineMode;
+          const idx  = MULTI_TAB_ORDER.indexOf(mode);
+          const nextIdx = dX < 0
+            ? Math.min(idx + 1, MULTI_TAB_ORDER.length - 1)
+            : Math.max(idx - 1, 0);
+          if (nextIdx !== idx) TimeCalc.setEngineMode(MULTI_TAB_ORDER[nextIdx]);
+        }
+        axisLocked = null;
+        document.body.classList.remove('is-swiping');
+        return;
+      }
+
       isTransitioning = true;
       if (currentId === 'errorMode' && typeof disableRealTimeIfActive === 'function') {
         disableRealTimeIfActive();
@@ -4841,7 +4998,312 @@ document.addEventListener("focusin", function(e) {
     }
 
     axisLocked = null;
+    document.body.classList.remove('is-swiping');
   });
+
+  // ----------------------------------------------------------------
+  // マウスドラッグによる横スワイプ対応 (ヒロさん仕様: PCでもスワイプ可能に)
+  // ----------------------------------------------------------------
+  let isMouseDragging = false;
+
+  document.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return; // 左クリックのみ
+    if (isTransitioning) return;
+    if (typeof activeTimePickerGroup !== 'undefined' && activeTimePickerGroup) return;
+
+    // クリックされた要素が入力コントロールやボタン等の場合はドラッグスワイプを開始しない
+    const target = e.target;
+    if (target && target.closest) {
+      if (target.closest('#timeCalcMode')) {
+        // マルチ電卓内: キーパッド・ディスプレイ等からもドラッグ可能にする
+        // 入力欄・ドラッグハンドル・モーダルのみ除外（button/.calc-btn/.time-calc-screenは除外しない）
+        if (target.closest('input, textarea, select, a, .currency-drag-handle, .currency-slot-card, .currency-palette-item, .custom-rate-modal-box, .rate-modal-backdrop, .lang-selector')) {
+          return;
+        }
+      } else {
+        if (target.closest('input, textarea, select, button, a, .action-btn, .orbit-planet-btn, .calc-btn, .currency-drag-handle, .currency-slot-card, .currency-palette-item, .time-calc-screen, .custom-rate-modal-box, .rate-modal-backdrop, .key-cell, .lang-selector')) {
+          return;
+        }
+      }
+    }
+
+    currentId = detectCurrentId();
+    isLockedScreen = currentId ? LOCKED.includes(currentId) : false;
+    if (!currentId || isLockedScreen) return;
+
+    fromEl = getEl(currentId);
+    if (!fromEl) return;
+
+    startX = e.clientX;
+    startY = e.clientY;
+    lastX  = startX;
+
+    // 画面端20px以内は除外
+    if (startX < 20 || startX > window.innerWidth - 20) return;
+
+    isMouseDragging = true;
+    axisLocked = null;
+    toEl = null;
+    toId = null;
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isMouseDragging || isTransitioning) return;
+    if (!fromEl || !currentId) return;
+
+    const x  = e.clientX;
+    const y  = e.clientY;
+    const dX = x - startX;
+    const dY = y - startY;
+    lastX = x;
+
+    // 軸判定（10px以上の移動で確定）
+    if (!axisLocked) {
+      if (Math.abs(dX) < 10 && Math.abs(dY) < 10) return;
+      axisLocked = Math.abs(dX) >= Math.abs(dY) ? 'horizontal' : 'vertical';
+      if (axisLocked === 'vertical') {
+        isMouseDragging = false;
+        fromEl = null;
+        return;
+      } else {
+        isSwiping = true;
+        fromEl.style.transition = 'none';
+        // 水平スワイプ確定: ボタンの :active 視覚効果を抑制
+        document.body.classList.add('is-swiping');
+      }
+    }
+
+    e.preventDefault();
+
+    const destId = getDestId(currentId, dX);
+    if (!destId) {
+      fromEl.style.transform = `translateX(${dX * 0.15}px)`;
+      return;
+    }
+
+    // マルチ電卓タブ切り替え: toElなしでdamped pullのみ
+    if (destId === '__MULTI_TAB__') {
+      toId = '__MULTI_TAB__';
+      toEl = null;
+      fromEl.style.transform = `translateX(${dX * 0.3}px)`;
+      return;
+    }
+
+    if (toId !== destId) {
+      if (toEl) {
+        toEl.style.display    = 'none';
+        toEl.style.position   = '';
+        toEl.style.zIndex     = '';
+        if (toEl.id === 'resultListPage') {
+          toEl.style.width      = '';
+          toEl.style.minHeight  = '';
+          toEl.style.background = '';
+        }
+        toEl.style.transform  = '';
+        toEl.style.transition = '';
+      }
+      toId = destId;
+      toEl = getEl(toId);
+
+      const initW = window.innerWidth;
+      const initBase = dX > 0 ? -initW : initW;
+      toEl.style.transition = 'none';
+      toEl.style.position   = 'absolute';
+      toEl.style.top        = '0';
+      toEl.style.left       = '0';
+      toEl.style.right      = '0';
+      toEl.style.marginLeft = 'auto';
+      toEl.style.marginRight= 'auto';
+      if (toId === 'resultListPage') {
+        toEl.style.width      = '100%';
+        toEl.style.minHeight  = '100vh';
+        toEl.style.background = 'var(--bg-dark, #111118)';
+      }
+      toEl.style.zIndex     = '100';
+      toEl.style.transform  = `translateX(${initBase + dX}px)`;
+      toEl.style.display    = 'block';
+    }
+
+    const w    = window.innerWidth;
+    const base = dX > 0 ? -w : w;
+    fromEl.style.transform = `translateX(${dX}px)`;
+    toEl.style.transform   = `translateX(${base + dX}px)`;
+  });
+
+  function finishMouseSwipe() {
+    if (!isMouseDragging) return;
+    isMouseDragging = false;
+
+    if (axisLocked !== 'horizontal') {
+      fromEl = null; toEl = null; toId = null; currentId = null;
+      isSwiping = false;
+      return;
+    }
+
+    const dX        = lastX - startX;
+    const w         = window.innerWidth;
+    const threshold = w * 0.2; // マウスの場合は約20%の移動でスワイプ成立
+
+    // __MULTI_TAB__は !toEl より先に判定（toEl=nullのため）
+    if (toId === '__MULTI_TAB__') {
+      fromEl.style.transition = 'transform 0.2s ease';
+      fromEl.style.transform  = 'translateX(0)';
+      const f = fromEl;
+      fromEl = null; toEl = null; toId = null; currentId = null;
+      setTimeout(() => { f.style.transform = ''; f.style.transition = ''; }, 200);
+      // しきい値以上ならタブ切り替え
+      if (Math.abs(dX) > threshold && typeof TimeCalc !== 'undefined') {
+        const mode = TimeCalc.engineMode;
+        const idx  = MULTI_TAB_ORDER.indexOf(mode);
+        const nextIdx = dX < 0
+          ? Math.min(idx + 1, MULTI_TAB_ORDER.length - 1)
+          : Math.max(idx - 1, 0);
+        if (nextIdx !== idx) TimeCalc.setEngineMode(MULTI_TAB_ORDER[nextIdx]);
+      }
+      axisLocked = null;
+      setTimeout(() => { isSwiping = false; isMouseDragging = false; }, 80);
+      document.body.classList.remove('is-swiping');
+      return;
+    }
+
+    if (!toEl) {
+      if (fromEl) {
+        fromEl.style.transition = 'transform 0.3s ease';
+        fromEl.style.transform  = 'translateX(0)';
+        const f = fromEl;
+        setTimeout(() => {
+          f.style.transition = '';
+          f.style.transform  = '';
+        }, 300);
+      }
+      fromEl = null; toEl = null; toId = null; currentId = null;
+      axisLocked = null;
+      setTimeout(() => { isSwiping = false; }, 80);
+      return;
+    }
+
+    if (Math.abs(dX) > threshold) {
+      // マウス: マルチ電卓タブ切り替え（画面遷移なし）
+      if (toId === '__MULTI_TAB__') {
+        if (toEl) {
+          toEl.style.display    = 'none';
+          toEl.style.position   = '';
+          toEl.style.zIndex     = '';
+          toEl.style.transform  = '';
+          toEl.style.transition = '';
+        }
+        fromEl.style.transition = 'transform 0.2s ease';
+        fromEl.style.transform  = 'translateX(0)';
+        const f = fromEl;
+        fromEl = null; toEl = null; toId = null; currentId = null;
+        setTimeout(() => {
+          f.style.transform  = '';
+          f.style.transition = '';
+        }, 200);
+        if (typeof TimeCalc !== 'undefined') {
+          const mode = TimeCalc.engineMode;
+          const idx  = MULTI_TAB_ORDER.indexOf(mode);
+          const nextIdx = dX < 0
+            ? Math.min(idx + 1, MULTI_TAB_ORDER.length - 1)
+            : Math.max(idx - 1, 0);
+          if (nextIdx !== idx) TimeCalc.setEngineMode(MULTI_TAB_ORDER[nextIdx]);
+        }
+        axisLocked = null;
+        setTimeout(() => { isSwiping = false; isMouseDragging = false; }, 80);
+        document.body.classList.remove('is-swiping');
+        return;
+      }
+
+      // 遷移確定
+      isTransitioning = true;
+      if (currentId === 'errorMode' && typeof disableRealTimeIfActive === 'function') {
+        disableRealTimeIfActive();
+      }
+
+      fromEl.style.transition = 'transform 0.3s ease';
+      toEl.style.transition   = 'transform 0.3s ease';
+      fromEl.style.transform  = `translateX(${dX > 0 ? w : -w}px)`;
+      toEl.style.transform    = 'translateX(0)';
+
+      const cFrom  = fromEl;
+      const cTo    = toEl;
+      const cToId  = toId;
+      const cFromId = currentId;
+
+      fromEl = null; toEl = null; toId = null; currentId = null;
+
+      setTimeout(() => {
+        cFrom.style.display    = 'none';
+        cFrom.style.transform  = '';
+        cFrom.style.transition = '';
+
+        cTo.style.position   = '';
+        cTo.style.top        = '';
+        cTo.style.left       = '';
+        cTo.style.right      = '';
+        cTo.style.marginLeft = '';
+        cTo.style.marginRight= '';
+        if (cTo.id === 'resultListPage') {
+          cTo.style.width      = '';
+          cTo.style.minHeight  = '';
+          cTo.style.background = '';
+        }
+        cTo.style.zIndex     = '';
+        cTo.style.transform  = '';
+        cTo.style.transition = '';
+        cTo.style.display    = 'block';
+
+        afterSwipe(cToId, cFromId);
+        setTimeout(() => {
+          isTransitioning = false;
+          isSwiping = false;
+        }, 80);
+      }, 300);
+
+    } else {
+      // キャンセル
+      isTransitioning = true;
+      fromEl.style.transition = 'transform 0.3s ease';
+      toEl.style.transition   = 'transform 0.3s ease';
+      fromEl.style.transform  = 'translateX(0)';
+      toEl.style.transform    = `translateX(${dX > 0 ? -w : w}px)`;
+
+      const cFrom = fromEl;
+      const cTo   = toEl;
+
+      fromEl = null; toEl = null; toId = null; currentId = null;
+
+      setTimeout(() => {
+        cFrom.style.transform  = '';
+        cFrom.style.transition = '';
+
+        cTo.style.display    = 'none';
+        cTo.style.position   = '';
+        cTo.style.top        = '';
+        cTo.style.left       = '';
+        cTo.style.right      = '';
+        cTo.style.marginLeft = '';
+        cTo.style.marginRight= '';
+        if (cTo.id === 'resultListPage') {
+          cTo.style.width      = '';
+          cTo.style.minHeight  = '';
+          cTo.style.background = '';
+        }
+        cTo.style.zIndex     = '';
+        cTo.style.transform  = '';
+        cTo.style.transition = '';
+
+        isTransitioning = false;
+        setTimeout(() => { isSwiping = false; }, 80);
+      }, 300);
+    }
+
+    axisLocked = null;
+    document.body.classList.remove('is-swiping');
+  }
+
+  document.addEventListener('mouseup', finishMouseSwipe);
+  window.addEventListener('blur', finishMouseSwipe);
 
 })();
 
@@ -4889,7 +5351,11 @@ function returnToLockScreenFromHold() {
   const returnTo = window._readmeReturnTo || null;
   window._readmeReturnTo = null;
 
-  const pagesToHide = ['readmePage', 'informationPage', 'qrCodePage', 'modeSelect'];
+  const pagesToHide = [
+    'readmePage', 'informationPage', 'qrCodePage', 'modeSelect',
+    'errorMode', 'correctionMode', 'timeCalcMode', 'resultListPage',
+    'decoyScreen', 'viewLockScreen', 'analogLockScreen'
+  ];
   pagesToHide.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
@@ -4968,12 +5434,24 @@ function initHoldToReturn() {
   const ring = document.getElementById('readmeRingCircle');
   const hint = document.getElementById('readmeHoldHint');
 
+  let holdDelayTimer = null;
   let holdStartTime = 0;
-  let holdDuration = 1000;
+  const holdDelay = 350;     // 350ms押し続けて初めて「長押しモード」として出現（通常のタップや軽いスクロールでリングが出ないよう遅延）
+  const holdDuration = 750;  // 出現後、750msかけて円が100%まで満ちて解錠（合計約1.1秒の快適な長押し時間）
   let isHolding = false;
+  let isHoldActive = false;
+  let startX = 0, startY = 0;
+  let activePageEl = null;
 
   const updateRing = () => {
-    if (!isHolding) return;
+    if (!isHoldActive) return;
+
+    // 画面遷移中、または長押しを開始したページが途中で非表示になった場合は即時中断
+    if (window._isModeTransitioning || (activePageEl && (activePageEl.style.display === 'none' || activePageEl.offsetParent === null))) {
+      cancelHold();
+      return;
+    }
+
     const now = Date.now();
     const elapsed = now - holdStartTime;
     let progress = elapsed / holdDuration;
@@ -4981,6 +5459,8 @@ function initHoldToReturn() {
     if (progress >= 1) {
       progress = 1;
       isHolding = false;
+      isHoldActive = false;
+      activePageEl = null;
       if (_readmeHoldRaf) cancelAnimationFrame(_readmeHoldRaf);
       _readmeHoldRaf = null;
       if (ringContainer) ringContainer.style.display = 'none';
@@ -5001,6 +5481,11 @@ function initHoldToReturn() {
   };
 
   const startHold = (e) => {
+    // モード遷移中、または現在のページが非表示の場合は長押しを一切受け付けない
+    if (window._isModeTransitioning) return;
+    const page = e.currentTarget;
+    if (page && (page.style.display === 'none' || page.offsetParent === null)) return;
+
     if (e.target) {
       const targetTag = e.target.tagName.toLowerCase();
       if (['select', 'input', 'button', 'a'].includes(targetTag)) return;
@@ -5008,7 +5493,8 @@ function initHoldToReturn() {
     }
     
     isHolding = true;
-    holdStartTime = Date.now();
+    isHoldActive = false;
+    activePageEl = page;
 
     let x, y;
     if (e.touches && e.touches.length > 0) {
@@ -5018,34 +5504,55 @@ function initHoldToReturn() {
       x = e.clientX;
       y = e.clientY;
     }
+    startX = x;
+    startY = y;
 
-    if (ringContainer) {
-      ringContainer.style.display = 'block';
-      ringContainer.style.left = x + 'px';
-      ringContainer.style.top = y + 'px';
-    }
-    if (ring) {
-      ring.style.transition = 'none';
-      ring.style.strokeDashoffset = '163.4';
-    }
-    if (hint) {
-      hint.style.transition = 'color 0.2s ease';
-      hint.style.display = 'block';
-      hint.style.left = x + 'px';
-      hint.style.top = (y - 80) + 'px';
-      hint.innerText = '長押しで戻る';
-      requestAnimationFrame(() => {
-        hint.style.color = 'rgba(0, 255, 224, 0.8)';
-      });
-    }
-
+    if (holdDelayTimer) clearTimeout(holdDelayTimer);
     if (_readmeHoldRaf) cancelAnimationFrame(_readmeHoldRaf);
-    _readmeHoldRaf = requestAnimationFrame(updateRing);
+    _readmeHoldRaf = null;
+
+    // 触れた瞬間に即表示するのではなく、350ms押し続けた時だけ長押しリング＆テキストを表示！
+    holdDelayTimer = setTimeout(() => {
+      // 遅延時間経過時に、遷移中になったりページが消えていたら表示しない
+      if (!isHolding || window._isModeTransitioning) return;
+      if (activePageEl && (activePageEl.style.display === 'none' || activePageEl.offsetParent === null)) return;
+
+      isHoldActive = true;
+      holdStartTime = Date.now();
+
+      if (ringContainer) {
+        ringContainer.style.display = 'block';
+        ringContainer.style.left = x + 'px';
+        ringContainer.style.top = y + 'px';
+      }
+      if (ring) {
+        ring.style.transition = 'none';
+        ring.style.strokeDashoffset = '163.4';
+      }
+      if (hint) {
+        hint.style.transition = 'color 0.2s ease';
+        hint.style.display = 'block';
+        hint.style.left = x + 'px';
+        hint.style.top = (y - 80) + 'px';
+        hint.innerText = '長押しで戻る';
+        requestAnimationFrame(() => {
+          hint.style.color = 'rgba(0, 255, 224, 0.8)';
+        });
+      }
+
+      _readmeHoldRaf = requestAnimationFrame(updateRing);
+    }, holdDelay);
   };
 
   const cancelHold = () => {
-    if (!isHolding) return;
+    if (holdDelayTimer) {
+      clearTimeout(holdDelayTimer);
+      holdDelayTimer = null;
+    }
+    if (!isHolding && !isHoldActive) return;
     isHolding = false;
+    isHoldActive = false;
+    activePageEl = null;
     if (_readmeHoldRaf) cancelAnimationFrame(_readmeHoldRaf);
     _readmeHoldRaf = null;
 
@@ -5064,15 +5571,35 @@ function initHoldToReturn() {
     }
   };
 
+  window._cancelHoldToReturn = cancelHold;
+
+  const handleMove = (e) => {
+    if (!isHolding) return;
+    let curX, curY;
+    if (e.touches && e.touches.length > 0) {
+      curX = e.touches[0].clientX;
+      curY = e.touches[0].clientY;
+    } else {
+      curX = e.clientX;
+      curY = e.clientY;
+    }
+    const dist = Math.hypot(curX - startX, curY - startY);
+    if (dist > 15) { // 15px以上の指の移動（スワイプやスクロール）は長押しキャンセル
+      cancelHold();
+    }
+  };
+
   pagesToBind.forEach(id => {
     const page = document.getElementById(id);
     if (!page) return;
     page.addEventListener('mousedown', startHold);
     page.addEventListener('mouseup', cancelHold);
     page.addEventListener('mouseleave', cancelHold);
+    page.addEventListener('mousemove', handleMove);
     page.addEventListener('touchstart', startHold, { passive: true });
     page.addEventListener('touchend', cancelHold);
     page.addEventListener('touchcancel', cancelHold);
+    page.addEventListener('touchmove', handleMove, { passive: true });
     
     // 長押し時のネイティブコンテキストメニューや画像保存ポップアップを無効化（長押しのキャンセルを防ぐため）
     page.addEventListener('contextmenu', (e) => {
@@ -5087,14 +5614,12 @@ function initHoldToReturn() {
   window.addEventListener('scroll', cancelHold, { capture: true, passive: true });
 }
 
-// Force keypad generation on script execution
+// Hold to return initialization
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    if (typeof generateKeypad === 'function') generateKeypad();
     initHoldToReturn();
   });
 } else {
-  if (typeof generateKeypad === 'function') generateKeypad();
   initHoldToReturn();
 }
 
@@ -5110,6 +5635,10 @@ let _viewLockHoldTimer = null;
 let _viewLockStyleInterval = null;
 let _viewLockCurrentFormat = 'standard';
 let _viewLockScaleFactor = 1.0;
+let _viewLockUserScale = 1.0;          // 2本指ピンチ / ホイールによる拡大縮小倍率
+let _vlIsPinching = false;
+let _vlPinchStartDist = 0;
+let _vlPinchBaseScale = 1.0;
 // viewLockScreen 長押しジェスチャー用モジュールレベル状態
 // クロージャの代わりに名前付き関数を使うことで removeEventListener が確実に機能する
 let _vlPressStartTime = 0;
@@ -5218,7 +5747,7 @@ function changeViewLockStyle(reason = "tick") {
   const randomFont = VIEW_LOCK_FONTS[_viewLockCurrentFontIndex];
   const clockEl = document.getElementById("viewLockClock");
   if (clockEl) {
-    clockEl.style.fontFamily = randomFont;
+    clockEl.style.fontFamily = `'${randomFont}', sans-serif`;
   }
   
   // フォーマット・スケールの変更は、初期化時またはフォントランダム時
@@ -5255,14 +5784,53 @@ function changeViewLockStyle(reason = "tick") {
       const w = clockEl.offsetWidth;
       const h = clockEl.offsetHeight;
       
-      const maxX = Math.max(0, (winW - w) / 2);
-      const maxY = Math.max(0, (winH - h) / 2);
+      const safeMarginX = 16;
+      const safeMarginY = 16;
+      const maxX = Math.max(0, (winW - w) / 2 - safeMarginX);
+      const maxY = Math.max(0, (winH - h) / 2 - safeMarginY);
       
-      const randomX = (Math.random() * 2 - 1) * maxX;
-      const randomY = (Math.random() * 2 - 1) * maxY;
+      const randomX = maxX > 0 ? (Math.random() * 2 - 1) * maxX : 0;
+      const randomY = maxY > 0 ? (Math.random() * 2 - 1) * maxY : 0;
       
       clockEl.style.transform = `translate(${randomX}px, ${randomY}px)`;
     }, 350);
+  }
+}
+
+// 文字サイズ拡大時・画面リサイズ時・日付トグル時の画面はみ出し防止補正
+function _clampViewLockPosition() {
+  const clockEl = document.getElementById("viewLockClock");
+  if (!clockEl || clockEl.style.display === "none") return;
+
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+  const w = clockEl.offsetWidth;
+  const h = clockEl.offsetHeight;
+
+  const transformStr = clockEl.style.transform;
+  let currentX = 0;
+  let currentY = 0;
+
+  if (transformStr) {
+    const match = transformStr.match(/translate\(([^p]+)px,\s*([^p]+)px\)/);
+    if (match) {
+      currentX = parseFloat(match[1]);
+      currentY = parseFloat(match[2]);
+    }
+  }
+
+  if (isNaN(currentX) || isNaN(currentY)) return;
+
+  const safeMarginX = 16;
+  const safeMarginY = 16;
+  const maxX = Math.max(0, (winW - w) / 2 - safeMarginX);
+  const maxY = Math.max(0, (winH - h) / 2 - safeMarginY);
+
+  const cx = Math.max(-maxX, Math.min(maxX, currentX));
+  const cy = Math.max(-maxY, Math.min(maxY, currentY));
+
+  if (cx !== currentX || cy !== currentY) {
+    clockEl.style.transform = `translate(${cx}px, ${cy}px)`;
   }
 }
 
@@ -5270,46 +5838,9 @@ let _viewLockResizeTimer = null;
 function _handleViewLockResize() {
   clearTimeout(_viewLockResizeTimer);
   _viewLockResizeTimer = setTimeout(() => {
-    const clockEl = document.getElementById("viewLockClock");
-    if (!clockEl || clockEl.style.display === "none") return;
-    
     // ★【バグ修正】画面の回転・リサイズに合わせてフォントサイズを再計算させる
     _updateViewLockClock();
-    
-    const winW = window.innerWidth;
-    const winH = window.innerHeight;
-    const w = clockEl.offsetWidth;
-    const h = clockEl.offsetHeight;
-    
-    // Flexboxのtransform方式に対応した画面外はみ出し補正
-    const transformStr = clockEl.style.transform;
-    let currentX = 0;
-    let currentY = 0;
-    
-    if (transformStr) {
-      const match = transformStr.match(/translate\(([^p]+)px,\s*([^p]+)px\)/);
-      if (match) {
-        currentX = parseFloat(match[1]);
-        currentY = parseFloat(match[2]);
-      }
-    }
-    
-    if (isNaN(currentX) || isNaN(currentY)) return;
-    
-    const maxX = Math.max(0, (winW - w) / 2);
-    const maxY = Math.max(0, (winH - h) / 2);
-    
-    let changed = false;
-    
-    if (currentX < -maxX) { currentX = -maxX; changed = true; }
-    if (currentX > maxX) { currentX = maxX; changed = true; }
-    
-    if (currentY < -maxY) { currentY = -maxY; changed = true; }
-    if (currentY > maxY) { currentY = maxY; changed = true; }
-    
-    if (changed) {
-      clockEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
-    }
+    _clampViewLockPosition();
   }, 100);
 }
 
@@ -5327,8 +5858,11 @@ function showViewLockScreen() {
 
   // 入室時：ランダムフォントを1つ選択し、モードをOFF（手動スワイプ切替）でスタート
   _viewLockCurrentFontIndex = Math.floor(Math.random() * VIEW_LOCK_FONTS.length);
-  _vlRandomFontMode = false;
+  _vlRandomMode = 0;       // ランダムモードは必ずOFFでスタート（前セッションの状態を持ち越さない）
   _vlLastTapTime = 0;
+  _vlTapCount = 0;
+  _viewLockUserScale = 1.0;
+  _vlIsPinching = false;
   changeViewLockStyle("init");
   
   // setInterval(changeViewLockStyle, 60000) は削除。
@@ -5465,8 +5999,8 @@ function _updateViewLockClock() {
     let fontSizePx = (calculatedVw / 100) * winW;
     let maxFontSizePxByVh = (vhLimit / 100) * winH;
     
-    let finalPx = Math.min(fontSizePx, maxFontSizePxByVh);
-    if (finalPx < 60) finalPx = 60; // 下限 60px
+    let finalPx = Math.min(fontSizePx, maxFontSizePxByVh) * _viewLockUserScale;
+    if (finalPx < 20) finalPx = 20; // 下限 20px
     
     // ★【バグ修正】CSSアニメーション（transition）が設定されていると、
     // offsetWidthの測定値がアニメーション途中の値になってしまい、サイズが振動するバグを防ぐ
@@ -5475,12 +6009,11 @@ function _updateViewLockClock() {
     
     clockEl.style.fontSize = finalPx + 'px';
     
-    // ★【はみ出し完全防止】フォントごとの文字幅・高さの違い（複数行や特殊フォント対策）
-    // 実際にブラウザが計算した文字幅と高さを取得し、画面サイズを超えていたら縮小する
+    // ★【はみ出し防止】ユーザーの拡大率に合わせて制限幅・高さを動的に拡張
     const actualWidth = clockEl.offsetWidth;
     const actualHeight = clockEl.offsetHeight;
-    const targetMaxWidth = winW * 0.95;
-    const targetMaxHeight = winH * 0.95;
+    const targetMaxWidth = winW * 0.95 * Math.max(1.0, _viewLockUserScale);
+    const targetMaxHeight = winH * 0.95 * Math.max(1.0, _viewLockUserScale);
     
     let scaleDownRatio = 1;
     if (actualWidth > targetMaxWidth) {
@@ -5495,9 +6028,12 @@ function _updateViewLockClock() {
       clockEl.style.fontSize = finalPx + 'px';
     }
     
-    // 変更をブラウザに反映（強制リフロー）させた後、アニメーション設定を元に戻す
+    // 変更をブラウザに反映（強制リフロー）させた後、ピンチ操作中でなければアニメーション設定を元に戻す
     void clockEl.offsetWidth;
-    clockEl.style.transition = originalTransition;
+    _clampViewLockPosition();
+    if (!_vlIsPinching) {
+      clockEl.style.transition = originalTransition;
+    }
   }
 }
 
@@ -5613,6 +6149,19 @@ function _vlClickBlocker(e) {
 
 // 指離し（touchend / mouseup）ハンドラ
 function _vlEndHold(e) {
+  // ★ ピンチ操作終了時の処理（タップやスワイプを誤爆させない）
+  if (_vlIsPinching) {
+    if (!e.touches || e.touches.length < 2) {
+      _vlIsPinching = false;
+      _vlPinchStartDist = 0;
+      _vlPressStartTime = 0;
+      _vlTapCount = 0;
+      const clockEl = document.getElementById("viewLockClock");
+      if (clockEl) clockEl.style.transition = '';
+    }
+    return;
+  }
+
   if (_vlIsLongPressSuccess) return;
   clearTimeout(_viewLockHoldTimer);
   _viewLockHoldTimer = null;
@@ -5636,7 +6185,7 @@ function _vlEndHold(e) {
   const absDeltaY = Math.abs(deltaY);
   const absDeltaX = Math.abs(deltaX);
 
-  if (absDeltaX > 25 && absDeltaX > absDeltaY && elapsed < 700) {
+  if (absDeltaX > 20 && absDeltaX > absDeltaY && elapsed < 1000) {
     // ─── 横スワイプ検出 — フォント＋フォーマット切替 ───
     if (_vlRandomMode === 2 || _vlRandomMode === 3) {
       _viewLockCurrentFontIndex = Math.floor(Math.random() * VIEW_LOCK_FONTS.length);
@@ -5653,7 +6202,7 @@ function _vlEndHold(e) {
       }
     }
     changeViewLockStyle("swipe");
-  } else if (absDeltaY > 25 && absDeltaY > absDeltaX && elapsed < 700) {
+  } else if (absDeltaY > 20 && absDeltaY > absDeltaX && elapsed < 1000) {
     // ─── 縦スワイプ検出 — ネオン輝き強度の増減 ───
     const step = 0.2;
     if (deltaY > 0) {
@@ -5695,26 +6244,7 @@ function _vlEndHold(e) {
           _updateViewLockClock();
           // 日付追加で要素が上に拡大しても画面外にはみ出さないよう位置を再クランプ
           setTimeout(() => {
-            const clockEl = document.getElementById("viewLockClock");
-            if (!clockEl) return;
-            const winW = window.innerWidth;
-            const winH = window.innerHeight;
-            const transformStr = clockEl.style.transform;
-            let currentX = 0, currentY = 0;
-            if (transformStr) {
-              const match = transformStr.match(/translate\(([^p]+)px,\s*([^p]+)px\)/);
-              if (match) { currentX = parseFloat(match[1]); currentY = parseFloat(match[2]); }
-            }
-            if (isNaN(currentX) || isNaN(currentY)) return;
-            const w = clockEl.offsetWidth;
-            const h = clockEl.offsetHeight;
-            const maxX = Math.max(0, (winW - w) / 2);
-            const maxY = Math.max(0, (winH - h) / 2);
-            let cx = Math.max(-maxX, Math.min(maxX, currentX));
-            let cy = Math.max(-maxY, Math.min(maxY, currentY));
-            if (cx !== currentX || cy !== currentY) {
-              clockEl.style.transform = `translate(${cx}px, ${cy}px)`;
-            }
+            _clampViewLockPosition();
           }, 50);
         } else if (count === 2) {
           // ダブルタップ → ネオンカラー順次変更
@@ -5730,6 +6260,42 @@ function _vlEndHold(e) {
 
 // スワイプ中の指移動（touchmove / mousemove）ハンドラ：長押しをキャンセル
 function _vlMoveHold(e) {
+  // ★ 2本指タッチの検出・ピンチ拡大縮小処理
+  if (e.touches && e.touches.length >= 2) {
+    if (e.cancelable) e.preventDefault();
+    if (!_vlIsPinching) {
+      _vlIsPinching = true;
+      _vlPinchStartDist = Math.hypot(
+        e.touches[1].clientX - e.touches[0].clientX,
+        e.touches[1].clientY - e.touches[0].clientY
+      );
+      _vlPinchBaseScale = _viewLockUserScale;
+      _vlPressStartTime = 0;
+      if (_viewLockHoldTimer) {
+        clearTimeout(_viewLockHoldTimer);
+        _viewLockHoldTimer = null;
+      }
+      const ring = document.getElementById("viewLockHoldRing");
+      const circle = document.getElementById("viewLockRingCircle");
+      if (ring) ring.style.opacity = "0";
+      if (circle) {
+        circle.style.transition = "stroke-dashoffset 0.1s linear";
+        circle.style.strokeDashoffset = "164";
+      }
+    } else {
+      const currentDist = Math.hypot(
+        e.touches[1].clientX - e.touches[0].clientX,
+        e.touches[1].clientY - e.touches[0].clientY
+      );
+      if (_vlPinchStartDist > 0) {
+        const factor = currentDist / _vlPinchStartDist;
+        _viewLockUserScale = Math.max(0.3, Math.min(3.0, Math.round((_vlPinchBaseScale * factor) * 100) / 100));
+        _updateViewLockClock();
+      }
+    }
+    return;
+  }
+
   if (!_vlPressStartTime) return;
   const touch = e.touches ? e.touches[0] : e;
   const moveY = touch.clientY;
@@ -5759,6 +6325,25 @@ function _vlStartHold(e) {
   if (_viewLockHoldTimer) {
     clearTimeout(_viewLockHoldTimer);
     _viewLockHoldTimer = null;
+  }
+
+  // ★ 2本指タッチの検出：ピンチ操作として初期化
+  if (e.touches && e.touches.length >= 2) {
+    _vlIsPinching = true;
+    _vlPinchStartDist = Math.hypot(
+      e.touches[1].clientX - e.touches[0].clientX,
+      e.touches[1].clientY - e.touches[0].clientY
+    );
+    _vlPinchBaseScale = _viewLockUserScale;
+    _vlPressStartTime = 0;
+    const ring = document.getElementById("viewLockHoldRing");
+    const circle = document.getElementById("viewLockRingCircle");
+    if (ring) ring.style.opacity = "0";
+    if (circle) {
+      circle.style.transition = "stroke-dashoffset 0.1s linear";
+      circle.style.strokeDashoffset = "164";
+    }
+    return;
   }
 
   _vlIsLongPressSuccess = false;
@@ -5801,6 +6386,15 @@ function _vlStartHold(e) {
   }, 1000);
 }
 
+// マウスホイールによる拡大縮小ハンドラ
+function _vlWheel(e) {
+  e.preventDefault();
+  // 上スクロール（deltaY < 0）で拡大、下スクロール（deltaY > 0）で縮小
+  const step = e.deltaY < 0 ? 0.05 : -0.05;
+  _viewLockUserScale = Math.max(0.3, Math.min(3.0, Math.round((_viewLockUserScale + step) * 100) / 100));
+  _updateViewLockClock();
+}
+
 function initViewLockHold() {
   const viewLock = document.getElementById("viewLockScreen");
   if (!viewLock) return;
@@ -5815,6 +6409,7 @@ function initViewLockHold() {
   viewLock.removeEventListener('mouseleave',  _vlEndHold);
   viewLock.removeEventListener('touchend',    _vlEndHold);
   viewLock.removeEventListener('touchcancel', _vlEndHold);
+  viewLock.removeEventListener('wheel',       _vlWheel);
   // 状態をリセット
   _vlPressStartTime = 0;
   _vlIsLongPressSuccess = false;
@@ -5823,16 +6418,19 @@ function initViewLockHold() {
   _vlTapCount = 0;
   _vlSwipeStartY = 0;
   _vlSwipeStartX = 0;
+  _vlIsPinching = false;
+  _vlPinchStartDist = 0;
   // リスナーを登録
   viewLock.addEventListener('click',       _vlClickBlocker, true);
   viewLock.addEventListener('mousedown',   _vlStartHold);
   viewLock.addEventListener('mousemove',   _vlMoveHold);
   viewLock.addEventListener('touchstart',  _vlStartHold, { passive: false });
-  viewLock.addEventListener('touchmove',   _vlMoveHold, { passive: true });
+  viewLock.addEventListener('touchmove',   _vlMoveHold, { passive: false });
   viewLock.addEventListener('mouseup',     _vlEndHold);
   viewLock.addEventListener('mouseleave',  _vlEndHold);
   viewLock.addEventListener('touchend',    _vlEndHold);
   viewLock.addEventListener('touchcancel', _vlEndHold);
+  viewLock.addEventListener('wheel',       _vlWheel, { passive: false });
   viewLock.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
@@ -5840,17 +6438,46 @@ function initViewLockHold() {
 /* ============================================================
    ダミー画面（デコイ時計）ロジック
    ============================================================ */
-let _decoyClockTimer  = null; // 時計更新タイマー
-let _decoyHoldTimer   = null; // 長押し判定タイマー
-let _decoyHoldStarted = false;
-let _decoyClockPaused = false;
-let _decoyLastTapTime = 0;
-let _decoyDisplayMode = 0; // 0: 通常, 1: 24時間残り, 2: 日の出/日没
-let _decoySingleTapTimer = null;
-let _decoyTapCount = 0;
-let _decoyHideSubSeconds = false;
+let _decoyClockTimer     = null; // 時計更新タイマー
+let _decoyHoldTimer      = null; // 長押し完了タイマー (1000ms)
+let _decoyHoldDelayTimer = null; // 長押し開始判定ディレイ (260ms)
+let _decoyTapTimer       = null; // シングルタップ確定ディレイ (300ms)
+let _decoyTapCount       = 0;
+let _decoyLastTapEndTime = 0;    // 前回タップ終了時刻
+let _decoyLastTouchTime  = 0;    // ゴーストクリック（疑似マウスイベント）排除用
+let _decoyPressStartTime = 0;
+let _decoyStartX         = 0;
+let _decoyStartY         = 0;
+let _decoyHasMoved       = false;
+let _decoyHoldStarted    = false;
+let _decoyHoldActive     = false; // 長押しモードが開始されたか
+let _decoyDisplayMode    = 0; // 0: 通常, 1: 24時間残り, 2: 日の出/日没
+let _decoyTimeFormat     = 0; // 0: 時分秒.ミリ秒, 1: 時分秒, 2: 時分 (三段階切り替え)
+
+function _formatDecoyTimeString(h, mi, s, ms) {
+  if (_decoyTimeFormat === 2) {
+    return `${h}:${mi}`;
+  } else if (_decoyTimeFormat === 1) {
+    return `${h}:${mi}:${s}`;
+  } else {
+    return `${h}:${mi}:${s}.${ms}`;
+  }
+}
 
 function showDecoyScreen() {
+  _decoyClockPaused = false;
+  _decoyDisplayMode = 0;
+  _decoyHoldStarted = false;
+  _decoyHoldActive = false;
+  _decoyPressStartTime = 0;
+  _decoyHasMoved = false;
+  _decoyTapCount = 0;
+  _decoyLastTapEndTime = 0;
+  _decoyLastTouchTime = 0;
+  if (_decoyTapTimer) {
+    clearTimeout(_decoyTapTimer);
+    _decoyTapTimer = null;
+  }
   // Google Analytics: ダミー画面への遷移をカウント（国別データなどもAnalytics上で確認可能）
   if (typeof gtag === 'function') {
     gtag('event', 'view_decoy_screen', {
@@ -5903,13 +6530,14 @@ function showDecoyScreen() {
   const decoyEl = document.getElementById("decoyScreen");
   if (decoyEl) decoyEl._visibilityHandler = _decoyVisibilityHandler;
 
-  // 長押しイベント登録
-  decoy.addEventListener("touchstart",  _decoyHoldStart,  { passive: false });
-  decoy.addEventListener("touchend",    _decoyHoldEnd,    { passive: true });
-  decoy.addEventListener("touchcancel", _decoyHoldEnd,    { passive: true });
-  decoy.addEventListener("mousedown",   _decoyHoldStart);
-  decoy.addEventListener("mouseup",     _decoyHoldEnd);
-  decoy.addEventListener("mouseleave",  _decoyHoldEnd);
+  // 長押しイベント登録（画面全体のどこを押しても確実に検知するためdocumentレベルで登録）
+  document.addEventListener("touchstart",  _decoyHoldStart,  { passive: false });
+  document.addEventListener("touchmove",   _decoyHoldMove,   { passive: false });
+  document.addEventListener("touchend",    _decoyHoldEnd,    { passive: true });
+  document.addEventListener("touchcancel", _decoyHoldEnd,    { passive: true });
+  document.addEventListener("mousedown",   _decoyHoldStart);
+  window.addEventListener("mousemove",     _decoyHoldMove);
+  window.addEventListener("mouseup",       _decoyHoldEnd);
 }
 
 function hideDecoyScreen() {
@@ -5917,11 +6545,18 @@ function hideDecoyScreen() {
   _decoyClockTimer = null;
   clearTimeout(_decoyHoldTimer);
   _decoyHoldTimer = null;
-  _decoyHoldStarted = false;
-  _decoyDisplayMode = 0;
-  _decoyClockPaused = false;
-  _decoyLastTapTime = 0;
+  clearTimeout(_decoyHoldDelayTimer);
+  _decoyHoldDelayTimer = null;
+  clearTimeout(_decoyTapTimer);
+  _decoyTapTimer = null;
   _decoyTapCount = 0;
+  _decoyLastTapEndTime = 0;
+  _decoyLastTouchTime = 0;
+  _decoyHoldStarted = false;
+  _decoyHoldActive = false;
+  _decoyPressStartTime = 0;
+  _decoyHasMoved = false;
+  _decoyTimeFormat = 0;
 
   // ★【消灯防止】Wake Lock を解放する
   _releaseWakeLock();
@@ -5933,20 +6568,33 @@ function hideDecoyScreen() {
     document.removeEventListener('visibilitychange', decoy._visibilityHandler);
     decoy._visibilityHandler = null;
   }
-  decoy.removeEventListener("touchstart",  _decoyHoldStart);
-  decoy.removeEventListener("touchend",    _decoyHoldEnd);
-  decoy.removeEventListener("touchcancel", _decoyHoldEnd);
-  decoy.removeEventListener("mousedown",   _decoyHoldStart);
-  decoy.removeEventListener("mouseup",     _decoyHoldEnd);
-  decoy.removeEventListener("mouseleave",  _decoyHoldEnd);
+  document.removeEventListener("touchstart",  _decoyHoldStart);
+  document.removeEventListener("touchmove",   _decoyHoldMove);
+  document.removeEventListener("touchend",    _decoyHoldEnd);
+  document.removeEventListener("touchcancel", _decoyHoldEnd);
+  document.removeEventListener("mousedown",   _decoyHoldStart);
+  window.removeEventListener("mousemove",     _decoyHoldMove);
+  window.removeEventListener("mouseup",       _decoyHoldEnd);
 
-  // ヒント・リングをリセット
+  // ヒント・リング・下部ガイドをリセット
   const hint = document.getElementById("decoyHint");
-  if (hint) { hint.textContent = ""; hint.classList.remove("visible"); }
+  if (hint) {
+    hint.textContent = "";
+    hint.classList.remove("visible");
+    hint.style.left = "";
+    hint.style.top = "";
+    hint.style.transform = "";
+  }
   const ring = document.getElementById("decoyHoldRing");
-  if (ring) ring.style.display = "none";
+  if (ring) {
+    ring.style.display = "none";
+    ring.style.left = "";
+    ring.style.top = "";
+  }
   const circle = document.getElementById("decoyRingCircle");
   if (circle) circle.style.strokeDashoffset = "163";
+  const guide = document.getElementById("decoyBottomGuide");
+  if (guide) guide.style.opacity = "1";
 
   decoy.style.display = "none";
   document.getElementById("lockScreen").style.display = "block";
@@ -6007,7 +6655,6 @@ function getSunriseSunset(date, lat = 35.6895, lng = 139.6917) {
 }
 
 function _updateDecoyClock() {
-  if (_decoyClockPaused) return; // ダブルタップ停止中は更新しない
   const now = new Date();
   const dateEl = document.getElementById("decoyDate");
   const timeEl = document.getElementById("decoyTime");
@@ -6033,7 +6680,7 @@ function _updateDecoyClock() {
     }
     if (timeEl) {
       timeEl.style.fontSize = ""; // Reset inline font-size
-      timeEl.textContent = _decoyHideSubSeconds ? `${h}:${mi}:${s}` : `${h}:${mi}:${s}.${ms}`;
+      timeEl.textContent = _formatDecoyTimeString(h, mi, s, ms);
     }
   } else if (_decoyDisplayMode === 2) {
     // Mode 2: 日の出・日没
@@ -6072,7 +6719,7 @@ function _updateDecoyClock() {
     }
     if (timeEl) {
       timeEl.style.fontSize = ""; // 固定サイズを維持
-      timeEl.textContent = _decoyHideSubSeconds ? `${h}:${mi}:${s}` : `${h}:${mi}:${s}.${ms}`;
+      timeEl.textContent = _formatDecoyTimeString(h, mi, s, ms);
     }
   } else {
     // Mode 0: 通常
@@ -6092,98 +6739,232 @@ function _updateDecoyClock() {
     // 全角コロンだと幅を取りすぎて改行されるため、半角コロンに変更
     if (timeEl) {
       timeEl.style.fontSize = ""; // Reset inline font-size
-      timeEl.textContent = _decoyHideSubSeconds ? `${h}:${mi}:${s}` : `${h}:${mi}:${s}.${ms}`;
+      timeEl.textContent = _formatDecoyTimeString(h, mi, s, ms);
     }
   }
 }
 
 function _decoyHoldStart(e) {
-  // ボタン類がタップされた場合は長押し判定やpreventDefaultを除外し、本来のclickを発火させる
+  // 精密時計画面が表示されていない時は反応しない
+  const decoy = document.getElementById("decoyScreen");
+  if (!decoy || decoy.style.display === "none") return;
+
+  // ボタン類（タイマー操作など）がタップされた場合は長押し判定を除外
   if (e && e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button'))) return;
 
-  if (e && e.cancelable) e.preventDefault(); // ghost click防止
-  if (_decoyHoldStarted) return;
-  _decoyHoldStarted = true;
-
-  // ヒントを表示
-  const hint = document.getElementById("decoyHint");
-  if (hint) { hint.textContent = "長押しで戻る..."; hint.classList.add("visible"); }
-
-  // プログレスリングを表示して開始
-  const ring   = document.getElementById("decoyHoldRing");
-  const circle = document.getElementById("decoyRingCircle");
-  if (ring)   ring.style.display = "block";
-  if (circle) {
-    // 一度リセットしてからアニメーション開始
-    circle.style.transition = "none";
-    circle.style.strokeDashoffset = "163";
-    // 強制リフロー後にアニメーション開始
-    void circle.getBoundingClientRect();
-    circle.style.transition = "stroke-dashoffset 0.8s linear";
-    circle.style.strokeDashoffset = "0";
+  // タッチデバイスでの疑似マウスイベント（ゴーストクリック）を排除
+  if (e.type.startsWith('touch')) {
+    _decoyLastTouchTime = Date.now();
+  } else if (e.type.startsWith('mouse') && Date.now() - _decoyLastTouchTime < 800) {
+    return;
   }
 
-  // 0.8秒後にロック画面へ戻る
-  _decoyHoldTimer = setTimeout(() => {
-    hideDecoyScreen();
-  }, 800);
+  if (_decoyHoldStarted) return;
+  _decoyHoldStarted = true;
+  _decoyHoldActive = false; // まだ長押しモードではない
+  _decoyHasMoved = false;
+  _decoyPressStartTime = Date.now();
+
+  // 1回目のタップ後の待ち受け時間内（350ms以内）に2回目のタップが開始されたら、
+  // シングルタップの確定タイマーを一旦停止してダブルタップの成立を待つ
+  const now = Date.now();
+  if (_decoyTapCount === 1 && (now - _decoyLastTapEndTime) < 350) {
+    if (_decoyTapTimer) {
+      clearTimeout(_decoyTapTimer);
+      _decoyTapTimer = null;
+    }
+  } else {
+    _decoyTapCount = 0;
+    if (_decoyTapTimer) {
+      clearTimeout(_decoyTapTimer);
+      _decoyTapTimer = null;
+    }
+  }
+
+  // タッチまたはマウス位置を取得
+  const touch = (e.touches && e.touches.length > 0) ? e.touches[0] : e;
+  const clientX = (touch && touch.clientX !== undefined) ? touch.clientX : (window.innerWidth / 2);
+  const clientY = (touch && touch.clientY !== undefined) ? touch.clientY : (window.innerHeight / 2);
+  _decoyStartX = clientX;
+  _decoyStartY = clientY;
+
+  // 押した瞬間にはリングを出さず、260ms押し続けた時だけ「長押しモード」として水色の丸とヒントを表示開始！
+  // これにより、短いタップ時に長押し処理が干渉するのを完全に防ぎます！
+  if (_decoyHoldDelayTimer) clearTimeout(_decoyHoldDelayTimer);
+  _decoyHoldDelayTimer = setTimeout(() => {
+    if (!_decoyHoldStarted || _decoyHasMoved) return;
+
+    _decoyHoldActive = true; // 長押しモード確定
+    _decoyTapCount = 0;      // 長押しモードに入ったらタップカウントをリセット
+    _decoyLastTapEndTime = 0;
+
+    const ring = document.getElementById("decoyHoldRing");
+    const circle = document.getElementById("decoyRingCircle");
+    const hint = document.getElementById("decoyHint");
+    const guide = document.getElementById("decoyBottomGuide");
+    const ringSize = 60;
+    // タップした指・クリックの「直下（真下・中心）」
+    const ringLeft = clientX - ringSize / 2;
+    const ringTop = clientY - ringSize / 2;
+
+    if (ring) {
+      ring.style.left = ringLeft + "px";
+      ring.style.top = ringTop + "px";
+      ring.style.display = "block";
+    }
+
+    // ヒント文字の位置計算：水色の円の「上」に配置
+    if (hint) {
+      hint.textContent = "長押しで戻る...";
+      const hintTop = ringTop - 26;
+      hint.style.left = (ringLeft + ringSize / 2) + "px";
+      hint.style.top = Math.max(8, hintTop) + "px";
+      hint.style.transform = "translateX(-50%)";
+      hint.classList.add("visible");
+    }
+
+    // 下の固定ガイドを長押し中はフェードアウト
+    if (guide) guide.style.opacity = "0";
+
+    // 1秒でぐるっと時計回りに円が描かれるアニメーション
+    if (circle) {
+      circle.style.transition = "none";
+      circle.style.strokeDashoffset = "163";
+      void circle.getBoundingClientRect(); // 強制リフローで163(空)を反映
+      requestAnimationFrame(() => {
+        circle.style.transition = "stroke-dashoffset 1.0s linear";
+        circle.style.strokeDashoffset = "0";
+      });
+    }
+
+    // 1秒長押し完了でロック画面へ戻る
+    if (_decoyHoldTimer) clearTimeout(_decoyHoldTimer);
+    _decoyHoldTimer = setTimeout(() => {
+      if (_decoyHoldStarted && !_decoyHasMoved) {
+        hideDecoyScreen();
+      }
+    }, 1000);
+  }, 260);
+}
+
+function _decoyHoldMove(e) {
+  if (e.type.startsWith('touch')) {
+    _decoyLastTouchTime = Date.now();
+  } else if (e.type.startsWith('mouse') && Date.now() - _decoyLastTouchTime < 800) {
+    return;
+  }
+  if (!_decoyHoldStarted) return;
+  const touch = (e.touches && e.touches.length > 0) ? e.touches[0] : e;
+  if (!touch) return;
+  const curX = touch.clientX !== undefined ? touch.clientX : _decoyStartX;
+  const curY = touch.clientY !== undefined ? touch.clientY : _decoyStartY;
+  // 15px以上動いたらスワイプ/ドラッグと判定し、長押し・タップを即座にキャンセル
+  if (Math.abs(curX - _decoyStartX) > 15 || Math.abs(curY - _decoyStartY) > 15) {
+    _decoyHasMoved = true;
+    _decoyTapCount = 0;
+    _decoyLastTapEndTime = 0;
+    if (_decoyHoldDelayTimer) {
+      clearTimeout(_decoyHoldDelayTimer);
+      _decoyHoldDelayTimer = null;
+    }
+    _cancelDecoyHoldVisuals();
+  }
+}
+
+function _cancelDecoyHoldVisuals() {
+  if (_decoyHoldDelayTimer) {
+    clearTimeout(_decoyHoldDelayTimer);
+    _decoyHoldDelayTimer = null;
+  }
+  if (_decoyHoldTimer) {
+    clearTimeout(_decoyHoldTimer);
+    _decoyHoldTimer = null;
+  }
+  const hint = document.getElementById("decoyHint");
+  if (hint) {
+    hint.textContent = "";
+    hint.classList.remove("visible");
+    hint.style.left = "";
+    hint.style.top = "";
+    hint.style.transform = "";
+  }
+  const ring = document.getElementById("decoyHoldRing");
+  const circle = document.getElementById("decoyRingCircle");
+  if (ring) {
+    ring.style.display = "none";
+    ring.style.left = "";
+    ring.style.top = "";
+  }
+  if (circle) {
+    circle.style.transition = "none";
+    circle.style.strokeDashoffset = "163";
+  }
+  const guide = document.getElementById("decoyBottomGuide");
+  if (guide) guide.style.opacity = "1";
 }
 
 function _decoyHoldEnd(e) {
+  const decoy = document.getElementById("decoyScreen");
+  if (!decoy || decoy.style.display === "none") return;
   if (e && e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button'))) return;
 
+  if (e.type.startsWith('touch')) {
+    _decoyLastTouchTime = Date.now();
+    if (e.type === 'touchend' && e.cancelable) {
+      e.preventDefault();
+    }
+  } else if (e.type.startsWith('mouse') && Date.now() - _decoyLastTouchTime < 800) {
+    return;
+  }
+
   if (!_decoyHoldStarted) return;
+
+  const wasHoldActive = _decoyHoldActive;
+  const elapsed = Date.now() - _decoyPressStartTime;
+  const hadMoved = _decoyHasMoved;
+
   _decoyHoldStarted = false;
-  clearTimeout(_decoyHoldTimer);
-  _decoyHoldTimer = null;
+  _decoyHoldActive = false;
+  _decoyPressStartTime = 0;
 
-  // ヒントとリングをリセット
-  const hint = document.getElementById("decoyHint");
-  if (hint) { hint.textContent = ""; hint.classList.remove("visible"); }
-  const ring   = document.getElementById("decoyHoldRing");
-  const circle = document.getElementById("decoyRingCircle");
-  if (ring)   ring.style.display = "none";
-  if (circle) {
-    circle.style.transition = "none";
-    circle.style.strokeDashoffset = "163";
-  }
+  // リングと長押しタイマーを即座にリセット
+  _cancelDecoyHoldVisuals();
 
-  // タップ判定（長押しで戻る前に離した場合）
-  const now = Date.now();
-  if (_decoyLastTapTime > 0 && now - _decoyLastTapTime > 400) {
-    _decoyTapCount = 0; // 400ms以上空いたらリセット
-  }
-  _decoyLastTapTime = now;
-  _decoyTapCount++;
-  
-  if (_decoySingleTapTimer) clearTimeout(_decoySingleTapTimer);
-  
-  if (_decoyTapCount === 3) {
-    // トリプルタップ (元々はダブルタップの機能)
-    _decoyTapCount = 0;
-    _decoyClockPaused = !_decoyClockPaused; // 停止/再開をトグル
-    if (!_decoyClockPaused) {
+  // 長押しモードが開始されておらず、かつ指を動かしていない場合（タップ判定！）
+  if (!wasHoldActive && !hadMoved && elapsed < 450) {
+    _decoyTapCount++;
+    _decoyLastTapEndTime = Date.now();
+
+    if (_decoyTapCount >= 2) {
+      // 【ダブルタップ（素早く2回タップ）】：時分秒の三段階切り替え！
+      // 0: 時分秒.ミリ秒 → 1: 時分秒 → 2: 時分 → 0: 時分秒.ミリ秒
+      if (_decoyTapTimer) {
+        clearTimeout(_decoyTapTimer);
+        _decoyTapTimer = null;
+      }
+      _decoyTapCount = 0;
+      _decoyLastTapEndTime = 0;
+      _decoyTimeFormat = (_decoyTimeFormat + 1) % 3;
       _updateDecoyClock(); // 即時反映
+    } else {
+      // 【シングルタップ（1回タップ）】：300ms待って次のタップが来なければ実行！
+      // 0: 通常表示 → 1: 一日の終わりまで → 2: 日の出・日没 → 0: 通常表示
+      if (_decoyTapTimer) clearTimeout(_decoyTapTimer);
+      _decoyTapTimer = setTimeout(() => {
+        _decoyTapCount = 0;
+        _decoyLastTapEndTime = 0;
+        _decoyTapTimer = null;
+        _decoyDisplayMode = (_decoyDisplayMode + 1) % 3;
+        _updateDecoyClock(); // 即時反映
+      }, 300);
     }
   } else {
-    // 400ms待って次のタップが来なければ確定させる
-    _decoySingleTapTimer = setTimeout(() => {
-      const count = _decoyTapCount;
-      _decoyTapCount = 0;
-      if (count === 1) {
-        // シングルタップ
-        _decoyDisplayMode = (_decoyDisplayMode + 1) % 3;
-      } else if (count === 2) {
-        // ダブルタップ (元々はトリプルタップの機能)
-        _decoyHideSubSeconds = !_decoyHideSubSeconds;
-        if (_decoyHideSubSeconds) {
-          _decoyClockPaused = false; // コンマ秒をなくした時計が起動したときは静止を解除
-        }
-      }
-      if (!_decoyClockPaused || count === 2) {
-        _updateDecoyClock(); // 即時反映
-      }
-    }, 400);
+    _decoyTapCount = 0;
+    _decoyLastTapEndTime = 0;
+    if (_decoyTapTimer) {
+      clearTimeout(_decoyTapTimer);
+      _decoyTapTimer = null;
+    }
   }
 }
 
@@ -6616,6 +7397,15 @@ function hideAnalogLockScreen() {
     _releaseWakeLock();
   }
   
+  if (_analogSingleTapTimer) {
+    clearTimeout(_analogSingleTapTimer);
+    _analogSingleTapTimer = null;
+  }
+  _analogTapCount = 0;
+  _analogLastTapEndTime = 0;
+  _analogLastTouchTime = 0;
+  _analogHasMoved = false;
+
   const ring = document.getElementById("analogHoldRing");
   const circle = document.getElementById("analogRingCircle");
   if (ring) ring.style.opacity = "0";
@@ -6665,19 +7455,27 @@ let _analogPressStartTime = 0;
 let _analogIsLongPressSuccess = false;
 let _analogHoldTimer = null;
 let _analogLastTapTime = 0;
+let _analogLastTapEndTime = 0;
+let _analogLastTouchTime = 0;
 let _analogTapCount = 0;
 let _analogSingleTapTimer = null;
+let _analogLastTouchTarget = null;
+let _analogRingShowTimer = null;
+let _analogHasMoved = false;
 
 let _analogLastMinute = -1;
 let _analogShiftX = 0;
 let _analogShiftY = 0;
 
-let _analogInfoState = 0; // 0: なし, 1: デジタル, 2: カレンダー+デジタル
+let _analogInfoState = 0; // 0: なし, 1: デジタル, 2: カレンダー+デジタル(1ヶ月), 3: カレンダー+デジタル(2ヶ月)
 let _analogLastCalendarDate = "";
 let _analogGlowIntensity = 1.0;
 let _analogShowSecondHand = true;
+let _analogShowDigitalSeconds = true;
+let _analogSecondCycleState = 0;
 
 let _analogCalendarMonthOffset = 0;
+let _analogCalendar2Month = false; // false=1ヶ月表示, true=2ヶ月表示
 
 let _analogIsSwapped = false;
 let _analogIs2FingerDragging = false;
@@ -6696,35 +7494,9 @@ const _jp_holidays = new Set([
   "2027-01-01", "2027-01-11", "2027-02-11", "2027-02-23", "2027-03-21", "2027-03-22", "2027-04-29", "2027-05-03", "2027-05-04", "2027-05-05", "2027-07-19", "2027-08-11", "2027-09-20", "2027-09-23", "2027-10-11", "2027-11-03", "2027-11-23"
 ]);
 
-// コロナ時計（Eclipse）用の動的SVGパス生成（有機的に波打つ太陽光冠）
-function _generateCoronaPath(cx, cy, baseRadius, timeMs, seed) {
-  const points = [];
-  const count = 64;
-  for (let i = 0; i < count; i++) {
-    const angle = (i / count) * Math.PI * 2;
-    const wave1 = Math.sin(angle * 3 + timeMs * 0.0018 + seed) * 14;
-    const wave2 = Math.sin(angle * 7 - timeMs * 0.0026 + seed * 2.5) * 9;
-    const wave3 = Math.cos(angle * 13 + timeMs * 0.0034) * 6;
-    const wave4 = Math.sin(angle * 5 + timeMs * 0.0012 + seed * 1.2) * 11;
-    const r = baseRadius + Math.max(2, wave1 + wave2 + wave3 + wave4);
-    const x = cx + Math.cos(angle) * r;
-    const y = cy + Math.sin(angle) * r;
-    points.push({ x, y });
-  }
-  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
-  for (let i = 0; i < count; i++) {
-    const p0 = points[(i - 1 + count) % count];
-    const p1 = points[i];
-    const p2 = points[(i + 1) % count];
-    const p3 = points[(i + 2) % count];
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
-  }
-  d += " Z";
-  return d;
+// コロナ時計（Eclipse）用のSVGパス生成（でっぱり・へこみのない滑らかな真円の後光）
+function _generateCoronaPath(cx, cy, baseRadius) {
+  return `M ${cx} ${cy - baseRadius} A ${baseRadius} ${baseRadius} 0 1 0 ${cx} ${cy + baseRadius} A ${baseRadius} ${baseRadius} 0 1 0 ${cx} ${cy - baseRadius} Z`;
 }
 
 function _updateAnalogPager() {
@@ -6795,23 +7567,121 @@ function _generateCalendarBlock(year, month) {
 function _renderCalendar() {
   const rail = document.getElementById("analogCalendarRail");
   if (!rail) return;
+  rail.style.transition = "none";
   rail.innerHTML = "";
   
   const now = new Date();
-  for (let offset = -1; offset <= 1; offset++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + offset + _analogCalendarMonthOffset, 1);
-    const block = _generateCalendarBlock(d.getFullYear(), d.getMonth());
-    rail.appendChild(block);
+  const blockWidth = 192;
+  const gap = 12;         // 1ヶ月モードのブロック間隔
+  const gap2 = 36;        // 2ヶ月モードのブロック間隔（一文字分）
+  const viewport = document.getElementById("analogCalendarViewport");
+  const buffer = 8;       // 前後8ヶ月分（計17〜18ヶ月分）を常時バッファ展開して自由自在なロールを可能にする
+
+  if (_analogCalendar2Month) {
+    // 2ヶ月並列表示モード: 今月+翌月 を中心に前後8ヶ月分を生成
+    const step = blockWidth + gap2;
+    for (let offset = -buffer; offset <= buffer + 1; offset++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + offset + _analogCalendarMonthOffset, 1);
+      const block = _generateCalendarBlock(d.getFullYear(), d.getMonth());
+      rail.appendChild(block);
+    }
+    const viewportWidth = blockWidth * 2 + gap2; // 2ヶ月分の幅（一文字分の間隔付き）
+    if (viewport) viewport.style.width = `${viewportWidth}px`;
+    rail.style.gap = `${gap2}px`;
+    rail.style.transform = `translate3d(-${buffer * step}px, 0, 0)`;
+  } else {
+    // 1ヶ月表示モード: 今月 を中心に前後8ヶ月分を生成
+    const step = blockWidth + gap;
+    for (let offset = -buffer; offset <= buffer; offset++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + offset + _analogCalendarMonthOffset, 1);
+      const block = _generateCalendarBlock(d.getFullYear(), d.getMonth());
+      rail.appendChild(block);
+    }
+    if (viewport) viewport.style.width = `${blockWidth}px`;
+    rail.style.gap = `${gap}px`;
+    rail.style.transform = `translate3d(-${buffer * step}px, 0, 0)`;
+  }
+}
+
+let _calIsAnimating = false;
+
+// 今月に戻す時の「ギューンと高速スライドして、止まる直前にスーッとなめらかに静止する」アニメーション
+function _animateCalendarSnapToCurrent() {
+  const offset = _analogCalendarMonthOffset;
+  if (offset === 0 || _calIsAnimating) return;
+  
+  const rail = document.getElementById("analogCalendarRail");
+  const viewport = document.getElementById("analogCalendarViewport");
+  if (!rail || !viewport) {
+    _analogCalendarMonthOffset = 0;
+    _renderCalendar();
+    return;
   }
   
+  _calIsAnimating = true;
+  rail.innerHTML = "";
+  
+  const now = new Date();
   const blockWidth = 192;
   const gap = 12;
-  const totalBlockWidth = blockWidth + gap;
-  const viewport = document.getElementById("analogCalendarViewport");
-  if (viewport) {
-    viewport.style.width = `${blockWidth}px`;
+  const gap2 = 36;
+  const currentGap = _analogCalendar2Month ? gap2 : gap;
+  const step = blockWidth + currentGap;
+  
+  // 今月(0)と現在月(offset)を含む連続ブロックを生成
+  let startOffset, endOffset;
+  if (offset > 0) {
+    // 未来から今月へ戻る: [-1, 0(今月), 1, ..., offset, offset+1]
+    startOffset = -1;
+    endOffset = offset + (_analogCalendar2Month ? 2 : 1);
+  } else {
+    // 過去から今月へ戻る: [offset-1, offset, ..., 0(今月), 1]
+    startOffset = offset - 1;
+    endOffset = _analogCalendar2Month ? 2 : 1;
   }
-  rail.style.transform = `translateX(-${totalBlockWidth}px)`;
+  
+  const blocks = [];
+  for (let o = startOffset; o <= endOffset; o++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + o, 1);
+    const block = _generateCalendarBlock(d.getFullYear(), d.getMonth());
+    rail.appendChild(block);
+    blocks.push(o);
+  }
+  
+  rail.style.gap = `${currentGap}px`;
+  
+  // 初期位置: 現在表示していた月(offset)が見える位置
+  const currentPosIndex = blocks.indexOf(offset);
+  const startTranslate = -(currentPosIndex * step);
+  
+  // 目標位置: 今月(0)が見える位置
+  const targetPosIndex = blocks.indexOf(0);
+  const targetTranslate = -(targetPosIndex * step);
+  
+  // まず初期位置に瞬時セット（ハードウェアアクセラレーションを有効化してトランジション無効）
+  rail.style.transition = "none";
+  rail.style.transform = `translate3d(${startTranslate}px, 0, 0)`;
+  void rail.offsetWidth;
+  
+  // ギューンと高速にスライドして、止まる直前にスーッと静止するイージング
+  // 距離に応じてアニメーション時間を動的調整 (450ms〜850ms)
+  const absDistance = Math.abs(offset);
+  const duration = Math.min(850, 420 + absDistance * 45);
+  
+  // iOS Safari / WebKit に初期配置を1フレーム確実に描画させてから、次のフレームで遷移を開始
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      // 指数減速イージング: 最初ギューンと猛スピードで、最後スーッと極限までなめらかに減速して静止
+      rail.style.transition = `transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`;
+      rail.style.transform = `translate3d(${targetTranslate}px, 0, 0)`;
+      
+      setTimeout(() => {
+        _analogCalendarMonthOffset = 0;
+        _renderCalendar();
+        _calIsAnimating = false;
+      }, duration + 50);
+    });
+  });
 }
 
 function initAnalogCalendarTouch() {
@@ -6819,28 +7689,162 @@ function initAnalogCalendarTouch() {
   if (!viewport) return;
   
   let startX = 0;
+  let startY = 0;
+  let startTime = 0;
   let isDragging = false;
+  let hasMovedRail = false;
+  let initialTranslate = 0;
+  const buffer = 8;
   
-  viewport.addEventListener("touchstart", (e) => {
-    if (e.touches.length === 1) {
-      startX = e.touches[0].clientX;
-      isDragging = true;
+  const getStep = () => _analogCalendar2Month ? (192 + 36) : (192 + 12);
+  const getInitialTranslate = () => -(buffer * getStep());
+  
+  const handleStart = (clientX, clientY) => {
+    if (_calIsAnimating) return;
+    startX = clientX;
+    startY = clientY;
+    startTime = Date.now();
+    isDragging = true;
+    hasMovedRail = false;
+    initialTranslate = getInitialTranslate();
+    viewport.classList.add("is-dragging");
+  };
+  
+  const handleMove = (clientX, clientY, e) => {
+    if (!isDragging || _calIsAnimating) return;
+    const diffX = clientX - startX;
+    const diffY = clientY - startY;
+    
+    if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
+      _analogHasMoved = true;
     }
-  }, { passive: true });
+    
+    // 横移動が優位な場合（10px以上の水平移動）、カレンダーレールをリアルタイムに追従
+    if (Math.abs(diffX) > 10 && (Math.abs(diffX) > Math.abs(diffY))) {
+      if (e && e.cancelable) e.preventDefault();
+      hasMovedRail = true;
+      const r = document.getElementById("analogCalendarRail");
+      if (r) {
+        // 指/マウスの動きに合わせて滑らかにスーッと平行移動
+        r.style.transition = "none";
+        r.style.transform = `translate3d(${initialTranslate + diffX}px, 0, 0)`;
+      }
+    }
+  };
   
-  viewport.addEventListener("touchend", (e) => {
+  const handleEnd = (clientX, clientY) => {
     if (!isDragging) return;
     isDragging = false;
-    const endX = e.changedTouches[0].clientX;
-    const diff = endX - startX;
-    if (diff > 40) {
-      _analogCalendarMonthOffset--;
-      _renderCalendar();
-    } else if (diff < -40) {
-      _analogCalendarMonthOffset++;
-      _renderCalendar();
+    viewport.classList.remove("is-dragging");
+    if (_calIsAnimating) return;
+    
+    const diffX = clientX - startX;
+    const diffY = clientY - startY;
+    const elapsed = Math.max(10, Date.now() - startTime);
+    const speed = Math.abs(diffX) / elapsed; // px/ms
+    const step = getStep();
+    const r = document.getElementById("analogCalendarRail");
+    
+    if (Math.abs(diffX) >= 15 || Math.abs(diffY) >= 15) {
+      _analogHasMoved = true;
+    }
+
+    if (r && hasMovedRail) {
+      const dist = Math.abs(diffX);
+      let monthsDelta = 0;
+
+      // 1. スライド移動距離に基づく月数（45px以上で1ヶ月、以降約130px毎に+1ヶ月）
+      if (dist >= 45) {
+        monthsDelta = 1 + Math.floor((dist - 45) / 130);
+      }
+      
+      // 2. フリック（素早いスワイプ）の速度ボーナス加算
+      if (speed > 2.0) {
+        monthsDelta += 3;
+      } else if (speed > 1.3) {
+        monthsDelta += 2;
+      } else if (speed > 0.7) {
+        monthsDelta += 1;
+      }
+      
+      // 一度にめくれる最大月数をバッファ内の6ヶ月までに制限
+      monthsDelta = Math.min(6, monthsDelta);
+
+      if (monthsDelta > 0 && Math.abs(diffX) > Math.abs(diffY)) {
+        _calIsAnimating = true;
+        const direction = diffX < 0 ? 1 : -1; // 1: 翌月方向 (左スワイプ), -1: 前月方向 (右スワイプ)
+        const targetOffsetDelta = direction * monthsDelta;
+        const targetTranslate = initialTranslate - (targetOffsetDelta * step);
+        
+        // 移動月数と速度に応じた、極めてなめらかな指数減速イージング時間 (280ms〜680ms)
+        const duration = Math.min(680, 260 + monthsDelta * 65);
+        
+        r.style.transition = `transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`;
+        r.style.transform = `translate3d(${targetTranslate}px, 0, 0)`;
+        
+        setTimeout(() => {
+          r.style.transition = "none";
+          _analogCalendarMonthOffset += targetOffsetDelta;
+          _renderCalendar();
+          _calIsAnimating = false;
+        }, duration + 40);
+      } else {
+        // しきい値未満: 元の位置にスーッと戻る（スナップバック）
+        r.style.transition = "transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)";
+        r.style.transform = `translate3d(${initialTranslate}px, 0, 0)`;
+        setTimeout(() => {
+          if (r) r.style.transition = "none";
+        }, 230);
+      }
+    }
+    hasMovedRail = false;
+  };
+  
+  // タッチ操作 (スマホ)
+  viewport.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 1) {
+      handleStart(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: false });
+  
+  viewport.addEventListener("touchmove", (e) => {
+    if (e.touches.length === 1) {
+      handleMove(e.touches[0].clientX, e.touches[0].clientY, e);
+    }
+  }, { passive: false });
+  
+  viewport.addEventListener("touchend", (e) => {
+    if (e.changedTouches && e.changedTouches.length > 0) {
+      handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
     }
   }, { passive: true });
+
+  // マウス操作 (PC)
+  viewport.addEventListener("mousedown", (e) => {
+    if (e.button === 0) { // 左クリックのみ
+      handleStart(e.clientX, e.clientY);
+    }
+  });
+
+  // PCでの直接ダブルクリック対応 (1ヶ月 ⇔ 2ヶ月切替)
+  viewport.addEventListener("dblclick", (e) => {
+    e.stopPropagation();
+    _analogCalendar2Month = !_analogCalendar2Month;
+    _analogCalendarMonthOffset = 0;
+    _renderCalendar();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (isDragging) {
+      handleMove(e.clientX, e.clientY, e);
+    }
+  });
+
+  window.addEventListener("mouseup", (e) => {
+    if (isDragging) {
+      handleEnd(e.clientX, e.clientY);
+    }
+  });
 }
 
 function _applyBurnInShift() {
@@ -6876,6 +7880,12 @@ function _startAnalogClock() {
   _renderCalendar();
   
   const updateHands = () => {
+    // アナログ画面が非表示なら自動停止（アプリ内遷移対応・省電力）
+    const analogScreenEl = document.getElementById("analogLockScreen");
+    if (!analogScreenEl || analogScreenEl.style.display === "none") {
+      _analogAnimFrameId = null;
+      return;
+    }
     const now = new Date();
     const ms = now.getMilliseconds();
     const s = now.getSeconds();
@@ -6888,7 +7898,12 @@ function _startAnalogClock() {
     if (digitalClock) {
       const hh = h.toString().padStart(2, '0');
       const mm = m.toString().padStart(2, '0');
-      digitalClock.textContent = `${hh}:${mm}`;
+      if (_analogShowDigitalSeconds) {
+        const ss = s.toString().padStart(2, '0');
+        digitalClock.textContent = `${hh}:${mm}:${ss}`;
+      } else {
+        digitalClock.textContent = `${hh}:${mm}`;
+      }
     }
 
     if (m !== _analogLastMinute) {
@@ -6943,14 +7958,14 @@ function _startAnalogClock() {
       eS.style.transition = "opacity 0.3s ease";
     }
 
-    // コロナSVGパスのアニメーション更新
+    // コロナSVGパス（でっぱり・へこみのない真円で固定し、背後から均一にもわっと光が広がる後光）
     const c1 = document.querySelector(".corona-layer1");
     const c2 = document.querySelector(".corona-layer2");
-    if (c1) {
-      c1.setAttribute("d", _generateCoronaPath(150, 150, 74, timeMs, 0));
+    if (c1 && !c1.getAttribute("d")) {
+      c1.setAttribute("d", _generateCoronaPath(150, 150, 75));
     }
-    if (c2) {
-      c2.setAttribute("d", _generateCoronaPath(150, 150, 80, timeMs, 35));
+    if (c2 && !c2.getAttribute("d")) {
+      c2.setAttribute("d", _generateCoronaPath(150, 150, 83));
     }
 
     _analogAnimFrameId = requestAnimationFrame(updateHands);
@@ -6996,8 +8011,13 @@ function initAnalogHold() {
   
   const ring = document.getElementById("analogHoldRing");
   const circle = document.getElementById("analogRingCircle");
+  let _analogLastTouchTime = 0;
   
   const cancelHold = () => {
+    if (_analogRingShowTimer) {
+      clearTimeout(_analogRingShowTimer);
+      _analogRingShowTimer = null;
+    }
     if (_analogHoldTimer) {
       clearTimeout(_analogHoldTimer);
       _analogHoldTimer = null;
@@ -7010,44 +8030,92 @@ function initAnalogHold() {
   };
 
   const onHoldStart = (e) => {
+    if (e.type.startsWith('touch')) {
+      _analogLastTouchTime = Date.now();
+    } else if (e.type.startsWith('mouse') && Date.now() - _analogLastTouchTime < 800) {
+      return;
+    }
+
     if (e.touches && e.touches.length > 1) return;
     
     _analogPressStartTime = Date.now();
     _analogIsLongPressSuccess = false;
+    _analogHasMoved = false;
     
     const touch = e.touches ? e.touches[0] : e;
     _analogStartX = touch.clientX;
     _analogStartY = touch.clientY;
+    _analogLastTouchTarget = e.target;
+
+    // 1回目のタップ後の待ち受け時間内（380ms以内）に2回目のタップが開始されたら、
+    // シングルタップ確定タイマーを一旦止めてダブルタップ成立を待つ
+    const now = Date.now();
+    if (_analogTapCount === 1 && (now - _analogLastTapEndTime) < 380) {
+      if (_analogSingleTapTimer) {
+        clearTimeout(_analogSingleTapTimer);
+        _analogSingleTapTimer = null;
+      }
+    } else {
+      _analogTapCount = 0;
+      if (_analogSingleTapTimer) {
+        clearTimeout(_analogSingleTapTimer);
+        _analogSingleTapTimer = null;
+      }
+    }
     
-    if (ring) {
-      ring.style.left = touch.clientX + "px";
-      ring.style.top = touch.clientY + "px";
-      ring.style.opacity = "1";
-    }
-    if (circle) {
-      circle.style.transition = "stroke-dashoffset 1s linear";
-      requestAnimationFrame(() => { circle.style.strokeDashoffset = "0"; });
-    }
+    // 長押しリングは200ms以上指を動かさずに押し続けた時だけ表示開始する
+    // (スワイプや軽いタップでリングが一瞬チラつくのを完全に防ぐ)
+    if (_analogRingShowTimer) clearTimeout(_analogRingShowTimer);
+    _analogRingShowTimer = setTimeout(() => {
+      if (!_analogHasMoved && _analogPressStartTime > 0) {
+        if (ring) {
+          ring.style.left = touch.clientX + "px";
+          ring.style.top = touch.clientY + "px";
+          ring.style.opacity = "1";
+        }
+        if (circle) {
+          circle.style.transition = "stroke-dashoffset 0.8s linear"; // 残り800ms
+          requestAnimationFrame(() => { circle.style.strokeDashoffset = "0"; });
+        }
+      }
+    }, 200);
     
     if (_analogHoldTimer) clearTimeout(_analogHoldTimer);
     _analogHoldTimer = setTimeout(() => {
-      _analogIsLongPressSuccess = true;
-      hideAnalogLockScreen();
+      if (!_analogHasMoved) {
+        _analogIsLongPressSuccess = true;
+        hideAnalogLockScreen();
+      }
     }, 1000);
   };
   
   const onHoldMove = (e) => {
+    if (e.type.startsWith('touch')) {
+      _analogLastTouchTime = Date.now();
+    } else if (e.type.startsWith('mouse') && Date.now() - _analogLastTouchTime < 800) {
+      return;
+    }
+
     if (!_analogPressStartTime) return;
     const touch = e.touches ? e.touches[0] : e;
     const diffX = touch.clientX - _analogStartX;
     const diffY = touch.clientY - _analogStartY;
-    // 10px以上移動したら長押しを即座にキャンセル
-    if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+    // 15px以上移動したらスワイプ/ドラッグと判定し、長押し・タップを即座に完全キャンセル
+    if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
+      _analogHasMoved = true;
+      _analogTapCount = 0;
+      _analogLastTapEndTime = 0;
       cancelHold();
     }
   };
 
   const onHoldEnd = (e) => {
+    if (e.type.startsWith('touch')) {
+      _analogLastTouchTime = Date.now();
+    } else if (e.type.startsWith('mouse') && Date.now() - _analogLastTouchTime < 800) {
+      return;
+    }
+
     cancelHold();
     
     if (_analogIsLongPressSuccess) return;
@@ -7055,43 +8123,106 @@ function initAnalogHold() {
     const elapsed = Date.now() - _analogPressStartTime;
     _analogPressStartTime = 0;
     
-    // タップ判定（350ms以内でドラッグ移動なし）
-    if (elapsed < 350 && !_analogSwipeDirection && !_analogIs2FingerDragging) {
-      const now = Date.now();
-      if (_analogLastTapTime > 0 && now - _analogLastTapTime > 400) {
-        _analogTapCount = 0;
-      }
-      _analogLastTapTime = now;
+    // スワイプまたはドラッグで移動していた場合はタップ判定を完全にスキップ！
+    if (_analogHasMoved || _analogSwipeDirection || _analogIs2FingerDragging) {
+      _analogHasMoved = false;
+      _analogTapCount = 0;
+      _analogLastTapEndTime = 0;
+      return;
+    }
+    
+    // タップ判定（移動なし、かつ400ms以内のリリース）
+    if (elapsed < 400) {
       _analogTapCount++;
+      _analogLastTapEndTime = Date.now();
+
+      // タップされた要素がカレンダー上かどうかを判定
+      const isCalendar = _analogLastTouchTarget && Boolean(
+        _analogLastTouchTarget.closest('#analogCalendarViewport') ||
+        _analogLastTouchTarget.closest('.analog-calendar-rail') ||
+        _analogLastTouchTarget.closest('.analog-calendar-block')
+      );
       
       if (_analogSingleTapTimer) {
         clearTimeout(_analogSingleTapTimer);
         _analogSingleTapTimer = null;
       }
       
-      if (_analogTapCount === 2) {
-        // ダブルタップ: 上下/左右入れ替え
+      if (_analogTapCount >= 2) {
+        // ダブルタップ実行
         _analogTapCount = 0;
-        _analogLastTapTime = 0;
-        _analogIsSwapped = !_analogIsSwapped;
-        if (_analogIsSwapped) {
-          analogScreen.classList.add("analog-layout-swapped");
+        _analogLastTapEndTime = 0;
+        if (isCalendar && _analogInfoState === 2) {
+          // カレンダー上のダブルタップ: 1ヶ月 ⇔ 2ヶ月 表示切替
+          _analogCalendar2Month = !_analogCalendar2Month;
+          _analogCalendarMonthOffset = 0;
+          _renderCalendar();
         } else {
-          analogScreen.classList.remove("analog-layout-swapped");
+          // アナログ秒針 ＆ デジタル秒の4ステップ巡回サイクル切り替え
+          // 0: アナログON, デジタルON (初期)
+          // 1: アナログOFF, デジタルON
+          // 2: アナログOFF, デジタルOFF
+          // 3: アナログON, デジタルOFF
+          _analogSecondCycleState = (_analogSecondCycleState + 1) % 4;
+
+          switch (_analogSecondCycleState) {
+            case 0:
+              _analogShowSecondHand = true;
+              _analogShowDigitalSeconds = true;
+              break;
+            case 1:
+              _analogShowSecondHand = false;
+              _analogShowDigitalSeconds = true;
+              break;
+            case 2:
+              _analogShowSecondHand = false;
+              _analogShowDigitalSeconds = false;
+              break;
+            case 3:
+              _analogShowSecondHand = true;
+              _analogShowDigitalSeconds = false;
+              break;
+          }
+
+          const regulusSec = document.getElementById("regulusSecond");
+          const radarSec = document.getElementById("radarSecond");
+          const eclipseSec = document.getElementById("eclipseSecond");
+          if (regulusSec) regulusSec.style.opacity = _analogShowSecondHand ? "1" : "0";
+          if (radarSec) radarSec.style.opacity = _analogShowSecondHand ? "1" : "0";
+          if (eclipseSec) eclipseSec.style.opacity = _analogShowSecondHand ? "1" : "0";
         }
       } else {
+        // 1回目のタップ: 300ms待ってダブルタップが来なければシングルタップ確定
         _analogSingleTapTimer = setTimeout(() => {
-          const count = _analogTapCount;
           _analogTapCount = 0;
-          _analogLastTapTime = 0;
-          if (count === 1) {
-            // シングルタップ: 情報ステート切替 (0:なし -> 1:デジタル -> 2:カレンダー+デジタル -> 0)
+          _analogLastTapEndTime = 0;
+          _analogSingleTapTimer = null;
+          if (isCalendar && _analogInfoState === 2) {
+            // カレンダー上のシングルタップ: ギューンと高速スライドしてスーッとなめらかに今月に戻る
+            if (_analogCalendarMonthOffset !== 0) {
+              _animateCalendarSnapToCurrent();
+            }
+          } else {
+            // アナログ時計上のシングルタップ: 情報ステート切替 (0:なし -> 1:デジタル -> 2:カレンダー+デジタル -> 0)
             _analogInfoState = (_analogInfoState + 1) % 3;
             analogScreen.classList.remove("info-state-0", "info-state-1", "info-state-2");
             analogScreen.classList.add(`info-state-${_analogInfoState}`);
+
+            if (_analogInfoState === 0) {
+              // 最初のサイクル（時計の中央表示）に戻った時、任意の位置に置いた時計とカレンダーの位置をリセット
+              _analogIsSwapped = false;
+              analogScreen.classList.remove("analog-layout-swapped");
+              document.documentElement.style.setProperty('--drag-analog-x', '0px');
+              document.documentElement.style.setProperty('--drag-analog-y', '0px');
+              document.documentElement.style.setProperty('--drag-info-x', '0px');
+              document.documentElement.style.setProperty('--drag-info-y', '0px');
+            }
           }
-        }, 350);
+        }, 300);
       }
+    } else {
+      _analogTapCount = 0;
+      _analogLastTapEndTime = 0;
     }
   };
   
@@ -7109,39 +8240,85 @@ function initAnalogSwipe() {
   const analogScreen = document.getElementById("analogLockScreen");
   
   const onStart = (e) => {
-    if (e.touches && e.touches.length === 2) {
+    // 1. タッチの2本指ドラッグ判定
+    const isTouch2Finger = e.touches && e.touches.length === 2;
+    
+    // 2. マウスによる位置変更・入れ替えドラッグ判定
+    const isMouse = !e.touches;
+    const isOverCalendarGrid = Boolean(e.target && (e.target.closest('.analog-calendar-grid') || e.target.closest('.analog-cal-day')));
+    
+    // 位置変更ドラッグのトリガー判定:
+    // - 右ボタンドラッグ (e.button === 2)
+    // - 中ボタンドラッグ (e.button === 1)
+    // - Shiftキー + ドラッグ
+    // - つまみ要素の直接ドラッグ:
+    //     ・時計盤 (.clock-face)
+    //     ・デジタル時計 (#analogDigitalClock) [ステート1・2問わず位置調整ハンドルとなる]
+    //     ・カレンダー年月ヘッダー (.analog-calendar-header)
+    const isDragHandle = isMouse && e.target && (
+      e.target.closest('.clock-face') || 
+      e.target.closest('#analogDigitalClock') ||
+      e.target.closest('.analog-calendar-header')
+    );
+    
+    // カレンダーの日付グリッド上で左クリックした場合は位置変更ドラッグを絶対に発動させない（月めくりスワイプに100%専念）
+    const isSpecialMouseDrag = isMouse && (
+      (e.button === 2 || e.button === 1 || e.shiftKey) ||
+      (e.button === 0 && isDragHandle && !isOverCalendarGrid)
+    );
+
+    if (isTouch2Finger || isSpecialMouseDrag) {
       _analogIs2FingerDragging = true;
       _analogIsDragging = false;
       
-      const t1 = e.touches[0];
-      const t2 = e.touches[1];
-      const midX = (t1.clientX + t2.clientX) / 2;
-      const midY = (t1.clientY + t2.clientY) / 2;
+      let midX, midY;
+      if (isTouch2Finger) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        midX = (t1.clientX + t2.clientX) / 2;
+        midY = (t1.clientY + t2.clientY) / 2;
+        _analog2FingerStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY) || 1;
+      } else {
+        midX = e.clientX;
+        midY = e.clientY;
+        _analog2FingerStartDist = 1;
+      }
+
       _analog2FingerStartX = midX;
       _analog2FingerStartY = midY;
       
       const isLandscape = window.innerWidth > window.innerHeight;
       let target = null;
       
-      if (isLandscape) {
-        target = (midX < window.innerWidth / 2) ? (_analogIsSwapped ? 'info' : 'analog') : (_analogIsSwapped ? 'analog' : 'info');
+      // 直接つかんだ要素があれば優先特定
+      if (e.target && (e.target.closest('#analogInfoContainer') || e.target.closest('#analogCalendarViewport') || e.target.closest('#analogDigitalClock'))) {
+        target = 'info';
+      } else if (e.target && e.target.closest('.clock-face')) {
+        target = 'analog';
       } else {
-        target = (midY < window.innerHeight / 2) ? (_analogIsSwapped ? 'info' : 'analog') : (_analogIsSwapped ? 'analog' : 'info');
+        if (isLandscape) {
+          target = (midX < window.innerWidth / 2) ? (_analogIsSwapped ? 'info' : 'analog') : (_analogIsSwapped ? 'analog' : 'info');
+        } else {
+          target = (midY < window.innerHeight / 2) ? (_analogIsSwapped ? 'info' : 'analog') : (_analogIsSwapped ? 'analog' : 'info');
+        }
       }
       _analogDragTarget = target;
       
       _analogTargetBaseX = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--drag-${target}-x`)) || 0;
       _analogTargetBaseY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--drag-${target}-y`)) || 0;
-      
-      _analog2FingerStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY) || 1;
       _analogTargetBaseScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--scale-${target}`)) || 1.0;
       
-      analogScreen.classList.add('analog-dragging-2finger');
+      if (analogScreen) analogScreen.classList.add('analog-dragging-2finger');
       return;
     }
     
     if (e.touches && e.touches.length > 1) return;
     
+    // カレンダーや情報コンテナ上での操作時、アナログ時計の横スワイプ・発光調整を開始させない
+    if (e.target && (e.target.closest('#analogCalendarViewport') || e.target.closest('#analogInfoContainer'))) {
+      return;
+    }
+
     _analogIs2FingerDragging = false;
     _analogIsDragging = true;
     _analogSwipeDirection = null;
@@ -7152,25 +8329,47 @@ function initAnalogSwipe() {
   };
   
   const onMove = (e) => {
-    if (_analogIs2FingerDragging && e.touches && e.touches.length === 2) {
-      const t1 = e.touches[0];
-      const t2 = e.touches[1];
-      const midX = (t1.clientX + t2.clientX) / 2;
-      const midY = (t1.clientY + t2.clientY) / 2;
+    if (_analogIs2FingerDragging) {
+      _analogHasMoved = true;
+      if (_analogHoldTimer) {
+        clearTimeout(_analogHoldTimer);
+        _analogHoldTimer = null;
+      }
+      if (_analogRingShowTimer) {
+        clearTimeout(_analogRingShowTimer);
+        _analogRingShowTimer = null;
+      }
+      const ring = document.getElementById("analogHoldRing");
+      if (ring) ring.style.opacity = "0";
+      const circle = document.getElementById("analogRingCircle");
+      if (circle) {
+        circle.style.transition = "stroke-dashoffset 0.1s linear";
+        circle.style.strokeDashoffset = "164";
+      }
+
+      let midX, midY;
+      if (e.touches && e.touches.length === 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        midX = (t1.clientX + t2.clientX) / 2;
+        midY = (t1.clientY + t2.clientY) / 2;
+        
+        const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        let newScale = _analogTargetBaseScale * (currentDist / _analog2FingerStartDist);
+        newScale = Math.min(Math.max(newScale, 0.5), 3.0);
+        document.documentElement.style.setProperty(`--scale-${_analogDragTarget}`, newScale);
+      } else {
+        midX = e.clientX;
+        midY = e.clientY;
+      }
       
       const diffX = midX - _analog2FingerStartX;
       const diffY = midY - _analog2FingerStartY;
-      
       const newX = _analogTargetBaseX + diffX;
       const newY = _analogTargetBaseY + diffY;
       
-      const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      let newScale = _analogTargetBaseScale * (currentDist / _analog2FingerStartDist);
-      newScale = Math.min(Math.max(newScale, 0.5), 3.0);
-      
       document.documentElement.style.setProperty(`--drag-${_analogDragTarget}-x`, newX + 'px');
       document.documentElement.style.setProperty(`--drag-${_analogDragTarget}-y`, newY + 'px');
-      document.documentElement.style.setProperty(`--scale-${_analogDragTarget}`, newScale);
       return;
     }
 
@@ -7179,6 +8378,25 @@ function initAnalogSwipe() {
     const currentY = e.touches ? e.touches[0].clientY : e.clientY;
     const diffX = currentX - _analogStartX;
     const diffY = currentY - _analogStartY;
+
+    if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
+      _analogHasMoved = true;
+      if (_analogHoldTimer) {
+        clearTimeout(_analogHoldTimer);
+        _analogHoldTimer = null;
+      }
+      if (_analogRingShowTimer) {
+        clearTimeout(_analogRingShowTimer);
+        _analogRingShowTimer = null;
+      }
+      const ring = document.getElementById("analogHoldRing");
+      if (ring) ring.style.opacity = "0";
+      const circle = document.getElementById("analogRingCircle");
+      if (circle) {
+        circle.style.transition = "stroke-dashoffset 0.1s linear";
+        circle.style.strokeDashoffset = "164";
+      }
+    }
 
     if (!_analogSwipeDirection) {
       if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
@@ -7200,9 +8418,9 @@ function initAnalogSwipe() {
     } else {
       const step = 0.05;
       if (diffY < 0) {
-        _analogGlowIntensity = Math.min(5.0, _analogGlowIntensity + step);
+        _analogGlowIntensity = Math.min(5.0, Math.round((_analogGlowIntensity + step) * 100) / 100);
       } else {
-        _analogGlowIntensity = Math.max(0.2, _analogGlowIntensity - step);
+        _analogGlowIntensity = Math.max(0.0, Math.round((_analogGlowIntensity - step) * 100) / 100);
       }
       _analogStartY = currentY;
       document.documentElement.style.setProperty("--analog-glow", _analogGlowIntensity);
@@ -7221,6 +8439,55 @@ function initAnalogSwipe() {
     if (_analogIs2FingerDragging) {
       _analogIs2FingerDragging = false;
       if (analogScreen) analogScreen.classList.remove('analog-dragging-2finger');
+
+      // ドラッグ終了時: 画面の中央ライン（50%）を越えたらスワップ確定
+      const isLandscape = window.innerWidth > window.innerHeight;
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+
+      // 終了時のポインタ座標を取得
+      let finalMidX = _analog2FingerStartX;
+      let finalMidY = _analog2FingerStartY;
+      if (e.changedTouches && e.changedTouches.length >= 2) {
+        finalMidX = (e.changedTouches[0].clientX + e.changedTouches[1].clientX) / 2;
+        finalMidY = (e.changedTouches[0].clientY + e.changedTouches[1].clientY) / 2;
+      } else if (e.changedTouches && e.changedTouches.length === 1) {
+        finalMidX = e.changedTouches[0].clientX;
+        finalMidY = e.changedTouches[0].clientY;
+      } else if (!e.touches) {
+        finalMidX = e.clientX;
+        finalMidY = e.clientY;
+      }
+
+      // 開始位置と終了位置が画面の「反対側の半分」かどうかで判定
+      let doSwap = false;
+      if (isLandscape) {
+        // 横置き: 左半分→右半分 または 右半分→左半分 を越えたらスワップ
+        const startedLeft = _analog2FingerStartX < centerX;
+        const endedLeft   = finalMidX < centerX;
+        doSwap = startedLeft !== endedLeft;
+      } else {
+        // 縦置き: 上半分→下半分 または 下半分→上半分 を越えたらスワップ
+        const startedTop = _analog2FingerStartY < centerY;
+        const endedTop   = finalMidY < centerY;
+        doSwap = startedTop !== endedTop;
+      }
+
+      if (doSwap) {
+        // 中央ライン越え: スワップ確定
+        _analogIsSwapped = !_analogIsSwapped;
+        if (_analogIsSwapped) {
+          analogScreen.classList.add('analog-layout-swapped');
+        } else {
+          analogScreen.classList.remove('analog-layout-swapped');
+        }
+        // スワップ確定時は相手の陣地の中央にスナップ
+        document.documentElement.style.setProperty('--drag-analog-x', '0px');
+        document.documentElement.style.setProperty('--drag-analog-y', '0px');
+        document.documentElement.style.setProperty('--drag-info-x', '0px');
+        document.documentElement.style.setProperty('--drag-info-y', '0px');
+      }
+      // スワップしなかった場合は、手を離した「任意の位置」のまま固定（リセットしない）
       return;
     }
 
@@ -7247,6 +8514,30 @@ function initAnalogSwipe() {
     _analogSwipeDirection = null;
   };
 
+  // マウスホイールによる時計・カレンダーの拡大縮小 (ズームイン/ズームアウト)
+  const onWheel = (e) => {
+    if (!analogScreen || analogScreen.style.display === "none") return;
+    e.preventDefault();
+
+    // カーソル下の要素に応じて変更対象を特定 (カレンダー/デジタル情報 or アナログ時計)
+    const isOverInfo = Boolean(e.target && (
+      e.target.closest('#analogInfoContainer') || 
+      e.target.closest('#analogCalendarViewport') ||
+      e.target.closest('.analog-digital-clock')
+    ));
+    const target = isOverInfo ? 'info' : 'analog';
+
+    let currentScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--scale-${target}`)) || 1.0;
+    const step = 0.08;
+    if (e.deltaY < 0) {
+      currentScale = Math.min(3.0, currentScale + step);
+    } else {
+      currentScale = Math.max(0.5, currentScale - step);
+    }
+
+    document.documentElement.style.setProperty(`--scale-${target}`, currentScale);
+  };
+
   if (container) {
     container.addEventListener("touchstart", onStart, { passive: false });
     container.addEventListener("touchmove", onMove, { passive: false });
@@ -7256,6 +8547,21 @@ function initAnalogSwipe() {
     container.addEventListener("mousedown", onStart);
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onEnd);
+  }
+
+  const infoContainer = document.getElementById("analogInfoContainer");
+  if (infoContainer) {
+    infoContainer.addEventListener("touchstart", onStart, { passive: false });
+    infoContainer.addEventListener("mousedown", onStart);
+  }
+
+  if (analogScreen) {
+    // ホイールによるサイズ変更リスナー
+    analogScreen.addEventListener("wheel", onWheel, { passive: false });
+    // 右クリックメニューの抑止 (右ボタンドラッグを快適にするため)
+    analogScreen.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+    });
   }
 
   // キーボード操作サポート (左右矢印キーでページ切替)
@@ -7290,66 +8596,256 @@ const TimeCalc = {
   isNewInput: true,         // 次のキー入力で currentInput を上書きするか
   history: [],              // 履歴配列
 
-  // 割り勘計算用ステート
+  // 割り勘計算用ステート (ヒロさん仕様: 多通貨対応)
+  splitCurrency: 'JPY',
   splitTotal: 0,
   splitPeople: 2,
-  splitRounding: 1000,      // 初期値: 1000円
+  splitRounding: 1000,      // 初期値: JPYなら1000、USDなら1
   splitActiveField: 'total', // 'total' または 'people'
   splitInputStr: '0',
   splitMoreCount: 0,        // 負担多めの人数
   splitLessCount: 0,        // 負担少なめの人数
-  splitTierGap: 1000,       // 傾斜配分の差額 (¥1,000)
+  splitTierGap: 1000,       // 傾斜配分の差額 (¥1,000 / $1.00)
 
-  // 為替レート変換用ステート
+  // 為替レート変換用ステート (19通貨対応)
   currencyFrom: 'USD',
   currencyTo: 'JPY',
-  currencyActiveField: 'to',  // 'from' または 'to' : 通貨ボタンがどちらを変更するか
+  currencyActiveField: 'from',  // 'from' または 'to' : 通貨ボタンがどちらを変更するか（デフォルト: FROM側をアクティブ）
   currencyAmount: 0,
   currencyInputStr: '0',
+
+  // キーパッドの6枠スロット (A〜F: ヒロさんご指定のデフォルト配置)
+  currencySlots: ['USD', 'JPY', 'EUR', 'GBP', 'AUD', 'CAD'],
+  activeSlotIndex: 0, // レート選択レイヤーで現在選択中のスロット (0〜5)
+
+  // 全21通貨の国旗絵文字マッピング
+  currencyFlags: {
+    USD: '🇺🇸', JPY: '🇯🇵', EUR: '🇪🇺', GBP: '🇬🇧', AUD: '🇦🇺',
+    CAD: '🇨🇦', CHF: '🇨🇭', CNY: '🇨🇳', KRW: '🇰🇷', HKD: '🇭🇰',
+    SGD: '🇸🇬', TWD: '🇹🇼', THB: '🇹🇭', NZD: '🇳🇿', INR: '🇮🇳',
+    PHP: '🇵🇭', IDR: '🇮🇩', VND: '🇻🇳', MYR: '🇲🇾', BRL: '🇧🇷', TRY: '🇹🇷'
+  },
+
+  // 割り勘・通貨フォーマット用の通貨記号マッピング
+  currencySymbols: {
+    USD: '$', JPY: '¥', EUR: '€', GBP: '£', AUD: 'A$',
+    CAD: 'C$', CHF: 'CHF', CNY: '¥', KRW: '₩', HKD: 'HK$',
+    SGD: 'S$', TWD: 'NT$', THB: '฿', NZD: 'NZ$', INR: '₹',
+    PHP: '₱', IDR: 'Rp', VND: '₫', MYR: 'RM', BRL: 'R$', TRY: '₺'
+  },
+
+  // 全21種類の定義リスト (3列×7行の整然としたグリッド配置)
+  allCurrencies: [
+    'USD', 'JPY', 'EUR', 
+    'GBP', 'AUD', 'CAD', 
+    'CHF', 'CNY', 'KRW', 
+    'HKD', 'SGD', 'TWD', 
+    'THB', 'NZD', 'INR', 
+    'PHP', 'IDR', 'VND', 
+    'MYR', 'BRL', 'TRY'
+  ],
+
   currencyRates: {
-    USD: 1.0,
-    JPY: 155.0,
-    EUR: 0.92,
-    GBP: 0.79,
-    CNY: 7.24,
-    KRW: 1380.0,
-    AUD: 1.52
+    USD: 1.0, JPY: 155.0, EUR: 0.92, GBP: 0.79, AUD: 1.52,
+    CAD: 1.36, CHF: 0.90, CNY: 7.24, KRW: 1380.0, HKD: 7.82,
+    SGD: 1.35, TWD: 32.5, THB: 36.5, NZD: 1.65, INR: 83.5,
+    PHP: 58.0, IDR: 16200.0, VND: 25400.0, MYR: 4.70, BRL: 5.30, TRY: 33.0
+  },
+  defaultCurrencyRates: {
+    USD: 1.0, JPY: 155.0, EUR: 0.92, GBP: 0.79, AUD: 1.52,
+    CAD: 1.36, CHF: 0.90, CNY: 7.24, KRW: 1380.0, HKD: 7.82,
+    SGD: 1.35, TWD: 32.5, THB: 36.5, NZD: 1.65, INR: 83.5,
+    PHP: 58.0, IDR: 16200.0, VND: 25400.0, MYR: 4.70, BRL: 5.30, TRY: 33.0
   },
   currencySymbols: {
-    USD: '$',
-    JPY: '¥',
-    EUR: '€',
-    GBP: '£',
-    CNY: '¥',
-    KRW: '₩',
-    AUD: 'A$'
+    USD: '$', JPY: '¥', EUR: '€', GBP: '£', AUD: 'A$',
+    CAD: 'C$', CHF: 'Fr', CNY: '¥', KRW: '₩', HKD: 'HK$',
+    SGD: 'S$', TWD: 'NT$', THB: '฿', NZD: 'NZ$', INR: '₹',
+    PHP: '₱', IDR: 'Rp', VND: '₫', MYR: 'RM', BRL: 'R$', TRY: '₺'
+  },
+  currencyNames: {
+    USD: '米ドル $', JPY: '日本円 ¥', EUR: 'ユーロ €', GBP: '英ポンド £', AUD: '豪ドル A$',
+    CAD: '加ドル C$', CHF: 'スイスフラン Fr', CNY: '人民元 ¥', KRW: 'ウォン ₩', HKD: '香港ドル HK$',
+    SGD: 'シンガポールドル S$', TWD: '台湾ドル NT$', THB: 'タイバーツ ฿', NZD: 'NZドル NZ$', INR: 'ルピー ₹',
+    PHP: 'ペソ ₱', IDR: 'ルピア Rp', VND: 'ドン ₫', MYR: 'リンギット RM', BRL: 'ブラジルレアル R$', TRY: 'トルコリラ ₺'
+  },
+  countryNames: {
+    USD: '米国', JPY: '日本', EUR: '欧州', GBP: '英国', AUD: '豪州',
+    CAD: '加国', CHF: 'スイス', CNY: '中国', KRW: '韓国', HKD: '香港',
+    SGD: 'シンガポール', TWD: '台湾', THB: 'タイ', NZD: 'NZ', INR: 'インド',
+    PHP: 'フィリピン', IDR: 'インドネシア', VND: 'ベトナム', MYR: 'マレーシア', BRL: 'ブラジル', TRY: 'トルコ'
   },
 
   // カスタムレート管理
   // キー: 'FROM_TO' (例: 'GBP_JPY')  値: 上書きレート数値 (fromあたりのto)
   customRates: {},
 
-  // デフォルトレート (変更しない基準値)
-  defaultCurrencyRates: {
-    USD: 1.0,
-    JPY: 155.0,
-    EUR: 0.92,
-    GBP: 0.79,
-    CNY: 7.24,
-    KRW: 1380.0,
-    AUD: 1.52
-  },
-
   // ライブレートキャッシュ (Frankfurter API, ECBデータ)
   // キー: 'FROM'  値: { rates: {TO: value, ...}, fetchedAt: timestamp }
   _liveRateCache: {},
   _liveRateCacheMs: 5 * 60 * 1000, // 5分間キャッシュ
 
+  // リアルタイム為替レート自動同期ステート (ヒロさん仕様)
+  // state: 'idle' | 'loading' | 'success' | 'offline'
+  _autoRateStatus: {
+    state: 'idle',
+    message: '',
+    timeStr: ''
+  },
+  _autoRateTimer: null,
+
+  async syncCurrentCurrencyRate(forceRefresh = false) {
+    // 全スロット（A〜F）一括取得に委譲
+    await this.syncAllSlotRates(forceRefresh);
+  },
+
+  // A〜Fスロットに設定されている全通貨のレートをUSD基準で一括取得
+  async syncAllSlotRates(forceRefresh = false) {
+    // 1. オフライン判定
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      this._autoRateStatus = {
+        state: 'offline',
+        message: '現在オフラインで使用中のためサンプル初期レートで計算します',
+        timeStr: ''
+      };
+      this.updateDisplay();
+      return;
+    }
+
+    const now = Date.now();
+
+    // 2. キャッシュチェック: USDキャッシュが5分以内であればスキップ（全スロット分カバー済み）
+    const usdCache = this._liveRateCache['USD'];
+    if (!forceRefresh && usdCache && (now - usdCache.fetchedAt) < this._liveRateCacheMs) {
+      const timeStr = new Date(usdCache.fetchedAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+      const slotList = this.currencySlots.join(' / ');
+      this._autoRateStatus = {
+        state: 'success',
+        message: `最新のレート取得済み（${slotList}）`,
+        timeStr: timeStr
+      };
+      this.updateDisplay();
+      return;
+    }
+
+    // 3. 取得中ステータス表示
+    this._autoRateStatus = {
+      state: 'loading',
+      message: '最新のレートを取得中...',
+      timeStr: ''
+    };
+    this.updateDisplay();
+
+    try {
+      // USD基準で全通貨レートを一括取得（Frankfurter API → open.er-api フォールバック）
+      let rates = {};
+      try {
+        const resp = await fetch('https://api.frankfurter.app/latest?from=USD');
+        if (resp.ok) {
+          const data = await resp.json();
+          rates = data.rates || {};
+          rates['USD'] = 1.0; // 自身を明示的に追加
+        }
+      } catch(_) {}
+
+      if (Object.keys(rates).length < 2) {
+        // フォールバック: open.er-api.com
+        const fbResp = await fetch('https://open.er-api.com/v6/latest/USD');
+        if (fbResp.ok) {
+          const fbData = await fbResp.json();
+          rates = fbData.rates || {};
+        }
+      }
+
+      if (rates && Object.keys(rates).length > 0) {
+        rates['USD'] = rates['USD'] || 1.0;
+
+        // USDキャッシュを保存（全スロット分のレートが含まれる）
+        this._liveRateCache['USD'] = { rates, fetchedAt: now };
+
+        // A〜Fスロット全通貨 + FROM/TO通貨のレートを更新
+        const targetCurrencies = new Set([
+          ...this.currencySlots,
+          this.currencyFrom,
+          this.currencyTo
+        ]);
+        targetCurrencies.forEach(c => {
+          if (this.allCurrencies.includes(c) && rates[c] !== undefined) {
+            this.currencyRates[c] = rates[c];
+            this.defaultCurrencyRates[c] = rates[c];
+            // 各通貨基準のキャッシュも作成（逆算）
+            if (!this._liveRateCache[c]) {
+              const crossRates = {};
+              Object.keys(rates).forEach(other => {
+                if (rates[c] && rates[other]) {
+                  crossRates[other] = rates[other] / rates[c];
+                }
+              });
+              this._liveRateCache[c] = { rates: crossRates, fetchedAt: now };
+            }
+          }
+        });
+
+        // スロットA〜Fの通貨一覧をメッセージに含める
+        const slotList = this.currencySlots.join(' / ');
+
+        const timeStr = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+        this._autoRateStatus = {
+          state: 'success',
+          message: `取得完了（${slotList}）`,
+          timeStr: timeStr
+        };
+
+        // 3.5秒後に「最新のレート取得済み」へ変化（スロット通貨一覧付き）
+        if (this._autoRateTimer) clearTimeout(this._autoRateTimer);
+        this._autoRateTimer = setTimeout(() => {
+          if (this._autoRateStatus.state === 'success') {
+            this._autoRateStatus.message = `最新のレート取得済み（${slotList}）`;
+            this.updateDisplay();
+          }
+        }, 3500);
+
+      } else {
+        throw new Error('No rate available');
+      }
+    } catch(err) {
+      this._autoRateStatus = {
+        state: 'offline',
+        message: '現在オフラインで使用中のためサンプル初期レートで計算します',
+        timeStr: ''
+      };
+    }
+
+    this.updateDisplay();
+  },
+
   init() {
+    this.loadSavedCurrencySlots();
     this.syncEngineUI();
     this.updateDisplay();
     this.renderHistory();
     this.setupDisplayDragScroll();
+    this.setupCurrencyDragAndDrop();
+    // タブ切り替えはグローバルスワイプシステムに統合済み（setupSwipeNavigation不要）
+
+    // ネットワーク状態の変化を自動監視
+    window.addEventListener('online', () => {
+      if (this.engineMode === 'currency') this.syncAllSlotRates(true);
+    });
+    window.addEventListener('offline', () => {
+      if (this.engineMode === 'currency') {
+        this._autoRateStatus = {
+          state: 'offline',
+          message: '現在オフラインで使用中のためサンプル初期レートで計算します',
+          timeStr: ''
+        };
+        this.updateDisplay();
+      }
+    });
+
+    if (this.engineMode === 'currency') {
+      this.syncAllSlotRates();
+    }
   },
 
   // PCマウスドラッグによる横スクロール機能
@@ -7406,6 +8902,133 @@ const TimeCalc = {
     });
   },
 
+  // スワイプによるタブ切り替え（左右スワイプでナビゲーションタブを順に切り替え）
+  // タブ順（画面左→右）: currency → split → precision → time
+  setupSwipeNavigation() {
+    const el = document.getElementById('timeCalcMode');
+    if (!el || el._swipeNavInitialized) return;
+    el._swipeNavInitialized = true;
+
+    // タブ順（HTMLの左→右の並び順に一致）
+    const TAB_ORDER = ['currency', 'split', 'precision', 'time'];
+    const SWIPE_THRESHOLD = 50;   // タブ切り替えに必要な最小水平移動量(px)
+    const ANGLE_THRESHOLD = 35;   // 水平スワイプとみなす最大傾き角度(°)
+
+    // ─── タッチ操作（スマホ）───────────────────────────
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let swiping = false;
+
+    el.addEventListener('touchstart', (e) => {
+      // マルチタッチは無視
+      if (e.touches.length !== 1) { swiping = false; return; }
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+      swiping = true;
+    }, { passive: true });
+
+    el.addEventListener('touchmove', (e) => {
+      if (!swiping || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+      // スクロール中（縦方向が支配的）はスワイプ判定をキャンセル
+      if (Math.abs(dy) > Math.abs(dx) * Math.tan((ANGLE_THRESHOLD * Math.PI) / 180)) {
+        swiping = false;
+      }
+    }, { passive: true });
+
+    el.addEventListener('touchend', (e) => {
+      if (!swiping) return;
+      swiping = false;
+
+      const changedTouch = e.changedTouches[0];
+      const dx = changedTouch.clientX - touchStartX;
+      const dy = changedTouch.clientY - touchStartY;
+      const elapsed = Date.now() - touchStartTime;
+
+      // 長時間タッチや垂直方向への移動はタブ切り替えとみなさない
+      if (elapsed > 600) return;
+      if (Math.abs(dy) > Math.abs(dx)) return;
+      if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+
+      const currentIndex = TAB_ORDER.indexOf(this.engineMode);
+      if (currentIndex === -1) return;
+
+      let nextIndex;
+      if (dx < 0) {
+        // 左スワイプ → 画面右側のタブへ（インデックス増加方向）
+        nextIndex = Math.min(currentIndex + 1, TAB_ORDER.length - 1);
+      } else {
+        // 右スワイプ → 画面左側のタブへ（インデックス減少方向）
+        nextIndex = Math.max(currentIndex - 1, 0);
+      }
+
+      if (nextIndex !== currentIndex) {
+        this.setEngineMode(TAB_ORDER[nextIndex]);
+      }
+    }, { passive: true });
+
+    // ─── マウス操作（PC）────────────────────────────────
+    // ※ 数式・メインディスプレイ・サブディスプレイは setupDisplayDragScroll で
+    //   横スクロールを担当するため、それらの要素内からドラッグ開始した場合は
+    //   タブ切り替えを発動しない。
+    const DRAG_DISPLAY_IDS = ['timeCalcSubDisplay', 'timeCalcMainDisplay', 'timeCalcFormula'];
+    const MOUSE_THRESHOLD = 80;  // タブ切り替えに必要な最小水平移動量(px) ─ マウスはやや多め
+    const MOUSE_MAX_TIME = 800;  // ms以内のドラッグのみ対象
+
+    let mouseStartX = 0;
+    let mouseStartY = 0;
+    let mouseStartTime = 0;
+    let mouseActive = false;
+
+    el.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      // ドラッグ開始位置が表示エリア内なら横スクロール優先でスキップ
+      const isDisplayArea = DRAG_DISPLAY_IDS.some(id => {
+        const target = document.getElementById(id);
+        return target && target.contains(e.target);
+      });
+      if (isDisplayArea) return;
+
+      mouseStartX = e.clientX;
+      mouseStartY = e.clientY;
+      mouseStartTime = Date.now();
+      mouseActive = true;
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (!mouseActive) return;
+      mouseActive = false;
+
+      const dx = e.clientX - mouseStartX;
+      const dy = e.clientY - mouseStartY;
+      const elapsed = Date.now() - mouseStartTime;
+
+      // 垂直方向が支配的・短距離・長時間はスキップ
+      if (elapsed > MOUSE_MAX_TIME) return;
+      if (Math.abs(dy) > Math.abs(dx)) return;
+      if (Math.abs(dx) < MOUSE_THRESHOLD) return;
+
+      const currentIndex = TAB_ORDER.indexOf(this.engineMode);
+      if (currentIndex === -1) return;
+
+      let nextIndex;
+      if (dx < 0) {
+        // 左ドラッグ → 右側のタブへ
+        nextIndex = Math.min(currentIndex + 1, TAB_ORDER.length - 1);
+      } else {
+        // 右ドラッグ → 左側のタブへ
+        nextIndex = Math.max(currentIndex - 1, 0);
+      }
+
+      if (nextIndex !== currentIndex) {
+        this.setEngineMode(TAB_ORDER[nextIndex]);
+      }
+    });
+  },
+
   // 4連ナビゲーションタブによるモード設定
   setEngineMode(mode) {
     if (!['time', 'precision', 'split', 'currency'].includes(mode)) return;
@@ -7413,6 +9036,13 @@ const TimeCalc = {
     this.allClear();
     this.syncEngineUI();
     this.updateDisplay();
+    if (mode === 'currency') {
+      this.syncCurrentCurrencyRate();
+    }
+    // GA: タブ切り替え
+    if (typeof gtag === 'function') {
+      gtag('event', 'multi_calc_tab_switch', { tab: mode });
+    }
   },
 
   syncEngineUI() {
@@ -7467,7 +9097,7 @@ const TimeCalc = {
       if (keyColon) keyColon.textContent = isTime ? ':' : '√';
     }
 
-    // 4. 割り勘キーパッド (keypadSplit) の状態更新
+    // 4. 割り勘キーパッド (keypadSplit) の状態更新 (ヒロさん仕様: 多通貨対応)
     if (isSplit) {
       const isTot = this.splitActiveField === 'total';
       const kTot = document.getElementById('splitKeyTotal');
@@ -7476,6 +9106,11 @@ const TimeCalc = {
       const fPeop = document.getElementById('splitFieldPeople');
       const valTot = document.getElementById('splitValTotal');
       const valPeop = document.getElementById('splitValPeople');
+      const splitCurrSel = document.getElementById('splitCurrencySelect');
+
+      if (splitCurrSel && splitCurrSel.value !== this.splitCurrency) {
+        splitCurrSel.value = this.splitCurrency;
+      }
 
       if (kTot) {
         if (isTot) kTot.classList.add('calc-btn-active-field');
@@ -7493,34 +9128,46 @@ const TimeCalc = {
         if (!isTot) fPeop.classList.add('active-field');
         else fPeop.classList.remove('active-field');
       }
-      if (valTot) valTot.textContent = `¥${Number(this.splitTotal || 0).toLocaleString()}`;
-      if (valPeop) valPeop.textContent = `${this.splitPeople || 0}人`;
+      const txtPersonUnit = typeof t === 'function' ? t('split_person_unit') : '人';
+      if (valTot) valTot.textContent = this.formatSplitMoney(this.splitTotal);
+      if (valPeop) valPeop.textContent = `${this.splitPeople || 0}${txtPersonUnit}`;
 
-      // ピルボタン更新
-      [1, 10, 100, 1000].forEach(u => {
-        const p = document.getElementById(`splitRound_${u}`);
-        if (p) {
-          if (u === this.splitRounding) p.classList.add('active');
-          else p.classList.remove('active');
-        }
-      });
+      // ピルボタン更新（通貨に合ったピルをレンダリング）
+      this.renderSplitRoundingPills();
 
+      const isNoDec = this.splitCurrency === 'JPY' || this.splitCurrency === 'KRW';
       const kRound = document.getElementById('splitKeyRounding');
-      if (kRound) kRound.textContent = `¥${this.splitRounding.toLocaleString()}`;
+      if (kRound) {
+        if (isNoDec) {
+          kRound.textContent = `¥${this.splitRounding.toLocaleString()}`;
+        } else {
+          const sym = this.currencySymbols[this.splitCurrency] || '$';
+          kRound.textContent = this.splitRounding < 1 ? `${Math.round(this.splitRounding * 100)}¢` : `${sym}${this.splitRounding.toFixed(2)}`;
+        }
+      }
+
+      const txtDiffLabel = typeof t === 'function' ? t('split_diff') : '差';
+      const txtMoreLabel = typeof t === 'function' ? t('split_more') : '多';
+      const txtLessLabel = typeof t === 'function' ? t('split_less') : '少';
 
       const kGap = document.getElementById('splitKeyTierGap');
-      if (kGap) kGap.innerHTML = `差:<br>¥${this.splitTierGap.toLocaleString()}`;
+      if (kGap) {
+        const gapStr = isNoDec
+          ? `¥${this.splitTierGap.toLocaleString()}`
+          : `${this.currencySymbols[this.splitCurrency] || '$'}${Number(this.splitTierGap).toFixed(2)}`;
+        kGap.innerHTML = `${txtDiffLabel}:<br>${gapStr}`;
+      }
 
       const kMore = document.getElementById('splitKeyMore');
       if (kMore) {
-        kMore.innerHTML = `▲ 多:<br>${this.splitMoreCount}人`;
+        kMore.innerHTML = `▲ ${txtMoreLabel}:<br>${this.splitMoreCount}${txtPersonUnit}`;
         if (this.splitMoreCount > 0) kMore.classList.add('calc-btn-active-field');
         else kMore.classList.remove('calc-btn-active-field');
       }
 
       const kLess = document.getElementById('splitKeyLess');
       if (kLess) {
-        kLess.innerHTML = `▼ 少:<br>${this.splitLessCount}人`;
+        kLess.innerHTML = `▼ ${txtLessLabel}:<br>${this.splitLessCount}${txtPersonUnit}`;
         if (this.splitLessCount > 0) kLess.classList.add('calc-btn-active-field');
         else kLess.classList.remove('calc-btn-active-field');
       }
@@ -7528,17 +9175,7 @@ const TimeCalc = {
 
     // 5. レートキーパッド (keypadCurrency) の状態更新
     if (isCurr) {
-      ['JPY', 'USD', 'EUR', 'GBP', 'AUD', 'CNY', 'KRW'].forEach(c => {
-        const btn = document.getElementById(`currKey_${c}`);
-        if (btn) {
-          // アクティブフィールドに応じてどちらの通貨と一致するかハイライト
-          const isActive = this.currencyActiveField === 'from'
-            ? c === this.currencyFrom
-            : c === this.currencyTo;
-          if (isActive) btn.classList.add('calc-btn-active-field');
-          else btn.classList.remove('calc-btn-active-field');
-        }
-      });
+      this.updateCurrencySlotsUI();
 
       const fromSel = document.getElementById('currencyFromSelect');
       const toSel = document.getElementById('currencyToSelect');
@@ -7546,8 +9183,8 @@ const TimeCalc = {
       if (toSel && toSel.value !== this.currencyTo) toSel.value = this.currencyTo;
 
       // From/Toボックスのアクティブ枠を視覚的に切り替え
-      const fromBox = document.getElementById('currencyBoxFrom');
-      const toBox = document.getElementById('currencyBoxTo');
+      const fromBox = document.getElementById('currencyFromField');
+      const toBox = document.getElementById('currencyToField');
       if (fromBox) {
         if (this.currencyActiveField === 'from') fromBox.classList.add('active-field');
         else fromBox.classList.remove('active-field');
@@ -7559,6 +9196,62 @@ const TimeCalc = {
     }
   },
 
+  // 割り勘: 通貨に応じた金額フォーマット
+  formatSplitMoney(num) {
+    const sym = this.currencySymbols[this.splitCurrency] || '';
+    const isNoDec = this.splitCurrency === 'JPY' || this.splitCurrency === 'KRW';
+    const dec = isNoDec ? 0 : 2;
+    return `${sym}${Number(num || 0).toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec })}`;
+  },
+
+  // 割り勘: 通貨変更ハンドラー
+  onSplitCurrencyChange() {
+    const sel = document.getElementById('splitCurrencySelect');
+    if (!sel) return;
+    this.splitCurrency = sel.value;
+    const isNoDec = this.splitCurrency === 'JPY' || this.splitCurrency === 'KRW';
+    if (isNoDec) {
+      this.splitRounding = 1000;
+      this.splitTierGap = 1000;
+    } else {
+      this.splitRounding = 1.00;
+      this.splitTierGap = 1.00;
+    }
+    this.renderSplitRoundingPills();
+    this.syncEngineUI();
+    this.updateDisplay();
+  },
+
+  // 割り勘: 丸め単位ピルボタンの描画 (外貨時は10¢, 25¢, $1, $5)
+  renderSplitRoundingPills() {
+    const container = document.getElementById('splitRoundPills');
+    if (!container) return;
+    const isNoDec = this.splitCurrency === 'JPY' || this.splitCurrency === 'KRW';
+    const sym = this.currencySymbols[this.splitCurrency] || '';
+
+    let units = [];
+    if (isNoDec) {
+      units = [
+        { val: 1, label: '1円' },
+        { val: 10, label: '10円' },
+        { val: 100, label: '100円' },
+        { val: 1000, label: '1000円' }
+      ];
+    } else {
+      units = [
+        { val: 0.10, label: '10¢' },
+        { val: 0.25, label: '25¢' },
+        { val: 1.00, label: `${sym}1` },
+        { val: 5.00, label: `${sym}5` }
+      ];
+    }
+
+    container.innerHTML = units.map(u => {
+      const active = (Math.abs(u.val - this.splitRounding) < 0.001) ? 'active' : '';
+      return `<button type="button" class="split-pill ${active}" id="splitRound_${String(u.val).replace('.', '_')}" onclick="TimeCalc.setSplitRounding(${u.val})">${u.label}</button>`;
+    }).join('');
+  },
+
   // 割り勘: 総額 / 人数フィールド切り替え
   setSplitActiveField(field) {
     this.splitActiveField = field;
@@ -7568,15 +9261,28 @@ const TimeCalc = {
     this.updateDisplay();
   },
 
-  // 割り勘: 端数単位のローテーション (1000円 -> 1円 -> 10円 -> 100円 -> 1000円)
+  // 割り勘: 端数単位のローテーション (円: 1000->1->10->100 / 外貨: 1.00->0.10->0.25->5.00)
   cycleSplitRounding() {
-    const cycle = [1000, 1, 10, 100];
-    const idx = cycle.indexOf(this.splitRounding);
+    const isNoDec = this.splitCurrency === 'JPY' || this.splitCurrency === 'KRW';
+    const cycle = isNoDec ? [1000, 1, 10, 100] : [1.00, 0.10, 0.25, 5.00];
+    let idx = cycle.findIndex(c => Math.abs(c - this.splitRounding) < 0.001);
+    if (idx === -1) idx = 0;
     this.setSplitRounding(cycle[(idx + 1) % cycle.length]);
   },
 
   setSplitRounding(unit) {
     this.splitRounding = unit;
+    this.syncEngineUI();
+    this.updateDisplay();
+  },
+
+  // 割り勘: 差額ステップのローテーション (円: 1000->2000->3000->5000->500 / 外貨: 1->2->5->10->0.5)
+  cycleSplitTierGap() {
+    const isNoDec = this.splitCurrency === 'JPY' || this.splitCurrency === 'KRW';
+    const cycle = isNoDec ? [1000, 2000, 3000, 5000, 500] : [1.00, 2.00, 5.00, 10.00, 0.50];
+    let idx = cycle.findIndex(c => Math.abs(c - this.splitTierGap) < 0.001);
+    if (idx === -1) idx = 0;
+    this.splitTierGap = cycle[(idx + 1) % cycle.length];
     this.syncEngineUI();
     this.updateDisplay();
   },
@@ -7627,50 +9333,413 @@ const TimeCalc = {
   },
 
   selectCurrencyTo(curr) {
+    this.setCurrencyTo(curr);
+  },
+
+  // スロット保存・読み込み (重複チェック付き)
+  loadSavedCurrencySlots() {
+    try {
+      const saved = localStorage.getItem('regulus_currency_slots');
+      if (saved) {
+        const arr = JSON.parse(saved);
+        if (Array.isArray(arr) && arr.length === 6) {
+          const uniqueSet = new Set(arr);
+          if (uniqueSet.size === 6) {
+            this.currencySlots = arr;
+            return;
+          }
+        }
+      }
+    } catch(e) {}
+    this.currencySlots = ['USD', 'JPY', 'EUR', 'GBP', 'AUD', 'CAD'];
+  },
+
+  saveCurrencySlots() {
+    try {
+      localStorage.setItem('regulus_currency_slots', JSON.stringify(this.currencySlots));
+    } catch(e) {}
+  },
+
+  // キーパッドの6枠スロットボタンUIの更新 (国旗マーク付き)
+  updateCurrencySlotsUI() {
+    if (!Array.isArray(this.currencySlots)) return;
+    this.currencySlots.forEach((curr, idx) => {
+      const btn = document.getElementById(`currSlot_${idx}`);
+      if (btn) {
+        const flag = this.currencyFlags[curr] || '';
+        btn.textContent = `${flag} ${curr}`;
+        btn.setAttribute('data-currency', curr);
+        const isActive = this.currencyActiveField === 'from'
+          ? curr === this.currencyFrom
+          : curr === this.currencyTo;
+        if (isActive) btn.classList.add('calc-btn-active-field');
+        else btn.classList.remove('calc-btn-active-field');
+      }
+    });
+  },
+
+  // スロットボタンを押した時
+  selectCurrencySlot(slotIdx) {
+    const curr = this.currencySlots[slotIdx] || 'USD';
+    this.selectCurrency(curr);
+  },
+
+  // 確実にFROM側を変更
+  setCurrencyFrom(curr) {
+    if (curr === this.currencyTo) {
+      this.swapCurrencies();
+      return;
+    }
+    this.currencyFrom = curr;
+    const fromSel = document.getElementById('currencyFromSelect');
+    if (fromSel) fromSel.value = curr;
+    this.syncEngineUI();
+    this.updateDisplay();
+    this.syncCurrentCurrencyRate();
+  },
+
+  // 確実にTO側を変更
+  setCurrencyTo(curr) {
+    if (curr === this.currencyFrom) {
+      this.swapCurrencies();
+      return;
+    }
     this.currencyTo = curr;
     const toSel = document.getElementById('currencyToSelect');
     if (toSel) toSel.value = curr;
     this.syncEngineUI();
     this.updateDisplay();
+    this.syncCurrentCurrencyRate();
   },
 
   // 通貨ボタン: アクティブフィールド(from/to)に応じて対応する通貨を変更
   selectCurrency(curr) {
     if (this.currencyActiveField === 'from') {
-      // from側を変更（toと同じになる場合はスワップ）
-      if (curr === this.currencyTo) {
-        // toと同じ通貨を選んだらスワップ
-        const temp = this.currencyFrom;
-        this.currencyFrom = curr;
-        this.currencyTo = temp;
-        const fromSel = document.getElementById('currencyFromSelect');
-        const toSel = document.getElementById('currencyToSelect');
-        if (fromSel) fromSel.value = this.currencyFrom;
-        if (toSel) toSel.value = this.currencyTo;
-      } else {
-        this.currencyFrom = curr;
-        const fromSel = document.getElementById('currencyFromSelect');
-        if (fromSel) fromSel.value = curr;
-      }
+      this.setCurrencyFrom(curr);
     } else {
-      // to側を変更（fromと同じになる場合はスワップ）
-      if (curr === this.currencyFrom) {
-        // fromと同じ通貨を選んだらスワップ
-        const temp = this.currencyTo;
-        this.currencyTo = curr;
-        this.currencyFrom = temp;
-        const fromSel = document.getElementById('currencyFromSelect');
-        const toSel = document.getElementById('currencyToSelect');
-        if (fromSel) fromSel.value = this.currencyFrom;
-        if (toSel) toSel.value = this.currencyTo;
-      } else {
-        this.currencyTo = curr;
-        const toSel = document.getElementById('currencyToSelect');
-        if (toSel) toSel.value = curr;
-      }
+      this.setCurrencyTo(curr);
     }
+  },
+
+  // 指でもマウスでもドラッグ＆ドロップでFROM/TO枠に放り込める機能
+  // 指でもマウス(左/右ボタン)でもドラッグ＆ドロップでFROM/TO枠やスロット枠に放り込める機能 (ヒロさん仕様)
+  setupCurrencyDragAndDrop() {
+    if (this._dragDropEngineInitialized) return;
+    this._dragDropEngineInitialized = true;
+
+    const ghost = document.getElementById('currDragGhost');
+    const fromField = document.getElementById('currencyFromField');
+    const toField = document.getElementById('currencyToField');
+
+    let isDragging = false;
+    let draggedCurrency = null;
+    let startX = 0;
+    let startY = 0;
+    let hasMoved = false;
+
+    // 通貨ボタン上やドラッグ中の右クリックメニューを抑制 (右ボタンドラッグを可能にするため)
+    document.addEventListener('contextmenu', (e) => {
+      if (isDragging || e.target.closest('.curr-draggable-btn, .rate-palette-item, .rate-slot-card')) {
+        e.preventDefault();
+      }
+    });
+
+    const startDrag = (curr, clientX, clientY, e) => {
+      draggedCurrency = curr;
+      isDragging = true;
+      hasMoved = false;
+      startX = clientX;
+      startY = clientY;
+
+      if (ghost) {
+        const flag = TimeCalc.currencyFlags[curr] || '';
+        ghost.textContent = `${flag} ${curr}`;
+        ghost.style.left = `${clientX}px`;
+        ghost.style.top = `${clientY}px`;
+        ghost.style.display = 'none'; // 動き出すまでは表示しない
+      }
+      if (e && e.cancelable && e.type === 'touchstart') {
+        // タッチ時のブラウザスクロール等を抑制
+      }
+    };
+
+    const moveDrag = (clientX, clientY, e) => {
+      if (!isDragging) return;
+      const dist = Math.hypot(clientX - startX, clientY - startY);
+      if (dist > 4) {
+        hasMoved = true;
+        if (ghost) {
+          ghost.style.display = 'block';
+          ghost.style.left = `${clientX}px`;
+          ghost.style.top = `${clientY}px`;
+        }
+
+        // カーソル直下にある要素を判定
+        const underEl = document.elementFromPoint(clientX, clientY);
+
+        // 1. メイン電卓の FROM / TO 判定
+        const isOverFrom = underEl && underEl.closest('#currencyFromField');
+        const isOverTo = underEl && underEl.closest('#currencyToField');
+
+        if (fromField) {
+          if (isOverFrom) fromField.classList.add('drag-over');
+          else fromField.classList.remove('drag-over');
+        }
+        if (toField) {
+          if (isOverTo) toField.classList.add('drag-over');
+          else toField.classList.remove('drag-over');
+        }
+
+        // 2. レート選択モーダルのスロットカード (A〜F) 判定
+        const hoveredCard = underEl ? underEl.closest('.rate-slot-card') : null;
+        document.querySelectorAll('.rate-slot-card').forEach(card => {
+          if (hoveredCard && card === hoveredCard) {
+            card.classList.add('drag-over');
+          } else {
+            card.classList.remove('drag-over');
+          }
+        });
+
+        if (e && e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    const endDrag = (clientX, clientY) => {
+      if (!isDragging) return;
+      isDragging = false;
+      if (ghost) ghost.style.display = 'none';
+
+      if (hasMoved && draggedCurrency) {
+        // ボタンを離した（リリースした）瞬間に、カーソル直下の要素へドロップ成立！
+        const underEl = document.elementFromPoint(clientX, clientY);
+
+        // ① メイン電卓の FROM 枠
+        const droppedFrom = underEl ? underEl.closest('#currencyFromField') : null;
+        if (droppedFrom) {
+          TimeCalc.setCurrencyFrom(draggedCurrency);
+          fromField.classList.add('drop-success');
+          setTimeout(() => fromField.classList.remove('drop-success'), 400);
+        }
+
+        // ② メイン電卓の TO 枠
+        const droppedTo = underEl ? underEl.closest('#currencyToField') : null;
+        if (droppedTo) {
+          TimeCalc.setCurrencyTo(draggedCurrency);
+          toField.classList.add('drop-success');
+          setTimeout(() => toField.classList.remove('drop-success'), 400);
+        }
+
+        // ③ レート選択モーダルのスロット枠 (A〜F)
+        const droppedSlotCard = underEl ? underEl.closest('.rate-slot-card') : null;
+        if (droppedSlotCard) {
+          const slotIdx = parseInt(droppedSlotCard.getAttribute('data-slot'), 10);
+          if (!isNaN(slotIdx) && slotIdx >= 0 && slotIdx < 6) {
+            TimeCalc.activeSlotIndex = slotIdx;
+            TimeCalc.onPaletteItemClick(draggedCurrency);
+            droppedSlotCard.classList.add('drop-success');
+            setTimeout(() => droppedSlotCard.classList.remove('drop-success'), 400);
+          }
+        }
+      }
+
+      // ハイライトを全て解除
+      if (fromField) fromField.classList.remove('drag-over');
+      if (toField) toField.classList.remove('drag-over');
+      document.querySelectorAll('.rate-slot-card').forEach(c => c.classList.remove('drag-over'));
+
+      draggedCurrency = null;
+    };
+
+    this.startCurrencyDrag = startDrag;
+
+    // メイン電卓キーパッドの6スロットボタンにドラッグリスナーを登録
+    for (let i = 0; i < 6; i++) {
+      const btn = document.getElementById(`currSlot_${i}`);
+      if (!btn) continue;
+
+      btn.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          const curr = TimeCalc.currencySlots[i] || 'USD';
+          startDrag(curr, e.touches[0].clientX, e.touches[0].clientY, e);
+        }
+      }, { passive: true });
+
+      btn.addEventListener('mousedown', (e) => {
+        // 左ボタン (0) または 右ボタン (2) でドラッグ可能！
+        if (e.button === 0 || e.button === 2) {
+          const curr = TimeCalc.currencySlots[i] || 'USD';
+          startDrag(curr, e.clientX, e.clientY, e);
+        }
+      });
+    }
+
+    window.addEventListener('touchmove', (e) => {
+      if (isDragging && e.touches.length === 1) {
+        moveDrag(e.touches[0].clientX, e.touches[0].clientY, e);
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+      if (isDragging && e.changedTouches.length > 0) {
+        endDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      }
+    }, { passive: true });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        moveDrag(e.clientX, e.clientY, e);
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (isDragging) {
+        endDrag(e.clientX, e.clientY);
+      }
+    });
+  },
+
+  // ===== レート選択レイヤー (21通貨パレット & 6枠配置) =====
+  openRateSelectLayer() {
+    const modal = document.getElementById('rateSelectModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    this.activeSlotIndex = 0;
+    this.renderRatePalette();
+    this.updateRateSlotsModalUI();
+  },
+
+  closeRateSelectLayer() {
+    const modal = document.getElementById('rateSelectModal');
+    if (modal) modal.style.display = 'none';
+    this.saveCurrencySlots();
     this.syncEngineUI();
     this.updateDisplay();
+  },
+
+  renderRatePalette() {
+    const grid = document.getElementById('ratePaletteGrid');
+    if (!grid) return;
+    const slotLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+    grid.innerHTML = this.allCurrencies.map(curr => {
+      const sym = this.currencySymbols[curr] || '';
+      const flag = this.currencyFlags[curr] || '';
+      const country = this.countryNames[curr] || '';
+      // 現在いずれかのスロットで使用中か判定
+      const usedIndex = this.currencySlots.indexOf(curr);
+      const isUsed = usedIndex !== -1;
+      const slotLetter = isUsed ? slotLetters[usedIndex] : '';
+      const usedClass = isUsed ? 'is-used' : '';
+      const usedBadge = isUsed ? `<span class="used-slot-badge">${slotLetter}</span>` : '';
+
+      return `<div class="rate-palette-item curr-draggable-btn ${usedClass}" id="paletteItem_${curr}" data-currency="${curr}" title="${this.currencyNames[curr] || curr}${isUsed ? ` (スロット${slotLetter}で使用中)` : ''}">
+        ${usedBadge}
+        <span style="font-size:16px;line-height:1;display:block;margin-bottom:1px;">${flag}</span>
+        <span style="font-size:9.5px;font-weight:bold;color:rgba(255,255,255,0.85);display:block;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${country}</span>
+        <strong style="font-size:11.5px;color:#00ffe0;">${curr}</strong> <span style="font-size:9px;opacity:0.75;">${sym}</span>
+      </div>`;
+    }).join('');
+
+    // パレットの各アイテムにドラッグ＆ドロップおよびクリックイベントを登録
+    this.allCurrencies.forEach(curr => {
+      const el = document.getElementById(`paletteItem_${curr}`);
+      if (!el) return;
+
+      // タッチドラッグ
+      el.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1 && TimeCalc.startCurrencyDrag) {
+          TimeCalc.startCurrencyDrag(curr, e.touches[0].clientX, e.touches[0].clientY, e);
+        }
+      }, { passive: true });
+
+      // マウスドラッグ (左ボタン 0 または 右ボタン 2)
+      el.addEventListener('mousedown', (e) => {
+        if ((e.button === 0 || e.button === 2) && TimeCalc.startCurrencyDrag) {
+          TimeCalc.startCurrencyDrag(curr, e.clientX, e.clientY, e);
+        }
+      });
+
+      // 通常クリックによる即時割り当て
+      el.addEventListener('click', (e) => {
+        TimeCalc.onPaletteItemClick(curr);
+      });
+    });
+  },
+
+  updateRateSlotsModalUI() {
+    for (let i = 0; i < 6; i++) {
+      const card = document.querySelector(`.rate-slot-card[data-slot="${i}"]`);
+      const nameEl = document.getElementById(`slotCardCurr_${i}`);
+      const curr = this.currencySlots[i] || 'USD';
+      const flag = this.currencyFlags[curr] || '';
+      const country = this.countryNames[curr] || '';
+      if (nameEl) nameEl.innerHTML = `${flag} ${curr}<br><span style="font-size:10px;color:rgba(0,255,128,0.85);font-weight:normal;">${country}</span>`;
+      if (card) {
+        if (i === this.activeSlotIndex) card.classList.add('is-active-target');
+        else card.classList.remove('is-active-target');
+
+        // スロットカード自体もドラッグ可能にして別の枠へ運んで入れ替え可能に
+        if (!card._dragBound) {
+          card._dragBound = true;
+          card.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1 && TimeCalc.startCurrencyDrag) {
+              const c = TimeCalc.currencySlots[i] || 'USD';
+              TimeCalc.startCurrencyDrag(c, e.touches[0].clientX, e.touches[0].clientY, e);
+            }
+          }, { passive: true });
+          card.addEventListener('mousedown', (e) => {
+            if ((e.button === 0 || e.button === 2) && TimeCalc.startCurrencyDrag) {
+              const c = TimeCalc.currencySlots[i] || 'USD';
+              TimeCalc.startCurrencyDrag(c, e.clientX, e.clientY, e);
+            }
+          });
+        }
+      }
+    }
+  },
+
+  onRateSlotClick(slotIdx) {
+    this.activeSlotIndex = slotIdx;
+    this.updateRateSlotsModalUI();
+  },
+
+  onPaletteItemClick(curr) {
+    const targetIdx = this.activeSlotIndex;
+    const existingIdx = this.currencySlots.indexOf(curr);
+
+    if (existingIdx !== -1) {
+      if (existingIdx === targetIdx) {
+        // 同じスロットなら次のスロットへ進めるだけ
+        this.activeSlotIndex = (this.activeSlotIndex + 1) % 6;
+        this.updateRateSlotsModalUI();
+        return;
+      }
+      // すでに別のスロットで使用中の場合: ダブりを防ぐためにスワップ（入れ替え）！
+      const currentCurr = this.currencySlots[targetIdx];
+      this.currencySlots[targetIdx] = curr;
+      this.currencySlots[existingIdx] = currentCurr;
+    } else {
+      // 未使用の通貨の場合: そのままセット
+      this.currencySlots[targetIdx] = curr;
+    }
+
+    this.updateRateSlotsModalUI();
+    this.renderRatePalette();
+    this.updateCurrencySlotsUI();
+    this.saveCurrencySlots();
+    // 次のスロットへ自動でフォーカス送り
+    this.activeSlotIndex = (this.activeSlotIndex + 1) % 6;
+    this.updateRateSlotsModalUI();
+  },
+
+  resetCurrencySlotsToDefault() {
+    this.currencySlots = ['USD', 'JPY', 'EUR', 'GBP', 'AUD', 'CAD'];
+    this.saveCurrencySlots();
+    this.updateRateSlotsModalUI();
+    this.renderRatePalette();
+    this.updateCurrencySlotsUI();
   },
 
   // From側セレクターをアクティブに設定
@@ -7687,6 +9756,14 @@ const TimeCalc = {
     if (toSel) this.currencyTo = toSel.value;
     this.syncEngineUI();
     this.updateDisplay();
+    this.syncCurrentCurrencyRate();
+    // GA: 通貨ペア変更
+    if (typeof gtag === 'function') {
+      gtag('event', 'multi_calc_currency_rate_update', {
+        from: this.currencyFrom,
+        to: this.currencyTo
+      });
+    }
   },
 
   swapCurrencies() {
@@ -7699,6 +9776,7 @@ const TimeCalc = {
     if (toSel) toSel.value = this.currencyTo;
     this.syncEngineUI();
     this.updateDisplay();
+    this.syncCurrentCurrencyRate();
   },
 
   // キー押下ハンドラ
@@ -7795,6 +9873,11 @@ const TimeCalc = {
       } else {
         this.splitInputStr += '00';
       }
+    } else if (key === '.') {
+      if (!this.splitInputStr.includes('.')) {
+        this.splitInputStr += '.';
+        this.isNewInput = false;
+      }
     } else if (key === 'BS') {
       if (this.splitInputStr.length > 1) {
         this.splitInputStr = this.splitInputStr.slice(0, -1);
@@ -7812,11 +9895,15 @@ const TimeCalc = {
       return;
     } else if (key === '=') {
       const state = this.calculateSplitMath();
-      const summary = `¥${this.splitTotal.toLocaleString()} ÷ ${this.splitPeople}人 (${this.splitRounding}円単位)`;
+      const unitText = (this.splitCurrency !== 'JPY' && this.splitCurrency !== 'KRW' && this.splitRounding < 1)
+        ? `${Math.round(this.splitRounding * 100)}¢`
+        : this.formatSplitMoney(this.splitRounding);
+      const summary = `${this.formatSplitMoney(this.splitTotal)} ÷ ${this.splitPeople}人 (${unitText}単位)`;
       const resultText = (this.splitMoreCount > 0 || this.splitLessCount > 0)
-        ? `一般: ¥${state.normalPrice.toLocaleString()} / 多: ¥${state.morePrice.toLocaleString()} / 少: ¥${state.lessPrice.toLocaleString()}`
-        : `¥${state.normalPrice.toLocaleString()} /人`;
+        ? `一般: ${this.formatSplitMoney(state.normalPrice)} / 多: ${this.formatSplitMoney(state.morePrice)} / 少: ${this.formatSplitMoney(state.lessPrice)}`
+        : `${this.formatSplitMoney(state.normalPrice)} /人`;
       this.addHistory(summary, resultText, 'split', {
+        splitCurrency: this.splitCurrency,
         splitTotal: this.splitTotal,
         splitPeople: this.splitPeople,
         splitRounding: this.splitRounding,
@@ -7824,14 +9911,18 @@ const TimeCalc = {
         splitLessCount: this.splitLessCount,
         splitTierGap: this.splitTierGap
       });
+      // GA: 計算実行（割り勘）
+      if (typeof gtag === 'function') {
+        gtag('event', 'multi_calc_result', { mode: 'split', currency: this.splitCurrency });
+      }
       return;
     }
 
-    const val = parseInt(this.splitInputStr, 10) || 0;
+    const val = parseFloat(this.splitInputStr) || 0;
     if (this.splitActiveField === 'total') {
       this.splitTotal = val;
     } else {
-      this.splitPeople = val;
+      this.splitPeople = Math.floor(val);
       if (this.splitPeople > 0) {
         const maxAllowed = Math.max(0, this.splitPeople - 1);
         if (this.splitMoreCount > maxAllowed) this.splitMoreCount = maxAllowed;
@@ -7852,8 +9943,9 @@ const TimeCalc = {
     const people = Math.max(1, this.splitPeople || 1);
     let moreCount = this.splitMoreCount || 0;
     let lessCount = this.splitLessCount || 0;
-    const gap = this.splitTierGap || 1000;
-    const roundUnit = this.splitRounding || 1000;
+    const isNoDec = this.splitCurrency === 'JPY' || this.splitCurrency === 'KRW';
+    const gap = this.splitTierGap || (isNoDec ? 1000 : 1.00);
+    const roundUnit = this.splitRounding || (isNoDec ? 1000 : 1.00);
 
     if (moreCount + lessCount >= people) {
       if (moreCount > 0) moreCount = Math.max(0, people - 1);
@@ -7861,14 +9953,19 @@ const TimeCalc = {
     }
     const normalCount = people - moreCount - lessCount;
 
+    // 傾斜配分の計算 (小数の丸め誤差対策)
     const baseTotal = total - (moreCount * gap) + (lessCount * gap);
     const basePerExact = baseTotal / people;
-    const normalPrice = Math.max(0, Math.ceil(basePerExact / roundUnit) * roundUnit);
-    const morePrice = normalPrice + gap;
-    const lessPrice = Math.max(0, normalPrice - gap);
+    let normalPrice = 0;
+    if (basePerExact > 0) {
+      normalPrice = Math.ceil(Math.round((basePerExact / roundUnit) * 100000) / 100000) * roundUnit;
+      normalPrice = Math.round(normalPrice * 100) / 100;
+    }
+    const morePrice = Math.round((normalPrice + gap) * 100) / 100;
+    const lessPrice = Math.max(0, Math.round((normalPrice - gap) * 100) / 100);
 
-    const totalCollected = (normalPrice * normalCount) + (morePrice * moreCount) + (lessPrice * lessCount);
-    const remainder = totalCollected - total;
+    const totalCollected = Math.round(((normalPrice * normalCount) + (morePrice * moreCount) + (lessPrice * lessCount)) * 100) / 100;
+    const remainder = Math.round((totalCollected - total) * 100) / 100;
 
     return { total, people, moreCount, lessCount, normalCount, gap, roundUnit, normalPrice, morePrice, lessPrice, totalCollected, remainder };
   },
@@ -8220,6 +10317,11 @@ const TimeCalc = {
       formula: fullFormula
     });
 
+    // GA: 計算実行（時間電卓・標準電卓）
+    if (typeof gtag === 'function') {
+      gtag('event', 'multi_calc_result', { mode: this.engineMode });
+    }
+
     this.formula = fullFormula;
     this.currentInput = resultStr;
     this.leftValue = null;
@@ -8243,32 +10345,57 @@ const TimeCalc = {
     const subEl = document.getElementById('timeCalcSubDisplay');
     const memEl = document.getElementById('timeCalcMemIndicator');
     const opEl = document.getElementById('timeCalcOpIndicator');
+    const liveRateStatusEl = document.getElementById('timeCalcLiveRateStatus');
 
-    // 1. 割り勘モードの表示
+    if (liveRateStatusEl && this.engineMode !== 'currency') {
+      liveRateStatusEl.style.display = 'none';
+      liveRateStatusEl.innerHTML = '';
+    }
+
+    // 1. 割り勘モードの表示 (ヒロさん仕様: 多言語化対応)
     if (this.engineMode === 'split') {
       const state = this.calculateSplitMath();
+      const txtTotal = typeof t === 'function' ? t('split_total') : '総額';
+      const txtPeople = typeof t === 'function' ? t('split_people') : '人数';
+      const txtUnit = typeof t === 'function' ? t('split_unit') : '単位';
+      const txtNormal = typeof t === 'function' ? t('split_normal') : '一般';
+      const txtPersonUnit = typeof t === 'function' ? t('split_person_unit') : '名';
+      const txtCollected = typeof t === 'function' ? t('split_collected') : '集金計';
+      const txtDiff = typeof t === 'function' ? t('split_diff') : '差額';
+      const txtMore = typeof t === 'function' ? t('split_more') : '多め';
+      const txtLess = typeof t === 'function' ? t('split_less') : '少なめ';
+
+      const isNoDec = this.splitCurrency === 'JPY' || this.splitCurrency === 'KRW';
+      const roundUnitStr = (!isNoDec && state.roundUnit < 1)
+        ? `${Math.round(state.roundUnit * 100)}¢`
+        : this.formatSplitMoney(state.roundUnit);
+
       if (formulaEl) {
-        formulaEl.textContent = `総額: ¥${state.total.toLocaleString()} / 人数: ${state.people}人 (${state.roundUnit}円単位)`;
+        const unitSuffix = (typeof currentLang !== 'undefined' && currentLang !== 'ja')
+          ? `(${roundUnitStr} ${txtUnit})`
+          : `(${roundUnitStr} ${txtUnit})`;
+        formulaEl.textContent = `${txtTotal}: ${this.formatSplitMoney(state.total)} / ${txtPeople}: ${state.people} ${unitSuffix}`;
       }
       if (opEl) opEl.textContent = '💸';
 
       if (mainEl) {
         if (state.moreCount > 0 || state.lessCount > 0) {
-          mainEl.textContent = `一般: ¥${state.normalPrice.toLocaleString()} (${state.normalCount}名)`;
+          mainEl.textContent = `${txtNormal}: ${this.formatSplitMoney(state.normalPrice)} (${state.normalCount}${txtPersonUnit})`;
         } else {
-          mainEl.textContent = `¥${state.normalPrice.toLocaleString()} /人`;
+          mainEl.textContent = `${this.formatSplitMoney(state.normalPrice)} /${txtPersonUnit}`;
         }
       }
 
       if (subEl) {
+        const diffSign = state.remainder >= 0 ? '+' : '';
         if (state.moreCount > 0 || state.lessCount > 0) {
           const parts = [];
-          if (state.moreCount > 0) parts.push(`🔺多め: ¥${state.morePrice.toLocaleString()} (${state.moreCount}名)`);
-          if (state.lessCount > 0) parts.push(`🔻少なめ: ¥${state.lessPrice.toLocaleString()} (${state.lessCount}名)`);
-          parts.push(`[集金計: ¥${state.totalCollected.toLocaleString()} / 差額: +¥${state.remainder.toLocaleString()}]`);
+          if (state.moreCount > 0) parts.push(`🔺${txtMore}: ${this.formatSplitMoney(state.morePrice)} (${state.moreCount}${txtPersonUnit})`);
+          if (state.lessCount > 0) parts.push(`🔻${txtLess}: ${this.formatSplitMoney(state.lessPrice)} (${state.lessCount}${txtPersonUnit})`);
+          parts.push(`[${txtCollected}: ${this.formatSplitMoney(state.totalCollected)} / ${txtDiff}: ${diffSign}${this.formatSplitMoney(state.remainder)}]`);
           subEl.textContent = parts.join(' | ');
         } else {
-          subEl.textContent = `集金計: ¥${state.totalCollected.toLocaleString()} (差額: +¥${state.remainder.toLocaleString()})`;
+          subEl.textContent = `${txtCollected}: ${this.formatSplitMoney(state.totalCollected)} (${txtDiff}: ${diffSign}${this.formatSplitMoney(state.remainder)})`;
         }
       }
       if (memEl) memEl.style.visibility = 'hidden';
@@ -8297,8 +10424,38 @@ const TimeCalc = {
       }
       if (subEl) {
         const customBadge = isCustomRate ? '<span class="custom-rate-badge">手動</span>' : '';
-        subEl.innerHTML = `<span class="currency-rate-clickable" onclick="TimeCalc.openCustomRateModal()" title="タップしてレートを変更">1 ${this.currencyFrom} = ${rate.toFixed(4)} ${this.currencyTo}</span>${customBadge}`;
+        // ⚙レート表示のみをスッキリ配置（右端切れを完全解消）
+        subEl.innerHTML = `<span class="currency-rate-clickable" onclick="TimeCalc.openCustomRateModal()" title="タップしてレートを変更"><span class="currency-rate-gear">⚙</span> 1 ${this.currencyFrom} = ${rate.toFixed(4)} ${this.currencyTo}</span>${customBadge}`;
       }
+
+      // 最新レート自動同期ステータスバー (ヒロさん仕様: ⚙レート表示の下に配置 & 多言語化対応)
+      if (liveRateStatusEl) {
+        const st = this._autoRateStatus;
+        if (st.state !== 'idle') {
+          liveRateStatusEl.style.display = 'flex';
+          let statusBadge = '';
+          const msgFetching = typeof t === 'function' ? t('live_rate_fetching') : '最新のレートを取得中...';
+          const msgSuccess = typeof t === 'function' ? t('live_rate_success') : '最新のレート取得済み';
+          const msgOffline = typeof t === 'function' ? t('live_rate_offline') : 'オフライン使用中（初期レート）';
+          const msgError = typeof t === 'function' ? t('live_rate_error') : 'レート取得に失敗';
+
+          if (st.state === 'loading') {
+            statusBadge = `<span class="live-rate-status-pill loading" title="${msgFetching}">🌐 ${msgFetching}</span>`;
+          } else if (st.state === 'success') {
+            const timeInfo = st.timeStr ? ` (${st.timeStr})` : '';
+            statusBadge = `<span class="live-rate-status-pill success" onclick="TimeCalc.syncCurrentCurrencyRate(true)" title="${msgSuccess}">✓ ${msgSuccess}${timeInfo}</span>`;
+          } else if (st.state === 'offline') {
+            statusBadge = `<span class="live-rate-status-pill offline" onclick="TimeCalc.syncCurrentCurrencyRate(true)" title="${msgOffline}">⚠️ ${msgOffline}</span>`;
+          } else if (st.state === 'error') {
+            statusBadge = `<span class="live-rate-status-pill error" onclick="TimeCalc.syncCurrentCurrencyRate(true)" title="${msgError}">⚠️ ${msgError}</span>`;
+          }
+          liveRateStatusEl.innerHTML = statusBadge;
+        } else {
+          liveRateStatusEl.style.display = 'none';
+          liveRateStatusEl.innerHTML = '';
+        }
+      }
+
       if (memEl) memEl.style.visibility = 'hidden';
       return;
     }
@@ -8447,6 +10604,11 @@ const TimeCalc = {
     const item = this.history[idx];
     if (!item) return;
 
+    // GA: 履歴から呼び出し
+    if (typeof gtag === 'function') {
+      gtag('event', 'multi_calc_history_load', { mode: item.mode || this.engineMode });
+    }
+
     if (item.mode && item.mode !== this.engineMode) {
       this.setEngineMode(item.mode);
     }
@@ -8530,6 +10692,13 @@ const TimeCalc = {
       const pairKey = `${this.currencyFrom}_${this.currencyTo}`;
       this.customRates[pairKey] = val;
       this.updateDisplay();
+      // GA: カスタムレート設定
+      if (typeof gtag === 'function') {
+        gtag('event', 'multi_calc_currency_custom_rate', {
+          from: this.currencyFrom,
+          to: this.currencyTo
+        });
+      }
     }
     this.closeCustomRateModal();
   },
