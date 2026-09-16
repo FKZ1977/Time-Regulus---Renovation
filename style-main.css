@@ -5139,6 +5139,7 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   margin-bottom: 12px;
   position: relative;
   overflow: hidden;
+  touch-action: pan-y; /* 縦スクロールは通し、水平スワイプはJSのタブ切り替えに委ねる */
 }
 
 .time-calc-screen-top {
@@ -5179,7 +5180,7 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   font-family: 'Consolas', 'Courier New', monospace;
   overflow-x: auto;
   white-space: nowrap;
-  touch-action: pan-x;
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -5199,7 +5200,7 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   margin: 6px 0;
   overflow-x: auto;
   white-space: nowrap;
-  touch-action: pan-x;
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }

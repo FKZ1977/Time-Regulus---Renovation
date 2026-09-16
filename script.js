@@ -4694,8 +4694,12 @@ document.addEventListener("focusin", function(e) {
       return;
     }
 
-    // 電卓液晶画面（.time-calc-screen）内のタッチは横スクロールを優先するため画面切り替えスワイプを除外
-    if (e.target && e.target.closest && e.target.closest('.time-calc-screen')) {
+    // 電卓液晶画面内でのスクロール優先判定:
+    // 文字列がはみ出ていて実際に左右スクロール可能な要素を直接なぞった場合は、テキスト閲覧スクロールを優先
+    const scrollableDisplay = (e.target && e.target.closest)
+      ? e.target.closest('.time-calc-formula, .time-calc-main-display')
+      : null;
+    if (scrollableDisplay && scrollableDisplay.scrollWidth > scrollableDisplay.clientWidth + 2) {
       isSwiping = false;
       fromEl = null;
       return;
@@ -5014,6 +5018,11 @@ document.addEventListener("focusin", function(e) {
         // マルチ電卓内: キーパッド・ディスプレイ等からもドラッグ可能にする
         // 入力欄・ドラッグハンドル・モーダルのみ除外（button/.calc-btn/.time-calc-screenは除外しない）
         if (target.closest('input, textarea, select, a, .currency-drag-handle, .currency-slot-card, .currency-palette-item, .custom-rate-modal-box, .rate-modal-backdrop, .lang-selector')) {
+          return;
+        }
+        // 文字列がはみ出ていて左右スクロール可能なテキスト要素上ではマウスドラッグスクロールを優先
+        const scrollableDisplay = target.closest('.time-calc-formula, .time-calc-main-display');
+        if (scrollableDisplay && scrollableDisplay.scrollWidth > scrollableDisplay.clientWidth + 2) {
           return;
         }
       } else {
