@@ -4900,6 +4900,25 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   padding: 4px;
   border-radius: 10px;
   border: 1px solid rgba(0, 255, 224, 0.2);
+  position: relative; /* スライダー絶対配置の基準点 */
+}
+
+/* グロー枠スライダーインジケーター */
+.tab-slider {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  height: calc(100% - 8px);
+  background: rgba(0, 255, 224, 0.18);
+  border: 1px solid var(--accent, #00ffe0);
+  border-radius: 8px;
+  box-shadow: 0 0 12px rgba(0, 255, 224, 0.45), inset 0 0 8px rgba(0, 255, 224, 0.08);
+  /* スライドアニメーション: キュービックイージングで滞らかに移動 */
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none; /* クリックを透過させる */
+  z-index: 0;
+  will-change: left, width;
 }
 
 .calc-nav-tab {
@@ -4916,9 +4935,11 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   font-size: 12px;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
   user-select: none;
   -webkit-user-select: none;
+  position: relative; /* スライダーより前面に表示 */
+  z-index: 1;
 }
 
 .calc-nav-icon {
@@ -4932,14 +4953,14 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
 
 .calc-nav-tab:hover {
   color: var(--text-main, #ffffff);
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .calc-nav-tab.active {
-  background: rgba(0, 255, 224, 0.18);
-  border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: 0 0 10px rgba(0, 255, 224, 0.35);
+  /* 背景・枠・影はスライダーで提供・テキスト色のみ維持 */
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent, #00ffe0);
+  box-shadow: none;
 }
 
 .calc-nav-tab:active {

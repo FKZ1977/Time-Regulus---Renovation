@@ -4392,10 +4392,6 @@ if (document.readyState === "loading") {
    テンキーキーボード表示時の自動スクロール（入力補助OFF時など）
    ========================================================================== */
 let _lastTextInputBlurTime = 0;
-// iOSのreadOnlyトリックによるキーボード自動スクロール防止フラグ
-// touchstartで処理済みのときはfocusinがスクロールを二重実行しないようにする
-let _iosKeyboardScrollHandled = false;
-
 document.addEventListener("focusout", function(e) {
   if (e.target && e.target.tagName === "INPUT" && 
       e.target.type !== "checkbox" && 
@@ -4405,95 +4401,38 @@ document.addEventListener("focusout", function(e) {
   }
 });
 
-// ============================================================
-// iOSキーボード自動スクロール防止: readOnlyトリック
-//
-// 通常のinputへのtap動作:
-//   touchstart → iOS: focus + キーボード表示 + 自動スクロール（制御不能）
-//
-// readOnlyトリック後の動作:
-//   touchstart → (我々) readOnly=true → focus（キーボードなし・スクロールなし）
-//             → 手動スクロール（干渉なし、1段階のみ）
-//             → readOnly=false → キーボード表示
-//                （inputは既にキーボードより上に見えているのでiOSは追加スクロールしない）
-// ============================================================
-(function setupIosKeyboardScrollPrevention() {
-  // 誤差の計算モード内の直接入力フィールド
-  const ERROR_MODE_INPUTS = [
-    { id: 'displayHour_direct',  result: 'result' },
-    { id: 'displayMin_direct',   result: 'result' },
-    { id: 'displaySec_direct',   result: 'result' },
-    { id: 'standardHour_direct', result: 'result' },
-    { id: 'standardMin_direct',  result: 'result' },
-    { id: 'standardSec_direct',  result: 'result' },
-  ];
-  // 補正時刻の計算モード内の直接入力フィールド
-  const CORRECTION_MODE_INPUTS = [
-    { id: 'reverseDisplayHour_direct', result: 'reverseResult' },
-    { id: 'reverseDisplayMin_direct',  result: 'reverseResult' },
-    { id: 'reverseDisplaySec_direct',  result: 'reverseResult' },
-    { id: 'errorHours_direct',         result: 'reverseResult' },
-    { id: 'errorMinutes_direct',       result: 'reverseResult' },
-    { id: 'errorSeconds_direct',       result: 'reverseResult' },
-  ];
-
-  function attachReadOnlyTrick(inputId, targetResultId) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
-
-    input.addEventListener('touchstart', function(e) {
-      // 入力補助ON（ドラムロール使用中）は介入しない
-      if (typeof inputHelperEnabled !== 'undefined' && inputHelperEnabled) return;
-      if (activeTimePickerGroup) return;
-
-      // iOSのデフォルトfocus+keyboard+自動スクロール動作を全てブロック
-      e.preventDefault();
-
-      // focusinハンドラーがスクロールを重複実行しないようにフラグを立てる
-      _iosKeyboardScrollHandled = true;
-
-      const self = this;
-      // readOnly=true: フォーカスしてもキーボード表示なし・iOSスクロールなし
-      self.readOnly = true;
-      self.focus();
-
-      // キーボード未表示状態でドラムロールと同一計算式のスクロールを実行
-      // （干渉がないため一段階のみ・正確）
+document.addEventListener("focusin", function(e) {
+  if (activeTimePickerGroup) return; // ピッカー起動中はキーボード用自動スクロールとの二重競合をシャットアウト！
+  if (e.target.tagName === "INPUT" && 
+      e.target.type !== "checkbox" && 
+      e.target.type !== "radio" && 
+      e.target.type !== "button" && 
+      e.target.type !== "date") {
+    
+    // 隣接する入力枠への移動時（連続入力時）は、画面が上下にバウンドするのを防ぐためスクロール処理をスキップ
+    if (e.relatedTarget && e.relatedTarget.tagName === "INPUT") {
+      return;
+    }
+    if (Date.now() - _lastTextInputBlurTime < 150) {
+      return;
+    }
+    
+    // キーボード展開アニメーション完了を待ってからスクロール判定
+    setTimeout(() => {
+      const isErrorMode = document.getElementById("errorMode").style.display !== "none";
+      const targetResultId = isErrorMode ? "result" : "reverseResult";
       const targetEl = document.getElementById(targetResultId);
+      
       if (targetEl) {
-        const scrollY = window.scrollY;
         const rect = targetEl.getBoundingClientRect();
-        const resultBottomAbs = rect.bottom + scrollY; // ページ上の絶対bottom座標
-        const pickerHeight = 390; // openTimePicker()と同一値
-        const targetScrollY = Math.max(0, resultBottomAbs - (window.innerHeight - pickerHeight));
-        if (Math.abs(targetScrollY - scrollY) > 5) {
-          window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
+        const keyboardHeight = 350; // iOS/Androidの一般的なキーボード高さ + 余白
+        if (rect.bottom > window.innerHeight - keyboardHeight) {
+          window.scrollBy({ top: rect.bottom - (window.innerHeight - keyboardHeight), behavior: "smooth" });
         }
       }
-
-      // スクロール完了後にreadOnly解除 → キーボード表示
-      // inputは既にキーボードより上に位置するのでiOSは追加スクロールしない
-      setTimeout(() => {
-        self.readOnly = false;
-        setTimeout(() => { _iosKeyboardScrollHandled = false; }, 150);
-      }, 350);
-
-    }, { passive: false }); // passive:false でe.preventDefault()を有効化
+    }, 400);
   }
-
-  ERROR_MODE_INPUTS.forEach(({ id, result }) => attachReadOnlyTrick(id, result));
-  CORRECTION_MODE_INPUTS.forEach(({ id, result }) => attachReadOnlyTrick(id, result));
-})();
-
-document.addEventListener("focusin", function(e) {
-  // readOnlyトリックによるtouchstart処理済みの場合はスキップ（二重スクロール防止）
-  if (_iosKeyboardScrollHandled) return;
-  // ピッカー起動中もスキップ（ドラムロール側で制御）
-  if (activeTimePickerGroup) return;
-  // PCや物理キーボードからのfocusはキーボードによる画面変化がないので追加処理不要
 });
-
-
 
 
 /* ==========================================================================
@@ -4817,11 +4756,11 @@ document.addEventListener("focusin", function(e) {
       return;
     }
 
-    // マルチ電卓タブ切り替え: toElなしでdamped pullのみ
+    // マルチ電卓タブ切り替え: 画面は動かさずジェスチャー検出のみ（目が疲れないようぶれなし）
     if (destId === '__MULTI_TAB__') {
       toId = '__MULTI_TAB__';
       toEl = null;
-      fromEl.style.transform = `translateX(${dX * 0.3}px)`;
+      // fromEl.style.transform は変更しない（画面固定）
       return;
     }
 
@@ -5131,11 +5070,11 @@ document.addEventListener("focusin", function(e) {
       return;
     }
 
-    // マルチ電卓タブ切り替え: toElなしでdamped pullのみ
+    // マルチ電卓タブ切り替え: 画面は動かさずジェスチャー検出のみ（目が疲れないようぶれなし）
     if (destId === '__MULTI_TAB__') {
       toId = '__MULTI_TAB__';
       toEl = null;
-      fromEl.style.transform = `translateX(${dX * 0.3}px)`;
+      // fromEl.style.transform は変更しない（画面固定）
       return;
     }
 
@@ -8878,6 +8817,19 @@ const TimeCalc = {
     this.setupCurrencyDragAndDrop();
     // タブ切り替えはグローバルスワイプシステムに統合済み（setupSwipeNavigation不要）
 
+    // グロースライダーの初期位置をアニメーションなしで即時設定
+    requestAnimationFrame(() => {
+      const activeTab = document.getElementById(`calcTab_${this.engineMode}`);
+      const slider = document.getElementById('calcTabSlider');
+      if (activeTab && slider) {
+        slider.style.transition = 'none'; // 初回はアニメーションなし
+        slider.style.left  = activeTab.offsetLeft + 'px';
+        slider.style.width = activeTab.offsetWidth + 'px';
+        // 次フレームからtransitionを有効化
+        requestAnimationFrame(() => { slider.style.transition = ''; });
+      }
+    });
+
     // ネットワーク状態の変化を自動監視
     window.addEventListener('online', () => {
       if (this.engineMode === 'currency') this.syncAllSlotRates(true);
@@ -9108,6 +9060,16 @@ const TimeCalc = {
       if (tab) {
         if (m === mode) tab.classList.add('active');
         else tab.classList.remove('active');
+      }
+    });
+
+    // グロースライダーをアクティブタブ位置へスムーズ移動
+    requestAnimationFrame(() => {
+      const activeTab = document.getElementById(`calcTab_${mode}`);
+      const slider = document.getElementById('calcTabSlider');
+      if (activeTab && slider) {
+        slider.style.left  = activeTab.offsetLeft + 'px';
+        slider.style.width = activeTab.offsetWidth + 'px';
       }
     });
 
