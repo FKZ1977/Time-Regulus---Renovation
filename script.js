@@ -4522,8 +4522,9 @@ document.addEventListener("focusin", function(e) {
       if (typeof renderResultList === 'function') renderResultList();
     }
     if (destId === 'timeCalcMode') {
-      if (typeof TimeCalc !== 'undefined' && typeof TimeCalc.init === 'function') {
-        TimeCalc.init();
+      if (typeof TimeCalc !== 'undefined') {
+        if (typeof TimeCalc.init === 'function') TimeCalc.init();
+        if (typeof TimeCalc.syncSlider === 'function') TimeCalc.syncSlider(true);
       }
     }
     if (destId === 'errorMode') {
@@ -4805,6 +4806,12 @@ document.addEventListener("focusin", function(e) {
       // display:blockより先にtransformで画面外へ → 表示時に一瞬でも中央に見えない
       toEl.style.transform  = `translateX(${initBase + dX}px)`;
       toEl.style.display    = 'block';
+
+      // マルチ電卓画面がスワイプで出現する際、スライダーの初期位置を即座に同期して縦線ちらつきを防止
+      if (toId === 'timeCalcMode' && typeof TimeCalc !== 'undefined') {
+        if (typeof TimeCalc.init === 'function') TimeCalc.init();
+        if (typeof TimeCalc.syncSlider === 'function') TimeCalc.syncSlider(true);
+      }
     }
 
     const w    = window.innerWidth;
@@ -5111,6 +5118,12 @@ document.addEventListener("focusin", function(e) {
       toEl.style.zIndex     = '100';
       toEl.style.transform  = `translateX(${initBase + dX}px)`;
       toEl.style.display    = 'block';
+
+      // マルチ電卓画面がスワイプで出現する際、スライダーの初期位置を即座に同期して縦線ちらつきを防止
+      if (toId === 'timeCalcMode' && typeof TimeCalc !== 'undefined') {
+        if (typeof TimeCalc.init === 'function') TimeCalc.init();
+        if (typeof TimeCalc.syncSlider === 'function') TimeCalc.syncSlider(true);
+      }
     }
 
     const w    = window.innerWidth;
@@ -8818,17 +8831,17 @@ const TimeCalc = {
     // タブ切り替えはグローバルスワイプシステムに統合済み（setupSwipeNavigation不要）
 
     // グロースライダーの初期位置をアニメーションなしで即時設定
-    requestAnimationFrame(() => {
-      const activeTab = document.getElementById(`calcTab_${this.engineMode}`);
-      const slider = document.getElementById('calcTabSlider');
-      if (activeTab && slider) {
-        slider.style.transition = 'none'; // 初回はアニメーションなし
-        slider.style.left  = activeTab.offsetLeft + 'px';
-        slider.style.width = activeTab.offsetWidth + 'px';
-        // 次フレームからtransitionを有効化
-        requestAnimationFrame(() => { slider.style.transition = ''; });
-      }
-    });
+    this.syncSlider(true);
+
+    if (!this._resizeBound) {
+      this._resizeBound = true;
+      window.addEventListener('resize', () => {
+        const tc = document.getElementById('timeCalcMode');
+        if (tc && tc.style.display !== 'none') {
+          this.syncSlider(true);
+        }
+      });
+    }
 
     // ネットワーク状態の変化を自動監視
     window.addEventListener('online', () => {
@@ -9063,15 +9076,8 @@ const TimeCalc = {
       }
     });
 
-    // グロースライダーをアクティブタブ位置へスムーズ移動
-    requestAnimationFrame(() => {
-      const activeTab = document.getElementById(`calcTab_${mode}`);
-      const slider = document.getElementById('calcTabSlider');
-      if (activeTab && slider) {
-        slider.style.left  = activeTab.offsetLeft + 'px';
-        slider.style.width = activeTab.offsetWidth + 'px';
-      }
-    });
+    // グロースライダーをアクティブタブ位置へ移動
+    this.syncSlider(false);
 
     // 1. 上部セレクターの表示切替
     const splitCtrl = document.getElementById('splitControls');
@@ -9206,6 +9212,38 @@ const TimeCalc = {
         else toBox.classList.remove('active-field');
       }
     }
+  },
+
+  // 4連ナビゲーションタブのグロースライダー位置合わせ
+  syncSlider(instant = false) {
+    const activeTab = document.getElementById(`calcTab_${this.engineMode}`);
+    const slider = document.getElementById('calcTabSlider');
+    if (!activeTab || !slider) return;
+
+    const apply = (isInst, retryCount = 0) => {
+      if (activeTab.offsetWidth === 0) {
+        // 非表示中またはレンダリング前の場合は最大5フレーム再試行
+        if (retryCount < 5) {
+          requestAnimationFrame(() => apply(true, retryCount + 1));
+        }
+        return;
+      }
+      if (isInst) {
+        slider.style.transition = 'none';
+        slider.style.left  = activeTab.offsetLeft + 'px';
+        slider.style.width = activeTab.offsetWidth + 'px';
+        slider.style.opacity = '1';
+        requestAnimationFrame(() => {
+          slider.style.transition = '';
+        });
+      } else {
+        slider.style.left  = activeTab.offsetLeft + 'px';
+        slider.style.width = activeTab.offsetWidth + 'px';
+        slider.style.opacity = '1';
+      }
+    };
+
+    apply(instant);
   },
 
   // 割り勘: 通貨に応じた金額フォーマット
