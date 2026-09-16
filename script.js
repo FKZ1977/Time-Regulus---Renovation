@@ -4392,8 +4392,9 @@ if (document.readyState === "loading") {
    テンキーキーボード表示時の自動スクロール（入力補助OFF時など）
    ========================================================================== */
 let _lastTextInputBlurTime = 0;
-// キーパッド入力のタップ前スクロール位置を記録（iOSの自動スクロールを後で正確に打ち消すため）
-let _scrollYBeforeFocus = 0;
+// touchstartでキーボード表示前の「スクロールすべき絶対Y座標」を事前計算する
+// → focusin のsetTimeout内でscrollTo（絶対値）で一度だけ移動し、iOSの二段階スクロールを排除
+let _targetAbsScrollY = -1; // -1 = 計算なし・スクロール不要
 
 document.addEventListener("focusout", function(e) {
   if (e.target && e.target.tagName === "INPUT" && 
@@ -4404,15 +4405,32 @@ document.addEventListener("focusout", function(e) {
   }
 });
 
-// タップ前のスクロール位置を記録（iOSが自動スクロールする前の値）
+// タップ時点（キーボード出現前）に絶対目標スクロール座標を計算して保存
 document.addEventListener("touchstart", function(e) {
+  _targetAbsScrollY = -1; // リセット
   if (!activeTimePickerGroup &&
       e.target && e.target.tagName === "INPUT" &&
       e.target.type !== "checkbox" &&
       e.target.type !== "radio" &&
       e.target.type !== "button" &&
       e.target.type !== "date") {
-    _scrollYBeforeFocus = window.scrollY;
+
+    const isErrorMode = document.getElementById("errorMode") &&
+                        document.getElementById("errorMode").style.display !== "none";
+    const targetResultId = isErrorMode ? "result" : "reverseResult";
+    const targetEl = document.getElementById(targetResultId);
+
+    if (targetEl) {
+      // 現在のscrollYとBoundingRectからページ上の絶対座標を計算
+      const scrollY = window.scrollY;
+      const rect = targetEl.getBoundingClientRect();
+      const resultBottomAbs = rect.bottom + scrollY; // ページ上の絶対bottom位置（不変）
+
+      // ドラムロール(openTimePicker)と同一基準: result.bottomをinnerHeight-390の位置に合わせるscrollY
+      const pickerHeight = 390;
+      const targetScrollY = resultBottomAbs - (window.innerHeight - pickerHeight);
+      _targetAbsScrollY = Math.max(0, targetScrollY);
+    }
   }
 }, { passive: true });
 
@@ -4432,30 +4450,13 @@ document.addEventListener("focusin", function(e) {
       return;
     }
     
-    // タップ前のスクロール位置を確定（touchstartで記録した値）
-    const savedScrollY = _scrollYBeforeFocus;
+    const targetScrollY = _targetAbsScrollY;
+    if (targetScrollY < 0) return; // 計算なし・スクロール不要
 
-    // キーボード展開完了を待ってから処理
+    // キーボード展開完了を待ってから絶対座標でscrollTo（iOSの自動スクロール量に依存しない）
+    // scrollByではなくscrollToで「最終位置を直接指定」→ 二段階スクロールを排除
     setTimeout(() => {
-      const isErrorMode = document.getElementById("errorMode").style.display !== "none";
-      const targetResultId = isErrorMode ? "result" : "reverseResult";
-      const targetEl = document.getElementById(targetResultId);
-      
-      if (targetEl) {
-        // ① iOSの自動スクロールを完全に打ち消す
-        //    （touchstartで記録したタップ前の位置に即時リセット）
-        window.scrollTo(0, savedScrollY);
-
-        // ② ドラムロールのopenTimePicker()と全く同じ計算式でスクロール
-        //    （rAFでDOM再描画後にBoundingRectを正確に取得）
-        requestAnimationFrame(() => {
-          const rect = targetEl.getBoundingClientRect();
-          const pickerHeight = 390; // ドラムロール開時と同一値
-          if (rect.bottom > window.innerHeight - pickerHeight) {
-            window.scrollBy({ top: rect.bottom - (window.innerHeight - pickerHeight), behavior: "smooth" });
-          }
-        });
-      }
+      window.scrollTo({ top: targetScrollY, behavior: "smooth" });
     }, 400);
   }
 });
