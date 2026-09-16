@@ -1,10 +1,10 @@
-const CACHE_NAME = "time-regulus-v3.3.1-c40";
+const CACHE_NAME = "time-regulus-v3.3.1-c41";
 const urlsToCache = [
   "./",
   "./index.html",
   "./style-lock.css?c=32",
   "./style-main.css?c=50",
-  "./script.js?c=49",
+  "./script.js?c=50",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
