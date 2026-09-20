@@ -873,6 +873,13 @@ function updateKeypadAndPickerRecordButtons() {
 function openTimePicker(group) {
   if (isPickerClosing) return; // 閉じる処理中のゴースト起動を完全ブロック！
 
+  // テンキーが開いている場合は確実に閉じる（シート重なり防止）
+  if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen) {
+    RegulusKeypad.close();
+  }
+  const keypadSheet = document.getElementById('regulusCustomKeypad');
+  if (keypadSheet) keypadSheet.classList.remove('show');
+
   activeTimePickerGroup = group;
   lastActiveTimeGroup = group;
 
@@ -1026,6 +1033,13 @@ const RegulusKeypad = {
     if (!inputEl) return;
     this._clearAutoResetTimer(); // 新規入力時は5秒復帰タイマーをキャンセル
 
+    // ドラムロールが開いている場合は確実に閉じる（シート重なり防止）
+    if (typeof closeTimePicker === 'function') {
+      closeTimePicker(true);
+    }
+    const pickerSheet = document.getElementById('regulusTimePicker');
+    if (pickerSheet) pickerSheet.classList.remove('show');
+
     this.isOpen = true;
     this.activeInput = inputEl;
 
@@ -1092,13 +1106,16 @@ const RegulusKeypad = {
   },
 
   close() {
+    const sheet = document.getElementById('regulusCustomKeypad');
+    const pickerSheet = document.getElementById('regulusTimePicker');
+    if (sheet) sheet.classList.remove('show');
+    if (pickerSheet) pickerSheet.classList.remove('show');
+
     if (!this.isOpen) return;
     this.isOpen = false;
 
     const overlay = document.getElementById('pickerOverlay');
-    const sheet = document.getElementById('regulusCustomKeypad');
     if (overlay) overlay.classList.remove('show');
-    if (sheet) sheet.classList.remove('show');
 
     document.querySelectorAll('.picker-focused').forEach(el => el.classList.remove('picker-focused'));
     document.querySelectorAll('.keypad-active-field').forEach(el => el.classList.remove('keypad-active-field'));
@@ -1205,11 +1222,13 @@ const RegulusKeypad = {
     }
 
     // maxLengthに達している場合は一旦クリアして新数字
-    if (el.maxLength && val.length >= el.maxLength) {
+    if (el.maxLength && el.maxLength > 0 && val.length >= el.maxLength) {
       val = '';
     }
 
     el.value = val + num;
+    // 入力後もfreshFocusは確実にfalseを維持（ボタン押下による再フォーカスイベントでクリアされないようにする）
+    el.dataset.freshFocus = 'false';
     el.dispatchEvent(new Event('input', { bubbles: true }));
 
     // ジャンプが発生しておらず同じ枠に留まっている場合のみ、キャレット位置を末尾に合わせる
@@ -3129,6 +3148,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // ④ タップ時はクリアせず、入力開始時までクリアを待つためのフラグ ＆ 手動選択時の全選択
       el.addEventListener("focus", function() {
+        if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen && RegulusKeypad.activeInput === el) {
+          // テンキー操作中の再フォーカス時は freshFocus を true に戻さない！
+          return;
+        }
         el.dataset.freshFocus = "true";
         el.dataset.keyPressed = "false"; // フォーカス時は未入力にリセット
         if (autoJumpTimer) {
@@ -4447,6 +4470,11 @@ function toggleReverseMode(doToggle = true) {
   const textLeft = document.getElementById("swapTextLeft");
   const textRight = document.getElementById("swapTextRight");
   
+  const clearSlideClasses = () => {
+    if (textLeft) textLeft.classList.remove("slide-to-right");
+    if (textRight) textRight.classList.remove("slide-to-left");
+  };
+
   if (doToggle) {
     reverseMode = reverseMode === "toStandard" ? "toDisplay" : "toStandard";
     
@@ -4456,34 +4484,46 @@ function toggleReverseMode(doToggle = true) {
     
     // アニメーション完了後にテキストをスワップし、クラスを削除して戻す
     setTimeout(() => {
-      updateButtonTexts();
-      if (textLeft) textLeft.classList.remove("slide-to-right");
-      if (textRight) textRight.classList.remove("slide-to-left");
+      try {
+        updateButtonTexts();
+      } finally {
+        clearSlideClasses();
+      }
     }, 150); // cssのtransition 0.25sより少し短めの150msで入れ替え
   } else {
     updateButtonTexts();
+    clearSlideClasses();
   }
 
   function updateButtonTexts() {
     if (textLeft && textRight) {
+      const correctionText = (typeof t === 'function') ? t("find_correction") : "補正時刻を求める";
+      const displayText = (typeof t === 'function') ? t("find_display") : "表示時刻を求める";
       if (reverseMode === "toDisplay") {
-        textLeft.textContent = t("find_display");
-        textRight.textContent = t("find_correction");
+        textLeft.textContent = displayText;
+        textRight.textContent = correctionText;
       } else {
-        textLeft.textContent = t("find_correction");
-        textRight.textContent = t("find_display");
+        textLeft.textContent = correctionText;
+        textRight.textContent = displayText;
       }
     }
   }
 
+  const targetTimeText = (typeof t === 'function') ? t("target_time") : "目標時刻";
+  const displayTimeText = (typeof t === 'function') ? t("display_time") : "表示時刻";
+
   if (reverseMode === "toDisplay") {
-    label.innerHTML = `<span style="color: var(--toggle-bg); font-weight: bold;">${t("target_time")}</span>`; 
-    toggleBtn.classList.add("active-toggle-pink");
-    toggleBtn.classList.remove("active-toggle");
+    if (label) label.innerHTML = `<span style="color: var(--toggle-bg); font-weight: bold;">${targetTimeText}</span>`; 
+    if (toggleBtn) {
+      toggleBtn.classList.add("active-toggle-pink");
+      toggleBtn.classList.remove("active-toggle");
+    }
   } else {
-    label.innerHTML = `<span style="color: var(--accent); font-weight: bold;">${t("display_time")}</span>`; 
-    toggleBtn.classList.remove("active-toggle-pink");
-    toggleBtn.classList.add("active-toggle"); 
+    if (label) label.innerHTML = `<span style="color: var(--accent); font-weight: bold;">${displayTimeText}</span>`; 
+    if (toggleBtn) {
+      toggleBtn.classList.remove("active-toggle-pink");
+      toggleBtn.classList.add("active-toggle"); 
+    }
   }
 
   handleReverseCalculation();
