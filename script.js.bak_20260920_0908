@@ -1,4 +1,4 @@
-const currentVersion = "3.3.1";
+﻿const currentVersion = "3.3.1";
 let lastError = null;
 let hasCalculated = false;
 let reverseMode = "toStandard";
@@ -3666,43 +3666,23 @@ function showErrorMode() {
 }
 
 function showCorrectionMode() { 
-  // 遷移前の不要なテンキー・ドラムロール・余白クラスを完全クリア
-  if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen) {
-    RegulusKeypad.close();
-  }
-  if (typeof closeTimePicker === 'function') {
-    closeTimePicker();
-  }
-  document.body.classList.remove('picker-open-padding');
-  document.body.classList.remove('scroll-locked');
-  document.body.classList.remove('keypad-open');
-  document.body.classList.remove('result-highlighted');
-
   if (window.slideTransition && document.getElementById("modeSelect").style.display !== "none") {
     window.slideTransition("modeSelect", "correctionMode", "left", () => {
-      try {
-        if (lastError) { 
-          applyLastErrorToReverseInputs();
-        }
-        reverseMode = "toStandard";
-        toggleReverseMode(false);
-      } catch (err) {
-        console.error("showCorrectionMode onPrepare error:", err);
-      }
-    });
-  } else {
-    document.getElementById("modeSelect").style.display = "none"; 
-    document.getElementById("correctionMode").style.display = "block";
-    window._isModeTransitioning = false;
-    try {
       if (lastError) { 
         applyLastErrorToReverseInputs();
       }
       reverseMode = "toStandard";
       toggleReverseMode(false);
-    } catch (err) {
-      console.error("showCorrectionMode fallback error:", err);
+    });
+  } else {
+    document.getElementById("modeSelect").style.display = "none"; 
+    document.getElementById("correctionMode").style.display = "block";
+    window._isModeTransitioning = false;
+    if (lastError) { 
+      applyLastErrorToReverseInputs();
     }
+    reverseMode = "toStandard";
+    toggleReverseMode(false);
 
     if (!inputHelperEnabled) {
       setTimeout(() => {
@@ -3761,8 +3741,6 @@ function backToModeSelect() {
   }
   document.body.classList.remove('picker-open-padding');
   document.body.classList.remove('scroll-locked');
-  document.body.classList.remove('keypad-open');
-  document.body.classList.remove('result-highlighted');
   window.scrollTo({ top: 0, left: 0 });
 
   // 現在表示中の画面とスライド方向を特定
@@ -4790,16 +4768,6 @@ function addResultToList() {
 }
 
 function showResultList() {
-  if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen) {
-    RegulusKeypad.close();
-  }
-  if (typeof closeTimePicker === 'function') {
-    closeTimePicker();
-  }
-  document.body.classList.remove('picker-open-padding');
-  document.body.classList.remove('scroll-locked');
-  window.scrollTo({ top: 0, left: 0 });
-
   if (window.slideTransition && document.getElementById("correctionMode").style.display !== "none") {
     window.slideTransition("correctionMode", "resultListPage", "left", () => {
       renderResultList();
@@ -5280,7 +5248,7 @@ document.addEventListener("focusin", function(e) {
     } else {
       // 右スワイプ → 左隣の画面へ戻る
       if (srcId === 'resultListPage') return 'correctionMode';
-      if (srcId === 'correctionMode') return 'modeSelect'; // 補正時刻モードから右スワイプでモード選択画面へ遷移
+      if (srcId === 'correctionMode') return 'modeSelect'; // ※縛り: 補正時刻からモード選択へ直接戻る
       if (srcId === 'errorMode')      return 'modeSelect';
       if (srcId === 'modeSelect')     return 'timeCalcMode';
     }
@@ -5290,6 +5258,8 @@ document.addEventListener("focusin", function(e) {
   // 遷移完了後の副作用・初期化処理
   function afterSwipe(destId, srcId) {
     if (destId === 'resultListPage') {
+      if (typeof renderResultList === 'function') renderResultList();
+      // ☆ヒロさん仕様：結果一覧画面へ遷移したらテンキー・ドラムロールを確実に閉じる
       if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen) {
         RegulusKeypad.close();
       }
@@ -5299,8 +5269,6 @@ document.addEventListener("focusin", function(e) {
       document.body.classList.remove('picker-open-padding');
       document.body.classList.remove('scroll-locked');
       document.body.classList.remove('keypad-open');
-      window.scrollTo({ top: 0, left: 0 });
-      if (typeof renderResultList === 'function') renderResultList();
     }
     if (destId === 'timeCalcMode') {
       if (typeof TimeCalc !== 'undefined') {
@@ -5425,20 +5393,15 @@ document.addEventListener("focusin", function(e) {
     if (typeof window._cancelHoldToReturn === 'function') {
       window._cancelHoldToReturn();
     }
-    // 安全装置: 既にフラグが立っていた場合でもデッドロックを防ぐためリセットして続行
-    if (isTransitioning) {
-      isTransitioning = false;
-      window._isModeTransitioning = false;
-    }
+    if (isTransitioning) return;
     const fEl = getEl(fromId);
     const tEl = getEl(toId);
     if (!fEl || !tEl) {
       if (fEl) fEl.style.display = 'none';
       if (tEl) tEl.style.display = 'block';
-      if (typeof onPrepare === 'function') { try { onPrepare(); } catch (e) {} }
-      if (typeof onComplete === 'function') { try { onComplete(); } catch (e) {} }
+      if (typeof onPrepare === 'function') onPrepare();
+      if (typeof onComplete === 'function') onComplete();
       afterSwipe(toId, fromId);
-      isTransitioning = false;
       window._isModeTransitioning = false;
       return;
     }
@@ -5463,9 +5426,7 @@ document.addEventListener("focusin", function(e) {
     tEl.style.transform  = `translateX(${initBase}px)`;
     tEl.style.display    = 'block';
 
-    if (typeof onPrepare === 'function') {
-      try { onPrepare(); } catch (err) { console.error('slideTransition onPrepare error:', err); }
-    }
+    if (typeof onPrepare === 'function') onPrepare();
 
     // 強制リフロー（初期位置を確実にレンダリング）
     void tEl.offsetHeight;
@@ -5475,7 +5436,7 @@ document.addEventListener("focusin", function(e) {
     fEl.style.transform  = `translateX(${direction === 'left' ? -w : w}px)`;
     tEl.style.transform  = 'translateX(0)';
 
-    const finishTransition = () => {
+    setTimeout(() => {
       fEl.style.display    = 'none';
       fEl.style.transform  = '';
       fEl.style.transition = '';
@@ -5500,28 +5461,17 @@ document.addEventListener("focusin", function(e) {
       void tEl.offsetHeight;
 
       afterSwipe(toId, fromId);
-      if (typeof onComplete === 'function') {
-        try { onComplete(); } catch (err) { console.error('slideTransition onComplete error:', err); }
-      }
-      isTransitioning = false;
-      window._isModeTransitioning = false;
-    };
-
-    setTimeout(finishTransition, 300);
-    // 万が一のアニメーション未完タイムアウト保証
-    setTimeout(() => {
-      isTransitioning = false;
-      window._isModeTransitioning = false;
-    }, 450);
+      if (typeof onComplete === 'function') onComplete();
+      setTimeout(() => {
+        isTransitioning = false;
+        window._isModeTransitioning = false;
+      }, 50);
+    }, 300);
   };
 
-  // スワイプ操作中のみクリック誤作動を防ぐ（テンキー・ピッカー内は絶対に阻害しない）
+  // スワイプ/遷移中はボタン誤作動を防ぐ
   document.addEventListener('click', function(e) {
-    if (isSwiping) {
-      // テンキーやドラムロール内の操作でなければキャンセル
-      if (e.target && e.target.closest && e.target.closest('#regulusCustomKeypad, .picker-bottom-sheet')) {
-        return;
-      }
+    if (isSwiping || isTransitioning) {
       e.preventDefault();
       e.stopPropagation();
     }
@@ -5546,6 +5496,8 @@ document.addEventListener("focusin", function(e) {
       fromEl = null;
       return;
     }
+
+    // これによりドラムロール表示中に誤って画面が切り替わるのを防ぐ
 
     fromEl = getEl(currentId);
     if (!fromEl) return;
@@ -5619,18 +5571,6 @@ document.addEventListener("focusin", function(e) {
         fromEl = null;
         return;
       } else {
-        // 水平スワイプ確定時: 開いているテンキーやドラムロールを即座に閉じる！
-        if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen) {
-          RegulusKeypad.close();
-        }
-        if (typeof closeTimePicker === 'function') {
-          closeTimePicker();
-        }
-        document.body.classList.remove('picker-open-padding');
-        document.body.classList.remove('scroll-locked');
-        document.body.classList.remove('keypad-open');
-        document.body.classList.remove('result-highlighted');
-
         // 水平スワイプ確定時のみtransitionを解除（タップ時のDOM操作によるフォーカス消失バグ回避）
         fromEl.style.transition = 'none';
         // ボタンの :active 視覚効果を抑制（長押し誤判定防止）
@@ -5896,7 +5836,8 @@ document.addEventListener("focusin", function(e) {
 
   document.addEventListener('mousedown', function(e) {
     if (e.button !== 0) return; // 左クリックのみ
-    if (isTransitioning) isTransitioning = false; // 万が一残っていても自己修復
+    if (isTransitioning) return;
+    if (typeof activeTimePickerGroup !== 'undefined' && activeTimePickerGroup) return;
 
     // クリックされた要素が入力コントロールやボタン等の場合はドラッグスワイプを開始しない
     const target = e.target;
@@ -5913,9 +5854,7 @@ document.addEventListener("focusin", function(e) {
           return;
         }
       } else {
-        // ボタン・入力枠そのものをクリックした場合はスワイプを開始しない（通常のタップ/クリックを優先）
-        // ※テンキーのヘッダーや余白、カードの余白などはドラッグ可能
-        if (target.closest('input, textarea, select, button, a, .action-btn, .orbit-planet-btn, .calc-btn, .custom-keypad-btn, .picker-confirm-btn, .keypad-nav-btn, .keypad-record-btn, .currency-drag-handle, .currency-slot-card, .currency-palette-item, .time-calc-screen, .custom-rate-modal-box, .rate-modal-backdrop, .key-cell, .lang-selector')) {
+        if (target.closest('input, textarea, select, button, a, .action-btn, .orbit-planet-btn, .calc-btn, .currency-drag-handle, .currency-slot-card, .currency-palette-item, .time-calc-screen, .custom-rate-modal-box, .rate-modal-backdrop, .key-cell, .lang-selector')) {
           return;
         }
       }
@@ -5960,18 +5899,6 @@ document.addEventListener("focusin", function(e) {
         fromEl = null;
         return;
       } else {
-        // 水平スワイプ確定時: 開いているテンキーやドラムロールを即座に閉じる！
-        if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen) {
-          RegulusKeypad.close();
-        }
-        if (typeof closeTimePicker === 'function') {
-          closeTimePicker();
-        }
-        document.body.classList.remove('picker-open-padding');
-        document.body.classList.remove('scroll-locked');
-        document.body.classList.remove('keypad-open');
-        document.body.classList.remove('result-highlighted');
-
         isSwiping = true;
         fromEl.style.transition = 'none';
         // 水平スワイプ確定: ボタンの :active 視覚効果を抑制

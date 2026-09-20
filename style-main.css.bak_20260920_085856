@@ -1,4 +1,4 @@
-
+﻿
 
 
 
@@ -1590,7 +1590,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 /* 2. 繝懊ヨ繝繧ｷ繝ｼ繝医さ繝ｳ繝・リ (繧ｬ繝ｩ繧ｹ繝｢繝ｫ繝輔ぅ繧ｺ繝) */
 .picker-bottom-sheet {
-  pointer-events: auto !important;
   position: fixed;
   bottom: 0;
   left: 50%;
@@ -1605,7 +1604,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border-right: 1px solid rgba(0, 255, 224, 0.15);
   border-radius: 20px 20px 0 0;
   box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.6);
-  z-index: 100010 !important; /* テンキー・ドラムピッカー本体を最前面（100010）に配置して、入力グループ（100001）やオーバーレイ（99999）より常に上にする！ */
+  z-index: 100000;
   transform: translate(-50%, 100%); /* 蛻晄悄縺ｯ逕ｻ髱｢荳九↓髫縺・*/
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
@@ -2704,8 +2703,7 @@ input[type="time"]:focus::-webkit-datetime-edit-minute-field {
    ピッカー表示中の裏画面タッチスクロール完全ロック制御
    ========================================================================== */
 body.scroll-locked {
-  overflow-y: hidden !important;
-  overflow-x: visible !important;
+  overflow: hidden !important;
   touch-action: pan-x !important; /* 縦スクロールは禁止しつつ、左右スワイプ遷移を確実に許可 */
 }
 
@@ -2730,8 +2728,7 @@ body.result-highlighted #reverseResult {
 }
 
 /* テンキー展開中、オーバーレイはタップを遮断しない（入力枠群をダイレクトに選択可能にする） */
-body.keypad-open .picker-overlay,
-body.picker-open .picker-overlay {
+body.keypad-open .picker-overlay {
   touch-action: pan-x; /* 左右スワイプジェスチャーを許可 */
   pointer-events: none !important;
 }

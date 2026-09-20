@@ -1,4 +1,4 @@
-﻿const i18n_translations = {
+const i18n_translations = {
   ja: {
     "app_title": "Time Regulus",
     "app_subtitle": "タイム　レグルス　v3.3.1",
@@ -89,6 +89,7 @@
     "show_qr": "QRコードを表示",
     "close": "☒ 閉じる",
     "select_time": "時刻を選択",
+    "input_keypad": "テンキー入力",
     "select_display_time": "表示時刻を選択",
     "select_standard_time": "標準時刻を選択",
     "select_error_time": "誤差時間を選択",
@@ -237,6 +238,7 @@
     "show_qr": "Show QR Code",
     "close": "☒ Close",
     "select_time": "Select Time",
+    "input_keypad": "Keypad Input",
     "select_display_time": "Select Display Time",
     "select_standard_time": "Select Standard Time",
     "select_error_time": "Select Error Time",
