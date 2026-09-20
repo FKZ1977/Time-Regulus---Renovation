@@ -280,6 +280,9 @@ function getDirectFieldId(group, type = 'hour') {
   return 'displayHour_direct';
 }
 
+// ★ヒロさん仕様：補正に使う誤差の「日」をタップした際の自動トグルOFF＆離脱時自動トグルON復帰用フラグ
+let _wasInputHelperOnBeforeDaysFocus = false;
+
 function toggleInputHelper(enabled) {
   // 現在開いているピッカーまたはテンキーの状態を記録
   const keypadWasOpen = typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen;
@@ -789,35 +792,25 @@ function getElementDocumentTop(el) {
 }
 
 // 補正時刻計算モードにおける絶対スクロール目標値
-// （非表示状態からテンキーまたは三連ドラムロールを表示させたときと100%同一の絶対値：入力補助トグルが画面上端から8px下に見える位置）
+// ★ヒロさん仕様：持ち上がり過ぎを防ぎ、「結果一覧に記録する」がせり出さないよう、モードタイトルが見える自然な位置（約10px）に抑える！
 function getCorrectionModeScrollTarget() {
-  const toggleEl = document.querySelector("#correctionMode .helper-toggle-wrapper");
-  if (!toggleEl) return 0;
-  
-  // correctionMode内のオフセット（通常約80〜90px）＋ カード上部マージン（約20px）
   const card = document.getElementById("correctionMode");
-  let cardTop = 20;
+  let cardTop = 0;
   if (card) {
     const errorMode = document.getElementById("errorMode");
-    // errorModeが非表示のときは実際のoffsetTopを使用、表示中・遷移中のときは静止時マージン20pxを安全に適用
     if (!errorMode || errorMode.style.display === "none") {
-      cardTop = card.offsetTop || 20;
+      cardTop = card.offsetTop || 0;
     }
   }
-  const pureDocTop = toggleEl.offsetTop + cardTop;
-  return Math.max(0, pureDocTop - 8);
+  return Math.max(0, cardTop - 10);
 }
 
 // 誤差計算モードにおける絶対スクロール目標値
-// （入力補助トグルが画面上端から8px下に見える絶対位置）
+// ★ヒロさん仕様：持ち上がり過ぎを防ぎ、「誤差の計算」モードタイトルまで表示できる自然な位置にする！
 function getErrorModeScrollTarget() {
-  const toggleEl = document.querySelector("#errorMode .helper-toggle-wrapper");
-  if (!toggleEl) return 0;
-  
   const card = document.getElementById("errorMode");
-  const cardTop = card ? (card.offsetTop || 20) : 20;
-  const pureDocTop = toggleEl.offsetTop + cardTop;
-  return Math.max(0, pureDocTop - 8);
+  const cardTop = card ? (card.offsetTop || 0) : 0;
+  return Math.max(0, cardTop - 10);
 }
 
 function scrollScreenToRevealResult(isReverse = false) {
@@ -1031,6 +1024,17 @@ const RegulusKeypad = {
 
   open(inputEl) {
     if (!inputEl) return;
+
+    // ★ヒロさん仕様：元々トグルONから「日」に入り、他を入力するために「日」を離れる際は自動でトグルONに戻す！
+    if (_wasInputHelperOnBeforeDaysFocus && this.activeInput && this.activeInput.id === 'errorDays_direct' && inputEl.id !== 'errorDays_direct') {
+      _wasInputHelperOnBeforeDaysFocus = false;
+      toggleInputHelper(true);
+      let grp = 'error';
+      if (inputEl.closest('#reverseTimeBlock')) grp = 'reverseDisplay';
+      setTimeout(() => { openTimePicker(grp); }, 30);
+      return;
+    }
+
     this._clearAutoResetTimer(); // 新規入力時は5秒復帰タイマーをキャンセル
 
     // ドラムロールが開いている場合は確実に閉じる（シート重なり防止）
@@ -1110,6 +1114,12 @@ const RegulusKeypad = {
     const pickerSheet = document.getElementById('regulusTimePicker');
     if (sheet) sheet.classList.remove('show');
     if (pickerSheet) pickerSheet.classList.remove('show');
+
+    // ★ヒロさん仕様：日を離れる（テンキーを閉じる）際、元々トグルONだった場合は自動でトグルONに戻す！
+    if (_wasInputHelperOnBeforeDaysFocus) {
+      _wasInputHelperOnBeforeDaysFocus = false;
+      toggleInputHelper(true);
+    }
 
     if (!this.isOpen) return;
     this.isOpen = false;
@@ -1272,6 +1282,13 @@ const RegulusKeypad = {
 
   nextField() {
     if (!this.activeInput) return;
+    // ★ヒロさん仕様：元々トグルONから「日」に入っていた場合、次へでトグルONに戻しドラムロールを開く！
+    if (_wasInputHelperOnBeforeDaysFocus && this.activeInput.id === 'errorDays_direct') {
+      _wasInputHelperOnBeforeDaysFocus = false;
+      toggleInputHelper(true);
+      setTimeout(() => { openTimePicker('error'); }, 30);
+      return;
+    }
     const inputs = this._getCurrentGroupInputs();
     const idx = inputs.indexOf(this.activeInput);
     if (idx !== -1 && idx < inputs.length - 1) {
@@ -2922,13 +2939,32 @@ document.addEventListener("DOMContentLoaded", function () {
     drumSec = new TimeRegulusDrum("pickerWheelSec", "sec", onDrumValueChange);
 
     // 「日」の入力枠(errorDays)のフォーカス状態追跡フラグ
-    // iOS テンキーの「∧∨」による隣接time入力への誤フォーカスを「日」選択時のみ防止するため
+    // ★ヒロさん仕様：補正に使う誤差の「日」をタップしたときは自動で入力補助トグルOFFにし、テンキーを起動！
     let isDayFieldFocused = false;
     const errorDaysEl = document.getElementById("errorDays");
     if (errorDaysEl) {
-      errorDaysEl.addEventListener("focus", () => { isDayFieldFocused = true; });
+      const onDaysHelperFocus = (e) => {
+        if (inputHelperEnabled) {
+          if (e && e.preventDefault) e.preventDefault();
+          _wasInputHelperOnBeforeDaysFocus = true;
+          toggleInputHelper(false); // トグルOFFにしてテンキーモードへ即座に移行
+          setTimeout(() => {
+            const dDirect = document.getElementById("errorDays_direct");
+            if (dDirect) {
+              RegulusKeypad.open(dDirect);
+            }
+          }, 30);
+        } else {
+          _wasInputHelperOnBeforeDaysFocus = false;
+        }
+      };
+      errorDaysEl.addEventListener("mousedown", onDaysHelperFocus);
+      errorDaysEl.addEventListener("touchstart", onDaysHelperFocus);
+      errorDaysEl.addEventListener("focus", (e) => {
+        isDayFieldFocused = true;
+        onDaysHelperFocus(e);
+      });
       errorDaysEl.addEventListener("blur", () => {
-        // blur → focus の発火順序を考慮し、わずかな遅延後にフラグをリセット
         setTimeout(() => { isDayFieldFocused = false; }, 100);
       });
     }
@@ -3325,15 +3361,19 @@ document.addEventListener("DOMContentLoaded", function () {
     setupDirectInputField({
       id: "errorDays_direct",
       customEnterHandler: function() {
-        if (inputHelperEnabled) {
-          const el = document.getElementById("errorDays_direct");
-          if (el) el.blur();
-        } else {
-          const nextEl = document.getElementById("errorHours_direct");
-          if (nextEl) {
-            if (RegulusKeypad.isOpen) RegulusKeypad.open(nextEl);
-            else { nextEl.focus(); if (nextEl.select) nextEl.select(); }
-          }
+        // ★ヒロさん仕様：元々トグルONから「日」に入った場合は、次へ進む際にトグルONに戻し、時分秒ドラムロールを開く！
+        if (_wasInputHelperOnBeforeDaysFocus) {
+          _wasInputHelperOnBeforeDaysFocus = false;
+          toggleInputHelper(true);
+          setTimeout(() => {
+            openTimePicker('error');
+          }, 50);
+          return;
+        }
+        const nextEl = document.getElementById("errorHours_direct");
+        if (nextEl) {
+          if (RegulusKeypad.isOpen) RegulusKeypad.open(nextEl);
+          else { nextEl.focus(); if (nextEl.select) nextEl.select(); }
         }
       }
     });
