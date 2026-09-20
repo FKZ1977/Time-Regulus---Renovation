@@ -1,4 +1,4 @@
-const currentVersion = "3.3.1";
+const currentVersion = "3.3.2";
 let lastError = null;
 let hasCalculated = false;
 let reverseMode = "toStandard";
@@ -1272,17 +1272,6 @@ const RegulusKeypad = {
   recordToList() {
     if (typeof addResultToList === 'function') {
       addResultToList();
-      const btns = [document.getElementById('keypadRecordBtn'), document.getElementById('pickerRecordBtn')].filter(Boolean);
-      btns.forEach(btn => {
-        btn.textContent = (typeof t === 'function' ? t('added_to_list') : '✔ 記録しました');
-        btn.classList.add('recorded');
-      });
-      setTimeout(() => {
-        btns.forEach(btn => {
-          btn.textContent = (typeof t === 'function' ? t('record_to_list') : '結果一覧に記録する');
-          btn.classList.remove('recorded');
-        });
-      }, 1200);
     }
   },
 
@@ -2882,7 +2871,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 起動時のバージョンポップアップ
   if (localStorage.getItem("lastVersion") !== currentVersion) {
-    alert("タイムレグルスがv3.3.1にアップデートされました！");
+    alert("タイムレグルスがv3.3.2にアップデートされました！");
     localStorage.setItem("lastVersion", currentVersion);
   }
 
@@ -3065,6 +3054,9 @@ document.addEventListener("DOMContentLoaded", function () {
           result: new Date(entry.result)
         }))
       }));
+      if (typeof normalizeResultHistory === 'function') {
+        normalizeResultHistory();
+      }
     }
     if (resultHistory.length > 0) {
       document.getElementById("showListLink").style.display = "block";
@@ -3801,6 +3793,9 @@ function backToModeSelect() {
 }
 
 function backToCorrectionMode() {
+  const topBtn = document.getElementById("scrollToTopBtn");
+  if (topBtn) topBtn.classList.remove("visible");
+  window.scrollTo({ top: 0, left: 0 });
   if (window.slideTransition && document.getElementById("resultListPage").style.display !== "none") {
     window.slideTransition("resultListPage", "correctionMode", "right");
   } else {
@@ -3857,7 +3852,11 @@ function resetApp(onlyInputs = false) {
   hasCalculatedError = false;
 
   if (typeof TimeCalc !== 'undefined') {
-    TimeCalc.allClear();
+    if (typeof TimeCalc.resetAllTabs === 'function') {
+      TimeCalc.resetAllTabs();
+    } else {
+      TimeCalc.allClear();
+    }
   }
 
   // isStandardOnTop の同期リセット（アニメーションなしで確実に初期のDOM順序へ戻す）
@@ -4704,52 +4703,144 @@ function handleReverseCalculation() {
   updateKeypadAndPickerRecordButtons();
 }
 
+let _recordFeedbackTimer = null;
+
+function showRecordFeedback(status) {
+  const isDuplicate = (status === 'duplicate');
+  const targetText = isDuplicate 
+    ? (typeof t === 'function' ? t('already_recorded') : '既に記録されています')
+    : (typeof t === 'function' ? t('added_to_list') : '✔ 記録しました');
+  const defaultText = (typeof t === 'function' ? t('record_to_list') : '結果一覧に記録する');
+
+  // すべての記録ボタン（画面上、テンキー上、ピッカー上）を更新
+  const btns = [
+    document.getElementById('addToListButton'),
+    document.getElementById('keypadRecordBtn'),
+    document.getElementById('pickerRecordBtn')
+  ].filter(Boolean);
+
+  btns.forEach(btn => {
+    btn.textContent = targetText;
+    if (isDuplicate) {
+      btn.classList.add('already-recorded');
+      btn.classList.remove('recorded');
+    } else {
+      btn.classList.add('recorded');
+      btn.classList.remove('already-recorded');
+    }
+  });
+
+  // 既存タイマーをクリア
+  if (_recordFeedbackTimer) clearTimeout(_recordFeedbackTimer);
+
+  // 1500ms後に元のボタン表示に戻す
+  _recordFeedbackTimer = setTimeout(() => {
+    btns.forEach(btn => {
+      btn.textContent = defaultText;
+      btn.classList.remove('recorded');
+      btn.classList.remove('already-recorded');
+    });
+  }, 1500);
+}
+
+/**
+ * 2つの誤差オブジェクトが同一かどうかを数値・正規化して厳密に判定
+ */
+function isSameError(e1, e2) {
+  if (!e1 || !e2) return false;
+  const d1 = Number(e1.days) || 0;
+  const d2 = Number(e2.days) || 0;
+  const h1 = Number(e1.hours) || 0;
+  const h2 = Number(e2.hours) || 0;
+  const m1 = Number(e1.minutes) || 0;
+  const m2 = Number(e2.minutes) || 0;
+  const s1 = Number(e1.seconds) || 0;
+  const s2 = Number(e2.seconds) || 0;
+  const dir1 = String(e1.direction || "late").trim().toLowerCase();
+  const dir2 = String(e2.direction || "late").trim().toLowerCase();
+
+  return d1 === d2 && h1 === h2 && m1 === m2 && s1 === s2 && dir1 === dir2;
+}
+
+/**
+ * 履歴内に同一誤差のグループが複数存在する場合、1つのグループに統合する
+ */
+function normalizeResultHistory() {
+  if (!Array.isArray(resultHistory) || resultHistory.length <= 1) return;
+  const mergedHistory = [];
+
+  resultHistory.forEach(group => {
+    if (!group || !group.error) return;
+    let existing = mergedHistory.find(g => isSameError(g.error, group.error));
+    if (!existing) {
+      existing = {
+        error: {
+          days: Number(group.error.days) || 0,
+          hours: Number(group.error.hours) || 0,
+          minutes: Number(group.error.minutes) || 0,
+          seconds: Number(group.error.seconds) || 0,
+          direction: String(group.error.direction || "late").trim().toLowerCase()
+        },
+        entries: []
+      };
+      mergedHistory.push(existing);
+    }
+    if (Array.isArray(group.entries)) {
+      group.entries.forEach(entry => {
+        const isEntryDup = existing.entries.some(e => e.id === entry.id || (
+          new Date(e.base).getTime() === new Date(entry.base).getTime() &&
+          new Date(e.result).getTime() === new Date(entry.result).getTime() &&
+          e.mode === entry.mode
+        ));
+        if (!isEntryDup) {
+          existing.entries.push(entry);
+        }
+      });
+    }
+  });
+
+  resultHistory = mergedHistory;
+  saveResultHistory();
+}
+
 function addResultToList() {
   const r = window.latestResult;
-  if (!r) return;
+  if (!r || !r.error) return;
 
-  const padH = String(r.error.hours || 0).padStart(2, '0');
-  const padM = String(r.error.minutes || 0).padStart(2, '0');
-  const errorKey = `${r.error.days}-${padH}-${padM}-${r.error.seconds}-${r.error.direction}`;
-  
-  let group = resultHistory.find(g => g.errorKey === errorKey);
+  const currentError = {
+    days: Number(r.error.days) || 0,
+    hours: Number(r.error.hours) || 0,
+    minutes: Number(r.error.minutes) || 0,
+    seconds: Number(r.error.seconds) || 0,
+    direction: String(r.error.direction || "late").trim().toLowerCase()
+  };
+
+  // 既存の同じ誤差を持つグループを検索
+  let group = resultHistory.find(g => isSameError(g.error, currentError));
 
   if (!group) {
     group = {
-      errorKey,
-      error: r.error,
+      error: currentError,
       entries: []
     };
     resultHistory.push(group);
   }
   
   // 重複チェック
-  const baseMs = r.base.getTime();
-  const resultMs = r.result.getTime();
-  const isDuplicate = group.entries.some(entry => 
-    entry.base.getTime() === baseMs && 
-    entry.result.getTime() === resultMs && 
-    entry.mode === r.mode &&
-    entry.includeDateCorrection === r.includeDateCorrection
-  );
+  const baseMs = (r.base instanceof Date) ? r.base.getTime() : new Date(r.base).getTime();
+  const resultMs = (r.result instanceof Date) ? r.result.getTime() : new Date(r.result).getTime();
+  const isDuplicate = group.entries.some(entry => {
+    const eBaseMs = (entry.base instanceof Date) ? entry.base.getTime() : new Date(entry.base).getTime();
+    const eResultMs = (entry.result instanceof Date) ? entry.result.getTime() : new Date(entry.result).getTime();
+    return eBaseMs === baseMs && 
+           eResultMs === resultMs && 
+           entry.mode === r.mode &&
+           entry.includeDateCorrection === r.includeDateCorrection;
+  });
 
   if (isDuplicate) {
-    const msg = document.getElementById("recordSuccessMessage");
-    const originalText = msg.innerText;
-    msg.innerText = t("already_recorded");
-    msg.style.display = 'inline-block';
-    msg.classList.remove('fade-out');
-    msg.classList.add('fade-in-out');
-    setTimeout(() => {
-        msg.classList.remove('fade-in-out');
-        msg.classList.add('fade-out');
-        setTimeout(() => {
-            msg.style.display = 'none';
-            msg.classList.remove('fade-out');
-            msg.innerText = originalText; 
-        }, 500); 
-    }, 3050); 
-    return;
+    showRecordFeedback('duplicate');
+    return 'duplicate';
   }
   
   const newEntry = {
@@ -4763,30 +4854,122 @@ function addResultToList() {
   
   saveResultHistory();
 
-  gtag('event', 'add_to_list'); 
+  if (typeof gtag === 'function') {
+    gtag('event', 'add_to_list'); 
+  }
 
   renderResultList();
   
   if (resultHistory.length > 0) {
       const listLink = document.getElementById("showListLink");
-      listLink.style.display = "block"; 
-      listLink.innerText = t("show_list_arrow"); 
+      if (listLink) {
+        listLink.style.display = "block"; 
+        listLink.innerText = t("show_list_arrow"); 
+      }
   }
 
-  // 成功メッセージ表示アニメーション
-  const msg = document.getElementById("recordSuccessMessage");
-  msg.innerText = t("added_to_list");
-  msg.style.display = 'inline-block';
-  msg.classList.remove('fade-out');
-  msg.classList.add('fade-in-out');
+  showRecordFeedback('added');
+  return 'added';
+}
+
+function scrollToTopResultList() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+}
+
+function updateScrollToTopBtn() {
+  const btn = document.getElementById("scrollToTopBtn");
+  if (!btn) return;
+  const resultListPage = document.getElementById("resultListPage");
+  const isResultListVisible = resultListPage && resultListPage.style.display !== "none";
+
+  // タイトルが隠れた場合（スクロール量が70px以上）に左下に表示
+  if (isResultListVisible && window.scrollY > 70) {
+    btn.classList.add("visible");
+  } else {
+    btn.classList.remove("visible");
+  }
+}
+
+window.addEventListener("scroll", updateScrollToTopBtn, { passive: true });
+
+function getCurrentCorrectionError() {
+  if (window.latestResult && window.latestResult.error) {
+    return {
+      days: Number(window.latestResult.error.days) || 0,
+      hours: Number(window.latestResult.error.hours) || 0,
+      minutes: Number(window.latestResult.error.minutes) || 0,
+      seconds: Number(window.latestResult.error.seconds) || 0,
+      direction: String(window.latestResult.error.direction || "late").trim().toLowerCase()
+    };
+  }
+
+  // 画面の入力枠から取得
+  const daysEl = document.getElementById("errorDays_direct");
+  const hoursEl = document.getElementById("errorHours_direct");
+  const minEl = document.getElementById("errorMinutes_direct");
+  const secEl = document.getElementById("errorSeconds_direct");
+  const dirEl = document.getElementById("errorDirection");
+
+  const days = (typeof includeDateEnabledCorrection !== 'undefined' && !includeDateEnabledCorrection) 
+    ? 0 
+    : Number(daysEl ? daysEl.value : 0) || 0;
+  const hours = Number(hoursEl ? hoursEl.value : 0) || 0;
+  const minutes = Number(minEl ? minEl.value : 0) || 0;
+  const seconds = Number(secEl ? secEl.value : 0) || 0;
+  const direction = String(dirEl ? dirEl.value : "late").trim().toLowerCase();
+
+  const hasError = (days > 0) || (hours > 0) || (minutes > 0) || (seconds > 0);
+  if (!hasError) return null;
+
+  return { days, hours, minutes, seconds, direction };
+}
+
+function scrollResultListToEndIfOverflow() {
+  // 一番上を表示した直後、今扱い中の誤差の位置、または一番下までぎゅーんとスクロール
   setTimeout(() => {
-      msg.classList.remove('fade-in-out');
-      msg.classList.add('fade-out');
+    const scrollHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    const clientHeight = window.innerHeight || document.documentElement.clientHeight;
+    
+    // スクロール可能な高さがない場合は何もしない
+    if (scrollHeight <= clientHeight + 30) return;
+
+    const currentErr = getCurrentCorrectionError();
+    const groupBoxes = Array.from(document.querySelectorAll(".result-list-group-outer"));
+
+    let targetEl = null;
+
+    if (currentErr && groupBoxes.length > 0) {
+      // 現在扱い中の誤差に合致するグループ枠を探す
+      targetEl = groupBoxes.find(box => box._groupError && isSameError(box._groupError, currentErr));
+    }
+
+    if (targetEl) {
+      // 適合する誤差の位置にとどまるようにぎゅーんとスクロール！
+      const rect = targetEl.getBoundingClientRect();
+      const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const targetTop = Math.max(0, currentScrollTop + rect.top - 16);
+
+      window.scrollTo({
+        top: targetTop,
+        behavior: 'smooth'
+      });
+
+      // 適合位置がわかりやすいよう、わずかにハイライトパルス
+      targetEl.classList.add("group-highlight-pulse");
       setTimeout(() => {
-          msg.style.display = 'none';
-          msg.classList.remove('fade-out');
-      }, 500); 
-  }, 3050); 
+        targetEl.classList.remove("group-highlight-pulse");
+      }, 1200);
+    } else {
+      // 適合する誤差がない場合は一番下までぎゅーんとスクロール
+      window.scrollTo({
+        top: scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }, 200);
 }
 
 function showResultList() {
@@ -4803,15 +4986,117 @@ function showResultList() {
   if (window.slideTransition && document.getElementById("correctionMode").style.display !== "none") {
     window.slideTransition("correctionMode", "resultListPage", "left", () => {
       renderResultList();
+    }, () => {
+      scrollResultListToEndIfOverflow();
     });
   } else {
     document.getElementById("correctionMode").style.display = "none";
     document.getElementById("resultListPage").style.display = "block";
     renderResultList();
+    scrollResultListToEndIfOverflow();
+  }
+}
+
+function restoreCorrectionFromEntry(entry, group, fallbackMode) {
+  if (!entry || !group) return;
+
+  // 1. 誤差入力の復元
+  const err = group.error || {};
+  const eDays = err.days || 0;
+  const eHours = err.hours || 0;
+  const eMinutes = err.minutes || 0;
+  const eSeconds = err.seconds || 0;
+  const eDirection = err.direction || "late";
+
+  const errorDaysEl = document.getElementById("errorDays_direct");
+  if (errorDaysEl) errorDaysEl.value = eDays;
+
+  const errorHoursEl = document.getElementById("errorHours_direct");
+  if (errorHoursEl) errorHoursEl.value = String(eHours).padStart(2, '0');
+
+  const errorMinutesEl = document.getElementById("errorMinutes_direct");
+  if (errorMinutesEl) errorMinutesEl.value = String(eMinutes).padStart(2, '0');
+
+  const errorSecondsEl = document.getElementById("errorSeconds_direct");
+  if (errorSecondsEl) errorSecondsEl.value = String(eSeconds).padStart(2, '0');
+
+  const errorDirectionEl = document.getElementById("errorDirection");
+  if (errorDirectionEl) errorDirectionEl.value = eDirection;
+
+  // ヘルパー用（存在する場合）
+  const hiddenErrorDays = document.getElementById("errorDays");
+  if (hiddenErrorDays) hiddenErrorDays.value = eDays;
+  const hiddenErrorTime = document.getElementById("errorTime");
+  if (hiddenErrorTime) hiddenErrorTime.value = `${String(eHours).padStart(2, '0')}:${String(eMinutes).padStart(2, '0')}`;
+  const hiddenErrorSec = document.getElementById("errorSeconds");
+  if (hiddenErrorSec) hiddenErrorSec.value = eSeconds;
+
+  // 2. 年月日トグルの復元
+  const incDate = (entry.includeDateCorrection !== undefined) ? entry.includeDateCorrection : false;
+  if (typeof toggleIncludeDateCorrection === 'function') {
+    toggleIncludeDateCorrection(incDate);
+  }
+
+  // 3. 対象時刻の復元
+  const baseDate = (entry.base instanceof Date) ? entry.base : new Date(entry.base);
+  if (!isNaN(baseDate.getTime())) {
+    const bY = baseDate.getFullYear();
+    const bM = String(baseDate.getMonth() + 1).padStart(2, '0');
+    const bD = String(baseDate.getDate()).padStart(2, '0');
+    const bH = String(baseDate.getHours()).padStart(2, '0');
+    const bMin = String(baseDate.getMinutes()).padStart(2, '0');
+    const bS = String(baseDate.getSeconds()).padStart(2, '0');
+
+    const rY = document.getElementById("reverseDisplayYear_direct");
+    if (rY) rY.value = bY;
+    const rM = document.getElementById("reverseDisplayMonth_direct");
+    if (rM) rM.value = bM;
+    const rD = document.getElementById("reverseDisplayDay_direct");
+    if (rD) rD.value = bD;
+    const rH = document.getElementById("reverseDisplayHour_direct");
+    if (rH) rH.value = bH;
+    const rMin = document.getElementById("reverseDisplayMin_direct");
+    if (rMin) rMin.value = bMin;
+    const rSec = document.getElementById("reverseDisplaySec_direct");
+    if (rSec) rSec.value = bS;
+
+    // ヘルパー用
+    const hiddenDate = document.getElementById("reverseDisplayDate");
+    if (hiddenDate) hiddenDate.value = `${bY}-${bM}-${bD}`;
+    const hiddenTime = document.getElementById("reverseDisplayTime");
+    if (hiddenTime) hiddenTime.value = `${bH}:${bMin}`;
+    const hiddenSec = document.getElementById("reverseDisplaySeconds");
+    if (hiddenSec) hiddenSec.value = bS;
+  }
+
+  // 4. 計算モードの復元
+  const targetMode = entry.mode || fallbackMode || "toStandard";
+  reverseMode = targetMode;
+  if (typeof toggleReverseMode === 'function') {
+    toggleReverseMode(false);
+  }
+
+  // 5. 再計算を実行
+  if (typeof handleReverseCalculation === 'function') {
+    handleReverseCalculation();
+  }
+
+  // 6. 補正時刻モードへの画面遷移（右スライドで戻る）
+  if (typeof backToCorrectionMode === 'function') {
+    backToCorrectionMode();
+  } else {
+    const topBtn = document.getElementById("scrollToTopBtn");
+    if (topBtn) topBtn.classList.remove("visible");
+    document.getElementById("resultListPage").style.display = "none";
+    document.getElementById("correctionMode").style.display = "block";
+    window.scrollTo({ top: 0, left: 0 });
   }
 }
 
 function renderResultList() {
+  if (typeof normalizeResultHistory === 'function') {
+    normalizeResultHistory();
+  }
   const container = document.getElementById("resultListContainer");
   container.innerHTML = "";
   
@@ -4857,6 +5142,7 @@ function renderResultList() {
     // 縦つぶしレイアウト圧縮の適用
     const outerBox = document.createElement("div");
     outerBox.className = "result-list-group-outer";
+    outerBox._groupError = group.error;
     outerBox.style.padding = "8px 10px";
     outerBox.style.marginBottom = "12px";
     outerBox.style.border = '2px solid var(--text-sub)';
@@ -4905,10 +5191,34 @@ function renderResultList() {
 
       modeEntries.forEach(entry => {
         const line = document.createElement("div");
+        line.className = "result-entry-line";
         line.style.marginBottom = "3px";
         line.style.display = "flex";
         line.style.justifyContent = "space-between";
         line.style.alignItems = "center";
+
+        // ダブルクリック（PC）で補正時刻モードに復元
+        line.addEventListener("dblclick", (e) => {
+          if (e.target.closest(".delete-btn")) return;
+          line.classList.add("restoring-flash");
+          setTimeout(() => line.classList.remove("restoring-flash"), 300);
+          restoreCorrectionFromEntry(entry, group, mode);
+        });
+
+        // ダブルタップ（スマホ・タッチデバイス）で補正時刻モードに復元
+        let lastTapTime = 0;
+        line.addEventListener("touchend", (e) => {
+          if (e.target.closest(".delete-btn")) return;
+          const currentTime = Date.now();
+          const tapLength = currentTime - lastTapTime;
+          if (tapLength < 350 && tapLength > 0) {
+            e.preventDefault();
+            line.classList.add("restoring-flash");
+            setTimeout(() => line.classList.remove("restoring-flash"), 300);
+            restoreCorrectionFromEntry(entry, group, mode);
+          }
+          lastTapTime = currentTime;
+        }, { passive: false });
         
         let baseStr, resultStr;
         if (entry.includeDateCorrection === undefined || entry.includeDateCorrection) {
@@ -4969,7 +5279,10 @@ function renderResultList() {
         const deleteBtn = document.createElement("button");
         deleteBtn.className = "delete-btn";
         deleteBtn.innerText = t("delete");
-        deleteBtn.onclick = () => deleteResultById(entry.id); 
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteResultById(entry.id);
+        };
         line.appendChild(deleteBtn);
         
         innerBox.appendChild(line);
@@ -5255,9 +5568,9 @@ document.addEventListener("focusin", function(e) {
   }
 
   // 左スワイプ(dX<0)=進む(右隣へ), 右スワイプ(dX>0)=戻る(左隣へ)
-  // 配置: [レート] ⇄ [割り勘] ⇄ [電卓] ⇄ [時間電卓] ⇄ [モード選択] ⇄ [誤差の計算] ⇄ [補正時刻の計算] ⇄ [結果一覧]
+  // 配置: [割り勘] ⇄ [レート] ⇄ [電卓] ⇄ [時間電卓] ⇄ [モード選択] ⇄ [誤差の計算] ⇄ [補正時刻の計算] ⇄ [結果一覧]
   // '__MULTI_TAB__' = timeCalcMode内のタブ切り替え（画面遷移なし）
-  const MULTI_TAB_ORDER = ['currency', 'split', 'precision', 'time'];
+  const MULTI_TAB_ORDER = ['split', 'currency', 'precision', 'time'];
   function getDestId(srcId, dX) {
     if (srcId === 'timeCalcMode') {
       const mode = (typeof TimeCalc !== 'undefined') ? TimeCalc.engineMode : 'time';
@@ -5267,7 +5580,7 @@ document.addEventListener("focusin", function(e) {
         if (idx < MULTI_TAB_ORDER.length - 1) return '__MULTI_TAB__';
         return 'modeSelect';
       } else {
-        // 右スワイプ: タブ左へ。currency(最左)のときは行き先なし
+        // 右スワイプ: タブ左へ。split(最左)のときは行き先なし
         if (idx > 0) return '__MULTI_TAB__';
         return null;
       }
@@ -5301,6 +5614,12 @@ document.addEventListener("focusin", function(e) {
       document.body.classList.remove('keypad-open');
       window.scrollTo({ top: 0, left: 0 });
       if (typeof renderResultList === 'function') renderResultList();
+      if (typeof scrollResultListToEndIfOverflow === 'function') {
+        scrollResultListToEndIfOverflow();
+      }
+    } else {
+      const topBtn = document.getElementById("scrollToTopBtn");
+      if (topBtn) topBtn.classList.remove("visible");
     }
     if (destId === 'timeCalcMode') {
       if (typeof TimeCalc !== 'undefined') {
@@ -5381,7 +5700,9 @@ document.addEventListener("focusin", function(e) {
       }
     }
     if (destId === 'correctionMode') {
-      if (typeof reverseMode !== 'undefined') reverseMode = "toStandard";
+      if (srcId !== 'resultListPage') {
+        if (typeof reverseMode !== 'undefined') reverseMode = "toStandard";
+      }
       if (typeof toggleReverseMode === 'function') toggleReverseMode(false);
 
       const isKeypadOpen = typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen;
@@ -5564,9 +5885,9 @@ document.addEventListener("focusin", function(e) {
     // 電卓液晶画面内でのスクロール優先判定:
     // 文字列がはみ出ていて実際に左右スクロール可能な要素を直接なぞった場合は、テキスト閲覧スクロールを優先
     const scrollableDisplay = (e.target && e.target.closest)
-      ? e.target.closest('.time-calc-formula, .time-calc-main-display')
+      ? e.target.closest('.time-calc-sub-display, .time-calc-main-display, .time-calc-formula')
       : null;
-    if (scrollableDisplay && scrollableDisplay.scrollWidth > scrollableDisplay.clientWidth + 2) {
+    if (scrollableDisplay && scrollableDisplay.scrollWidth > scrollableDisplay.clientWidth + 1) {
       isSwiping = false;
       fromEl = null;
       return;
@@ -5908,8 +6229,8 @@ document.addEventListener("focusin", function(e) {
           return;
         }
         // 文字列がはみ出ていて左右スクロール可能なテキスト要素上ではマウスドラッグスクロールを優先
-        const scrollableDisplay = target.closest('.time-calc-formula, .time-calc-main-display');
-        if (scrollableDisplay && scrollableDisplay.scrollWidth > scrollableDisplay.clientWidth + 2) {
+        const scrollableDisplay = target.closest('.time-calc-sub-display, .time-calc-main-display, .time-calc-formula');
+        if (scrollableDisplay && scrollableDisplay.scrollWidth > scrollableDisplay.clientWidth + 1) {
           return;
         }
       } else {
@@ -9506,6 +9827,7 @@ const TimeCalc = {
   memoryType: 'time',       // 'time' または 'scalar'
   displayFormat: 'COLON',   // 'COLON' (HH:MM:SS) または 'HMS' (X時間Y分Z秒)
   isNewInput: true,         // 次のキー入力で currentInput を上書きするか
+  tabStates: null,          // タブごとの入力保持用ステート辞書
   history: [],              // 履歴配列
 
   // 割り勘計算用ステート (ヒロさん仕様: 多通貨対応)
@@ -9835,7 +10157,7 @@ const TimeCalc = {
     el._swipeNavInitialized = true;
 
     // タブ順（HTMLの左→右の並び順に一致）
-    const TAB_ORDER = ['currency', 'split', 'precision', 'time'];
+    const TAB_ORDER = ['split', 'currency', 'precision', 'time'];
     const SWIPE_THRESHOLD = 50;   // タブ切り替えに必要な最小水平移動量(px)
     const ANGLE_THRESHOLD = 35;   // 水平スワイプとみなす最大傾き角度(°)
 
@@ -9848,6 +10170,17 @@ const TimeCalc = {
     el.addEventListener('touchstart', (e) => {
       // マルチタッチは無視
       if (e.touches.length !== 1) { swiping = false; return; }
+
+      // 液晶画面内の長文表示要素（サブディスプレイ、メインディスプレイ、数式など）の上をタッチした場合、
+      // 左右スクロール可能な長文であれば文字スクロールを最優先し、タブ切り替えスワイプを無効化
+      const scrollableDisplay = (e.target && e.target.closest)
+        ? e.target.closest('.time-calc-sub-display, .time-calc-main-display, .time-calc-formula')
+        : null;
+      if (scrollableDisplay && scrollableDisplay.scrollWidth > scrollableDisplay.clientWidth + 1) {
+        swiping = false;
+        return;
+      }
+
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
       touchStartTime = Date.now();
@@ -9856,6 +10189,16 @@ const TimeCalc = {
 
     el.addEventListener('touchmove', (e) => {
       if (!swiping || e.touches.length !== 1) return;
+
+      // 移動中も長文要素上ならスワイプを即キャンセルして文字スクロールに専念
+      const scrollableDisplay = (e.target && e.target.closest)
+        ? e.target.closest('.time-calc-sub-display, .time-calc-main-display, .time-calc-formula')
+        : null;
+      if (scrollableDisplay && scrollableDisplay.scrollWidth > scrollableDisplay.clientWidth + 1) {
+        swiping = false;
+        return;
+      }
+
       const dx = e.touches[0].clientX - touchStartX;
       const dy = e.touches[0].clientY - touchStartY;
       // スクロール中（縦方向が支配的）はスワイプ判定をキャンセル
@@ -9899,7 +10242,6 @@ const TimeCalc = {
     // ※ 数式・メインディスプレイ・サブディスプレイは setupDisplayDragScroll で
     //   横スクロールを担当するため、それらの要素内からドラッグ開始した場合は
     //   タブ切り替えを発動しない。
-    const DRAG_DISPLAY_IDS = ['timeCalcSubDisplay', 'timeCalcMainDisplay', 'timeCalcFormula'];
     const MOUSE_THRESHOLD = 80;  // タブ切り替えに必要な最小水平移動量(px) ─ マウスはやや多め
     const MOUSE_MAX_TIME = 800;  // ms以内のドラッグのみ対象
 
@@ -9911,11 +10253,10 @@ const TimeCalc = {
     el.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
       // ドラッグ開始位置が表示エリア内なら横スクロール優先でスキップ
-      const isDisplayArea = DRAG_DISPLAY_IDS.some(id => {
-        const target = document.getElementById(id);
-        return target && target.contains(e.target);
-      });
-      if (isDisplayArea) return;
+      const isDisplayArea = (e.target && e.target.closest)
+        ? e.target.closest('.time-calc-sub-display, .time-calc-main-display, .time-calc-formula')
+        : null;
+      if (isDisplayArea && isDisplayArea.scrollWidth > isDisplayArea.clientWidth + 1) return;
 
       mouseStartX = e.clientX;
       mouseStartY = e.clientY;
@@ -9954,11 +10295,169 @@ const TimeCalc = {
     });
   },
 
-  // 4連ナビゲーションタブによるモード設定
+  // タブ別入力状態の初期化
+  initTabStates() {
+    if (!this.tabStates) {
+      this.tabStates = {
+        time: {
+          currentInput: "0",
+          formula: "",
+          leftValue: null,
+          pendingOp: null,
+          isNewInput: true,
+          displayFormat: 'COLON'
+        },
+        precision: {
+          currentInput: "0",
+          formula: "",
+          leftValue: null,
+          pendingOp: null,
+          isNewInput: true
+        },
+        split: {
+          splitCurrency: this.splitCurrency || 'JPY',
+          splitTotal: this.splitTotal || 0,
+          splitPeople: this.splitPeople || 2,
+          splitRounding: this.splitRounding || 1000,
+          splitActiveField: this.splitActiveField || 'total',
+          splitInputStr: this.splitInputStr || '0',
+          splitMoreCount: this.splitMoreCount || 0,
+          splitLessCount: this.splitLessCount || 0,
+          splitTierGap: this.splitTierGap || 1000,
+          isNewInput: true
+        },
+        currency: {
+          currencyFrom: this.currencyFrom || 'USD',
+          currencyTo: this.currencyTo || 'JPY',
+          currencyActiveField: this.currencyActiveField || 'from',
+          currencyAmount: this.currencyAmount || 0,
+          currencyInputStr: this.currencyInputStr || '0',
+          isNewInput: true
+        }
+      };
+    }
+  },
+
+  // 現在のタブの入力状態を保存
+  saveCurrentTabState() {
+    this.initTabStates();
+    const mode = this.engineMode;
+    if (mode === 'time') {
+      this.tabStates.time = {
+        currentInput: this.currentInput,
+        formula: this.formula,
+        leftValue: this.leftValue,
+        pendingOp: this.pendingOp,
+        isNewInput: this.isNewInput,
+        displayFormat: this.displayFormat
+      };
+    } else if (mode === 'precision') {
+      this.tabStates.precision = {
+        currentInput: this.currentInput,
+        formula: this.formula,
+        leftValue: this.leftValue,
+        pendingOp: this.pendingOp,
+        isNewInput: this.isNewInput
+      };
+    } else if (mode === 'split') {
+      this.tabStates.split = {
+        splitCurrency: this.splitCurrency,
+        splitTotal: this.splitTotal,
+        splitPeople: this.splitPeople,
+        splitRounding: this.splitRounding,
+        splitActiveField: this.splitActiveField,
+        splitInputStr: this.splitInputStr,
+        splitMoreCount: this.splitMoreCount,
+        splitLessCount: this.splitLessCount,
+        splitTierGap: this.splitTierGap,
+        isNewInput: this.isNewInput
+      };
+    } else if (mode === 'currency') {
+      this.tabStates.currency = {
+        currencyFrom: this.currencyFrom,
+        currencyTo: this.currencyTo,
+        currencyActiveField: this.currencyActiveField,
+        currencyAmount: this.currencyAmount,
+        currencyInputStr: this.currencyInputStr,
+        isNewInput: this.isNewInput
+      };
+    }
+  },
+
+  // 切り替え先タブの入力状態を復元
+  restoreTabState(mode) {
+    this.initTabStates();
+    const s = this.tabStates[mode];
+    if (!s) return;
+
+    if (mode === 'time') {
+      this.currentInput = s.currentInput !== undefined ? s.currentInput : '0';
+      this.formula = s.formula !== undefined ? s.formula : '';
+      this.leftValue = s.leftValue !== undefined ? s.leftValue : null;
+      this.pendingOp = s.pendingOp !== undefined ? s.pendingOp : null;
+      this.isNewInput = s.isNewInput !== undefined ? s.isNewInput : true;
+      if (s.displayFormat) this.displayFormat = s.displayFormat;
+    } else if (mode === 'precision') {
+      this.currentInput = s.currentInput !== undefined ? s.currentInput : '0';
+      this.formula = s.formula !== undefined ? s.formula : '';
+      this.leftValue = s.leftValue !== undefined ? s.leftValue : null;
+      this.pendingOp = s.pendingOp !== undefined ? s.pendingOp : null;
+      this.isNewInput = s.isNewInput !== undefined ? s.isNewInput : true;
+    } else if (mode === 'split') {
+      if (s.splitCurrency) this.splitCurrency = s.splitCurrency;
+      this.splitTotal = s.splitTotal !== undefined ? s.splitTotal : 0;
+      this.splitPeople = s.splitPeople !== undefined ? s.splitPeople : 2;
+      this.splitRounding = s.splitRounding !== undefined ? s.splitRounding : 1000;
+      this.splitActiveField = s.splitActiveField || 'total';
+      this.splitInputStr = s.splitInputStr !== undefined ? s.splitInputStr : '0';
+      this.splitMoreCount = s.splitMoreCount !== undefined ? s.splitMoreCount : 0;
+      this.splitLessCount = s.splitLessCount !== undefined ? s.splitLessCount : 0;
+      this.splitTierGap = s.splitTierGap !== undefined ? s.splitTierGap : 1000;
+      this.isNewInput = s.isNewInput !== undefined ? s.isNewInput : true;
+      this.renderSplitRoundingPills();
+    } else if (mode === 'currency') {
+      if (s.currencyFrom) this.currencyFrom = s.currencyFrom;
+      if (s.currencyTo) this.currencyTo = s.currencyTo;
+      this.currencyActiveField = s.currencyActiveField || 'from';
+      this.currencyAmount = s.currencyAmount !== undefined ? s.currencyAmount : 0;
+      this.currencyInputStr = s.currencyInputStr !== undefined ? s.currencyInputStr : '0';
+      this.isNewInput = s.isNewInput !== undefined ? s.isNewInput : true;
+    }
+  },
+
+  // 全タブの入力状態を完全にリセット（アプリ初期化用）
+  resetAllTabs() {
+    this.tabStates = null;
+    this.initTabStates();
+    this.currentInput = '0';
+    this.formula = '';
+    this.leftValue = null;
+    this.pendingOp = null;
+    this.isNewInput = true;
+    this.splitInputStr = '0';
+    this.splitTotal = 0;
+    this.splitPeople = 2;
+    this.splitMoreCount = 0;
+    this.splitLessCount = 0;
+    this.currencyInputStr = '0';
+    this.currencyAmount = 0;
+    this.syncEngineUI();
+    this.updateDisplay();
+  },
+
+  // 4連ナビゲーションタブによるモード設定（状態を保持して切り替え）
   setEngineMode(mode) {
     if (!['time', 'precision', 'split', 'currency'].includes(mode)) return;
+    if (this.engineMode === mode) return;
+
+    // 1. 移動前のタブの入力状態を保存
+    this.saveCurrentTabState();
+
     this.engineMode = mode;
-    this.allClear();
+
+    // 2. 移動先タブの入力状態を復元（リセットしない）
+    this.restoreTabState(mode);
+
     this.syncEngineUI();
     this.updateDisplay();
     if (mode === 'currency') {
@@ -11114,19 +11613,25 @@ const TimeCalc = {
   },
 
   allClear() {
-    this.currentInput = '0';
-    this.formula = '';
-    this.leftValue = null;
-    this.pendingOp = null;
-    this.isNewInput = true;
-    if (this.engineMode === 'split') {
+    if (this.engineMode === 'time' || this.engineMode === 'precision') {
+      this.currentInput = '0';
+      this.formula = '';
+      this.leftValue = null;
+      this.pendingOp = null;
+      this.isNewInput = true;
+    } else if (this.engineMode === 'split') {
       this.splitInputStr = '0';
       this.splitTotal = 0;
       this.splitPeople = 2;
+      this.splitMoreCount = 0;
+      this.splitLessCount = 0;
+      this.isNewInput = true;
     } else if (this.engineMode === 'currency') {
       this.currencyInputStr = '0';
       this.currencyAmount = 0;
+      this.isNewInput = true;
     }
+    this.saveCurrentTabState();
   },
 
   parseValue(str) {
@@ -11527,6 +12032,10 @@ const TimeCalc = {
     });
     if (this.history.length > 30) this.history.pop();
     this.renderHistory();
+    const drawer = document.getElementById('timeCalcHistoryDrawer');
+    if (drawer) {
+      drawer.scrollTop = 0;
+    }
   },
 
   deleteHistoryItem(idx) {
@@ -11542,13 +12051,21 @@ const TimeCalc = {
   },
 
   renderHistory() {
+    const drawer = document.getElementById('timeCalcHistoryDrawer');
     const listEl = document.getElementById('timeCalcHistoryList');
-    if (!listEl) return;
+
     if (this.history.length === 0) {
-      const emptyMsg = typeof t === 'function' ? (t('no_records') || '記録された結果はありません。') : '記録された結果はありません。';
-      listEl.innerHTML = `<div class="time-calc-history-empty">${emptyMsg}</div>`;
+      if (drawer) drawer.style.display = 'none';
+      if (listEl) {
+        const emptyMsg = typeof t === 'function' ? (t('no_records') || '記録された結果はありません。') : '記録された結果はありません。';
+        listEl.innerHTML = `<div class="time-calc-history-empty">${emptyMsg}</div>`;
+      }
       return;
     }
+
+    if (drawer) drawer.style.display = 'block';
+    if (!listEl) return;
+
     listEl.innerHTML = this.history.map((item, idx) => `
       <div class="time-calc-history-item" onclick="TimeCalc.loadHistoryItem(${idx})">
         <div class="hist-content">
