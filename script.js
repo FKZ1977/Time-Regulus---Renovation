@@ -317,7 +317,7 @@ function toggleInputHelper(enabled) {
     "displayHour_direct", "displayMin_direct", "displaySec_direct",
     "standardYear_direct", "standardMonth_direct", "standardDay_direct",
     "standardHour_direct", "standardMin_direct", "standardSec_direct",
-    "errorDays_direct", "errorHours_direct", "errorMinutes_direct", "errorSeconds_direct",
+    "errorDays", "errorDays_direct", "errorHours_direct", "errorMinutes_direct", "errorSeconds_direct",
     "reverseDisplayYear_direct", "reverseDisplayMonth_direct", "reverseDisplayDay_direct",
     "reverseDisplayHour_direct", "reverseDisplayMin_direct", "reverseDisplaySec_direct"
   ];
@@ -1037,12 +1037,17 @@ const RegulusKeypad = {
     if (!inputEl) return;
 
     // ★ヒロさん仕様：元々トグルONから「日」に入り、他を入力するために「日」を離れる際は自動でトグルONに戻す！
-    if (_wasInputHelperOnBeforeDaysFocus && this.activeInput && this.activeInput.id === 'errorDays_direct' && inputEl.id !== 'errorDays_direct') {
+    if (_wasInputHelperOnBeforeDaysFocus && inputEl.id !== 'errorDays_direct' && inputEl.id !== 'errorDays') {
       _wasInputHelperOnBeforeDaysFocus = false;
       toggleInputHelper(true);
       let grp = 'error';
-      if (inputEl.closest('#reverseTimeBlock')) grp = 'reverseDisplay';
-      setTimeout(() => { openTimePicker(grp); }, 30);
+      if (inputEl.closest('#reverseTimeBlock') || inputEl.id.includes('reverseDisplay')) grp = 'reverseDisplay';
+      else if (inputEl.closest('#errorModeDisplayInputGroup') || inputEl.id.includes('display')) grp = 'display';
+      else if (inputEl.closest('#errorModeStandardInputGroup') || inputEl.id.includes('standard')) grp = 'standard';
+      setTimeout(() => { 
+        isPickerClosing = false;
+        openTimePicker(grp); 
+      }, 30);
       return;
     }
 
@@ -2866,42 +2871,64 @@ document.addEventListener("DOMContentLoaded", function () {
     drumMin = new TimeRegulusDrum("pickerWheelMin", "min", onDrumValueChange);
     drumSec = new TimeRegulusDrum("pickerWheelSec", "sec", onDrumValueChange);
 
-    // 「日」の入力枠(errorDays)のフォーカス状態追跡フラグ
+    // 「日」の入力枠(errorDays & errorDays_direct)のフォーカス状態追跡フラグ
     // ★ヒロさん仕様：補正に使う誤差の「日」をタップしたときは自動で入力補助トグルOFFにし、テンキーを起動！
-    let isDayFieldFocused = false;
-    const errorDaysEl = document.getElementById("errorDays");
-    if (errorDaysEl) {
+    // （カレンダー選択後でもiPhoneのネイティブテンキーを100%完全抑止）
+    const setupDaysFieldListeners = (el) => {
+      if (!el) return;
+      el.setAttribute("inputmode", "none");
       const onDaysHelperFocus = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (e && e.stopPropagation) e.stopPropagation();
+        el.blur();
+
         if (inputHelperEnabled) {
-          if (e && e.preventDefault) e.preventDefault();
           _wasInputHelperOnBeforeDaysFocus = true;
-          toggleInputHelper(false); // トグルOFFにしてテンキーモードへ即座に移行
+          toggleInputHelper(false); // トグルOFFにしてテンキーモードへ移行
           setTimeout(() => {
             const dDirect = document.getElementById("errorDays_direct");
             if (dDirect) {
+              dDirect.setAttribute("inputmode", "none");
               RegulusKeypad.open(dDirect);
             }
           }, 30);
         } else {
           _wasInputHelperOnBeforeDaysFocus = false;
+          const dDirect = document.getElementById("errorDays_direct");
+          if (dDirect) {
+            dDirect.setAttribute("inputmode", "none");
+            RegulusKeypad.open(dDirect);
+          }
         }
       };
-      errorDaysEl.addEventListener("mousedown", onDaysHelperFocus);
-      errorDaysEl.addEventListener("touchstart", onDaysHelperFocus);
-      errorDaysEl.addEventListener("focus", (e) => {
-        isDayFieldFocused = true;
+
+      el.addEventListener("touchstart", onDaysHelperFocus, { passive: false });
+      el.addEventListener("mousedown", onDaysHelperFocus);
+      el.addEventListener("focus", (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        el.blur();
         onDaysHelperFocus(e);
       });
-      errorDaysEl.addEventListener("blur", () => {
-        setTimeout(() => { isDayFieldFocused = false; }, 100);
-      });
-    }
+    };
+
+    setupDaysFieldListeners(document.getElementById("errorDays"));
+    setupDaysFieldListeners(document.getElementById("errorDays_direct"));
 
     // 時分秒セレクト・インプットのネイティブ起動を抑止し、カスタム三連無限ドラムピッカーをフック起動
     const hookTimePicker = (triggerId, group, isDirectField = false) => {
       const el = document.getElementById(triggerId);
       if (!el) return;
       const handler = (e) => {
+        if (_wasInputHelperOnBeforeDaysFocus) {
+          _wasInputHelperOnBeforeDaysFocus = false;
+          toggleInputHelper(true);
+          e.preventDefault();
+          e.stopPropagation();
+          el.blur();
+          isPickerClosing = false;
+          openTimePicker(group);
+          return;
+        }
         if (isDirectField && !inputHelperEnabled) {
           // 直接入力枠で、かつ入力補助OFFのときはオリジナルカスタムテンキーを起動！
           e.preventDefault();
@@ -3100,6 +3127,47 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // タップ時にオリジナルカスタムテンキーを起動（ネイティブキーボードを完全抑止）
       const directKeypadOpen = (e) => {
+        if (id === "errorDays_direct" || id === "errorDays") {
+          // 「日」枠の場合は入力補助ON/OFFにかかわらずテンキー起動＆トグル連動（ネイティブキーボードを完全阻止）
+          if (e && e.preventDefault) e.preventDefault();
+          if (e && e.stopPropagation) e.stopPropagation();
+          el.blur();
+          if (inputHelperEnabled) {
+            _wasInputHelperOnBeforeDaysFocus = true;
+            toggleInputHelper(false);
+            setTimeout(() => {
+              const dDirect = document.getElementById("errorDays_direct");
+              if (dDirect) {
+                dDirect.setAttribute("inputmode", "none");
+                RegulusKeypad.open(dDirect);
+              }
+            }, 30);
+          } else {
+            _wasInputHelperOnBeforeDaysFocus = false;
+            el.setAttribute("inputmode", "none");
+            RegulusKeypad.open(el);
+          }
+          return;
+        }
+
+        // 「日」以外の枠がタップされた場合：
+        if (_wasInputHelperOnBeforeDaysFocus) {
+          _wasInputHelperOnBeforeDaysFocus = false;
+          toggleInputHelper(true);
+          if (e && e.preventDefault) e.preventDefault();
+          if (e && e.stopPropagation) e.stopPropagation();
+          el.blur();
+
+          let grp = 'error';
+          if (id.includes('reverseDisplay') || el.closest('#reverseTimeBlock')) grp = 'reverseDisplay';
+          else if (id.includes('display') || el.closest('#errorModeDisplayInputGroup')) grp = 'display';
+          else if (id.includes('standard') || el.closest('#errorModeStandardInputGroup')) grp = 'standard';
+          
+          isPickerClosing = false;
+          openTimePicker(grp);
+          return;
+        }
+
         if (!inputHelperEnabled) {
           e.preventDefault();
           e.stopPropagation();
