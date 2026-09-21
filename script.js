@@ -1036,20 +1036,7 @@ const RegulusKeypad = {
   open(inputEl) {
     if (!inputEl) return;
 
-    // ★ヒロさん仕様：元々トグルONから「日」に入り、他を入力するために「日」を離れる際は自動でトグルONに戻す！
-    if (_wasInputHelperOnBeforeDaysFocus && inputEl.id !== 'errorDays_direct' && inputEl.id !== 'errorDays') {
-      _wasInputHelperOnBeforeDaysFocus = false;
-      toggleInputHelper(true);
-      let grp = 'error';
-      if (inputEl.closest('#reverseTimeBlock') || inputEl.id.includes('reverseDisplay')) grp = 'reverseDisplay';
-      else if (inputEl.closest('#errorModeDisplayInputGroup') || inputEl.id.includes('display')) grp = 'display';
-      else if (inputEl.closest('#errorModeStandardInputGroup') || inputEl.id.includes('standard')) grp = 'standard';
-      setTimeout(() => { 
-        isPickerClosing = false;
-        openTimePicker(grp); 
-      }, 30);
-      return;
-    }
+
 
     this._clearAutoResetTimer(); // 新規入力時は5秒復帰タイマーをキャンセル
 
@@ -1298,15 +1285,22 @@ const RegulusKeypad = {
   },
 
   nextField() {
-    if (!this.activeInput) return;
-    // ★ヒロさん仕様：元々トグルONから「日」に入っていた場合、次へでトグルONに戻しドラムロールを開く！
-    if (_wasInputHelperOnBeforeDaysFocus && this.activeInput.id === 'errorDays_direct') {
+    // ★ヒロさん仕様：元々入力補助ONから「日」に入っていた場合、他の入力枠（時）へ進むときは自動で入力補助ONに戻す！
+    if (_wasInputHelperOnBeforeDaysFocus && this.activeInput && (this.activeInput.id === 'errorDays_direct' || this.activeInput.id === 'errorDays')) {
       _wasInputHelperOnBeforeDaysFocus = false;
       toggleInputHelper(true);
-      setTimeout(() => { openTimePicker('error'); }, 30);
+      setTimeout(() => {
+        isPickerClosing = false;
+        openTimePicker('error');
+      }, 30);
       return;
     }
+
     const inputs = this._getCurrentGroupInputs();
+    if (!this.activeInput) {
+      if (inputs.length > 0) this.open(inputs[0]);
+      return;
+    }
     const idx = inputs.indexOf(this.activeInput);
     if (idx !== -1 && idx < inputs.length - 1) {
       this.open(inputs[idx + 1]);
@@ -1314,8 +1308,11 @@ const RegulusKeypad = {
   },
 
   prevField() {
-    if (!this.activeInput) return;
     const inputs = this._getCurrentGroupInputs();
+    if (!this.activeInput) {
+      if (inputs.length > 0) this.open(inputs[0]);
+      return;
+    }
     const idx = inputs.indexOf(this.activeInput);
     if (idx > 0) {
       this.open(inputs[idx - 1]);
@@ -1331,8 +1328,8 @@ const RegulusKeypad = {
   _getCurrentGroupInputs() {
     const visibleMode = document.querySelector('#errorMode:not([style*="display: none"]), #correctionMode:not([style*="display: none"])');
     if (!visibleMode) return [];
-    return Array.from(visibleMode.querySelectorAll('.direct-group input, .unit-capsule-wrapper input, .direct-capsule-wrapper input'))
-      .filter(el => el.offsetParent !== null);
+    return Array.from(visibleMode.querySelectorAll('input[id*="direct"], input[id="errorDays"]'))
+      .filter(el => el.offsetParent !== null && !el.disabled);
   }
 };
 
@@ -2882,24 +2879,22 @@ document.addEventListener("DOMContentLoaded", function () {
         if (e && e.stopPropagation) e.stopPropagation();
         el.blur();
 
+        if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen && RegulusKeypad.activeInput && RegulusKeypad.activeInput.id === 'errorDays_direct') {
+          return;
+        }
+
         if (inputHelperEnabled) {
           _wasInputHelperOnBeforeDaysFocus = true;
           toggleInputHelper(false); // トグルOFFにしてテンキーモードへ移行
-          setTimeout(() => {
-            const dDirect = document.getElementById("errorDays_direct");
-            if (dDirect) {
-              dDirect.setAttribute("inputmode", "none");
-              RegulusKeypad.open(dDirect);
-            }
-          }, 30);
-        } else {
-          _wasInputHelperOnBeforeDaysFocus = false;
+        }
+
+        setTimeout(() => {
           const dDirect = document.getElementById("errorDays_direct");
           if (dDirect) {
             dDirect.setAttribute("inputmode", "none");
             RegulusKeypad.open(dDirect);
           }
-        }
+        }, 30);
       };
 
       el.addEventListener("touchstart", onDaysHelperFocus, { passive: false });
@@ -3132,21 +3127,20 @@ document.addEventListener("DOMContentLoaded", function () {
           if (e && e.preventDefault) e.preventDefault();
           if (e && e.stopPropagation) e.stopPropagation();
           el.blur();
+          if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen && RegulusKeypad.activeInput && RegulusKeypad.activeInput.id === 'errorDays_direct') {
+            return;
+          }
           if (inputHelperEnabled) {
             _wasInputHelperOnBeforeDaysFocus = true;
             toggleInputHelper(false);
-            setTimeout(() => {
-              const dDirect = document.getElementById("errorDays_direct");
-              if (dDirect) {
-                dDirect.setAttribute("inputmode", "none");
-                RegulusKeypad.open(dDirect);
-              }
-            }, 30);
-          } else {
-            _wasInputHelperOnBeforeDaysFocus = false;
-            el.setAttribute("inputmode", "none");
-            RegulusKeypad.open(el);
           }
+          setTimeout(() => {
+            const dDirect = document.getElementById("errorDays_direct");
+            if (dDirect) {
+              dDirect.setAttribute("inputmode", "none");
+              RegulusKeypad.open(dDirect);
+            }
+          }, 30);
           return;
         }
 
