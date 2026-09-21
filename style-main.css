@@ -1635,7 +1635,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border-left: 1px solid rgba(0, 255, 224, 0.15);
   border-right: 1px solid rgba(0, 255, 224, 0.15);
   border-radius: 20px 20px 0 0;
-  box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.6);
+  box-shadow: none !important; /* ★ヒロさん仕様：テンキー・三連ドラムの影を完全になくし、下の画面の結果欄を見やすくする★ */
   z-index: 100010 !important; /* テンキー・ドラムピッカー本体を最前面（100010）に配置して、入力グループ（100001）やオーバーレイ（99999）より常に上にする！ */
   transform: translate(-50%, 100%); /* 蛻晄悄縺ｯ逕ｻ髱｢荳九↓髫縺・*/
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
