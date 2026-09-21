@@ -1331,98 +1331,7 @@ const RegulusKeypad = {
   }
 };
 
-// ★ヒロさん仕様：テンキーおよび三連ドラム展開中の外側（外枠・画面上）タップ検知★
-// テンキー／ドラム本体、トグル、および入力枠群以外がタップされたら解除する
-(function() {
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let isTouchMoved = false;
-
-  const isAnyPickerOpen = () => {
-    const isKeypad = typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen;
-    const isPicker = typeof activeTimePickerGroup !== 'undefined' && activeTimePickerGroup !== null;
-    return isKeypad || isPicker;
-  };
-
-  const onTouchStart = (e) => {
-    if (!isAnyPickerOpen()) return;
-    if (e.touches && e.touches.length > 0) {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      isTouchMoved = false;
-    }
-  };
-
-  const onTouchMove = (e) => {
-    if (!isAnyPickerOpen()) return;
-    if (e.touches && e.touches.length > 0) {
-      const dX = e.touches[0].clientX - touchStartX;
-      const dY = e.touches[0].clientY - touchStartY;
-      if (Math.abs(dX) > 10 || Math.abs(dY) > 10) {
-        isTouchMoved = true;
-      }
-    }
-  };
-
-  const checkOutsideAndClose = (target) => {
-    const isKeypad = typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen;
-    const isPicker = typeof activeTimePickerGroup !== 'undefined' && activeTimePickerGroup !== null;
-    if (!isKeypad && !isPicker) return;
-
-    // テンキーシートやピッカーシート自体のタップは操作中なので閉じない
-    const keypad = document.getElementById('regulusCustomKeypad');
-    if (keypad && keypad.contains(target)) return;
-    const picker = document.getElementById('regulusTimePicker');
-    if (picker && picker.contains(target)) return;
-
-    // トグルスイッチ自体のタップはトグル処理に任せるのでここでは閉じない
-    if (target.closest && (
-      target.closest('.helper-toggle-wrapper') ||
-      target.closest('#inputHelperToggleError, #inputHelperToggleCorrection') ||
-      target.closest('#swap-button-wrapper, #swapButton, .swap-btn') ||
-      target.closest('#reverseModeToggleBtn') ||
-      target.closest('#toReverseButton, .to-reverse-link')
-    )) {
-      return;
-    }
-
-    // 入力枠（直接入力ボックスやカプセル枠）自体のタップはフォーカス・選択切り替えなのでここでは閉じない
-    if (target.closest && (
-      target.closest('.direct-capsule-wrapper') ||
-      target.closest('.unit-capsule-wrapper') ||
-      target.closest('.time-capsule-wrapper') ||
-      (target.tagName === 'INPUT' && target.id && (
-        target.id.includes('direct') || 
-        target.id === 'displayDate' || 
-        target.id === 'standardDate' || 
-        target.id === 'reverseDisplayDate'
-      ))
-    )) {
-      return;
-    }
-
-    // ★ヒロさん仕様：それ以外の外枠（下の画面上）をタップした場合はテンキー・三連ドラムを解除！★
-    _isInputActiveSession = false;
-    if (isKeypad) RegulusKeypad.close();
-    if (isPicker) closeTimePicker();
-  };
-
-  const onTouchEnd = (e) => {
-    if (!isAnyPickerOpen()) return;
-    // スワイプ操作が行われた場合は閉じない（スワイプによる画面遷移を優先）
-    if (isTouchMoved || document.body.classList.contains('is-swiping')) return;
-
-    checkOutsideAndClose(e.target);
-  };
-
-  window.addEventListener('touchstart', onTouchStart, { passive: true });
-  window.addEventListener('touchmove', onTouchMove, { passive: true });
-  window.addEventListener('touchend', onTouchEnd, { passive: true });
-  window.addEventListener('mousedown', (e) => {
-    if (!isAnyPickerOpen()) return;
-    checkOutsideAndClose(e.target);
-  });
-})();
+// ★ヒロさん仕様：テンキー・三連ドラムは外枠タップでは消さず、「完了」ボタンを押した時のみ下がるようにする★
 
 function checkPass() {
   const inputField = document.getElementById("passcode");
@@ -4466,32 +4375,6 @@ function switchToCorrectionMode() {
       applyLastErrorToReverseInputs();
       reverseMode = "toStandard";
       toggleReverseMode(false);
-    }, () => {
-      // 遷移完了後の処理
-      if (isKeypadOpen || isPickerOpen) {
-        // ① テンキー・ドラムロールが表示されていた場合は消さずに維持！
-        document.body.classList.remove("scroll-locked");
-        hasPickerScrolled = false;
-        if (typeof RegulusKeypad !== 'undefined') RegulusKeypad.hasScrolled = false;
-
-        // ② 画面持ち上がり目標値（入力補助トグルが画面上端から8px下に見える絶対値）にピタッと合わせる！
-        const targetScrollTop = getCorrectionModeScrollTarget();
-        window.scrollTo({ top: targetScrollTop, left: 0, behavior: "auto" });
-
-        // 入力枠への連動
-        if (isPickerOpen) {
-          openTimePicker('reverseDisplay');
-        } else if (isKeypadOpen) {
-          const targetKeypadId = (typeof includeDateEnabledCorrection !== 'undefined' && includeDateEnabledCorrection) ? "errorDays_direct" : "errorHours_direct";
-          const targetEl = getEl(targetKeypadId);
-          if (targetEl) RegulusKeypad.open(targetEl);
-        }
-      } else {
-        // ① テンキー・ドラムロールが非表示の時は、持ち上げる前の状態（一番上）にする！
-        document.body.classList.remove("picker-open-padding");
-        document.body.classList.remove("scroll-locked");
-        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-      }
     });
   } else {
     document.getElementById("errorMode").style.display = "none";
@@ -4509,6 +4392,7 @@ function switchToCorrectionMode() {
       window.scrollTo({ top: targetScrollTop, left: 0, behavior: "auto" });
 
       if (isPickerOpen) {
+        isPickerClosing = false;
         openTimePicker('reverseDisplay');
       } else if (isKeypadOpen) {
         const targetKeypadId = (typeof includeDateEnabledCorrection !== 'undefined' && includeDateEnabledCorrection) ? "errorDays_direct" : "errorHours_direct";
@@ -5721,6 +5605,16 @@ document.addEventListener("focusin", function(e) {
       if (topBtn) topBtn.classList.remove("visible");
     }
     if (destId === 'timeCalcMode') {
+      if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen) {
+        RegulusKeypad.close();
+      }
+      if (typeof closeTimePicker === 'function') {
+        closeTimePicker();
+      }
+      document.body.classList.remove('picker-open-padding');
+      document.body.classList.remove('scroll-locked');
+      document.body.classList.remove('keypad-open');
+      document.body.classList.remove('result-highlighted');
       if (typeof TimeCalc !== 'undefined') {
         if (typeof TimeCalc.init === 'function') TimeCalc.init();
         if (typeof TimeCalc.syncSlider === 'function') TimeCalc.syncSlider(true);
@@ -5743,6 +5637,7 @@ document.addEventListener("focusin", function(e) {
 
         // ドラムロールまたはテンキーの対象枠を誤差モードの入力枠にスムーズ連動
         if (isPickerOpen) {
+          isPickerClosing = false;
           const targetPickerGroup = (typeof isStandardOnTop !== 'undefined' && isStandardOnTop) ? 'standard' : 'display';
           openTimePicker(targetPickerGroup);
         } else if (isKeypadOpen) {
@@ -5817,6 +5712,7 @@ document.addEventListener("focusin", function(e) {
 
         // ドラムロールまたはテンキーの対象枠を補正モードの入力枠にスムーズ連動
         if (isPickerOpen) {
+          isPickerClosing = false;
           openTimePicker('reverseDisplay');
         } else if (isKeypadOpen) {
           const targetKeypadId = (typeof includeDateEnabledCorrection !== 'undefined' && includeDateEnabledCorrection) ? "errorDays_direct" : "errorHours_direct";
@@ -6039,18 +5935,6 @@ document.addEventListener("focusin", function(e) {
         fromEl = null;
         return;
       } else {
-        // 水平スワイプ確定時: 開いているテンキーやドラムロールを即座に閉じる！
-        if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen) {
-          RegulusKeypad.close();
-        }
-        if (typeof closeTimePicker === 'function') {
-          closeTimePicker();
-        }
-        document.body.classList.remove('picker-open-padding');
-        document.body.classList.remove('scroll-locked');
-        document.body.classList.remove('keypad-open');
-        document.body.classList.remove('result-highlighted');
-
         // 水平スワイプ確定時のみtransitionを解除（タップ時のDOM操作によるフォーカス消失バグ回避）
         fromEl.style.transition = 'none';
         // ボタンの :active 視覚効果を抑制（長押し誤判定防止）
@@ -6380,18 +6264,6 @@ document.addEventListener("focusin", function(e) {
         fromEl = null;
         return;
       } else {
-        // 水平スワイプ確定時: 開いているテンキーやドラムロールを即座に閉じる！
-        if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen) {
-          RegulusKeypad.close();
-        }
-        if (typeof closeTimePicker === 'function') {
-          closeTimePicker();
-        }
-        document.body.classList.remove('picker-open-padding');
-        document.body.classList.remove('scroll-locked');
-        document.body.classList.remove('keypad-open');
-        document.body.classList.remove('result-highlighted');
-
         isSwiping = true;
         fromEl.style.transition = 'none';
         // 水平スワイプ確定: ボタンの :active 視覚効果を抑制
