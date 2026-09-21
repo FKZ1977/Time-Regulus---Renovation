@@ -282,13 +282,20 @@ function getDirectFieldId(group, type = 'hour') {
 
 // ★ヒロさん仕様：補正に使う誤差の「日」をタップした際の自動トグルOFF＆離脱時自動トグルON復帰用フラグ
 let _wasInputHelperOnBeforeDaysFocus = false;
+let _isInputActiveSession = false; // テンキーまたは三連ドラムが現在操作中であるか（連打時解除防止用）
 
 function toggleInputHelper(enabled) {
+  // 閉じる処理中のタイマーフラグを即時リセット（連打によるドラム起動ブロックを完全解除）
+  isPickerClosing = false;
+
   // 現在開いているピッカーまたはテンキーの状態を記録
   const keypadWasOpen = typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen;
   const keypadActiveEl = keypadWasOpen ? RegulusKeypad.activeInput : null;
   const pickerWasOpen = typeof activeTimePickerGroup !== 'undefined' && activeTimePickerGroup !== null;
   const pickerGroup = pickerWasOpen ? activeTimePickerGroup : null;
+
+  // 連打中でも入力セッションが継続しているかを判定
+  const isInputActive = keypadWasOpen || pickerWasOpen || _isInputActiveSession;
 
   inputHelperEnabled = enabled;
   const toggleErr = document.getElementById("inputHelperToggleError");
@@ -342,44 +349,47 @@ function toggleInputHelper(enabled) {
   calculateError();
   handleReverseCalculation();
 
-  // ★ヒロさん仕様：テンキー入力中と三連ドラムロールのシームレス即時相互切り替え★
-  if (enabled) {
-    // テンキー入力中にトグルONにした場合 → 三連ドラムロールピッカーへパッと即時切り替え
-    if (keypadWasOpen && keypadActiveEl) {
-      let group = "display";
-      if (keypadActiveEl.closest("#errorModeDisplayInputGroup")) {
-        group = "display";
-      } else if (keypadActiveEl.closest("#errorModeStandardInputGroup")) {
-        group = "standard";
-      } else if (keypadActiveEl.closest("#reverseTimeBlock")) {
-        group = "reverseDisplay";
-      } else if (keypadActiveEl.closest("#correctionMode")) {
-        group = "error";
+  // ★ヒロさん仕様：テンキー入力中と三連ドラムロールのシームレス即時相互切り替え（連打でも絶対に解除されない）★
+  const isModeSelectVisible = document.getElementById("modeSelect") && document.getElementById("modeSelect").style.display !== "none";
+  const isErrorModeVisible = document.getElementById("errorMode") && document.getElementById("errorMode").style.display !== "none";
+  const isCorrectionModeVisible = document.getElementById("correctionMode") && document.getElementById("correctionMode").style.display !== "none";
+
+  if (isInputActive && !isModeSelectVisible && (isErrorModeVisible || isCorrectionModeVisible)) {
+    _isInputActiveSession = true;
+    if (enabled) {
+      // トグルON：三連ドラムロールピッカーへパッと即時切り替え
+      let group = pickerGroup || lastActiveTimeGroup || "display";
+      if (keypadActiveEl) {
+        if (keypadActiveEl.closest("#errorModeDisplayInputGroup")) {
+          group = "display";
+        } else if (keypadActiveEl.closest("#errorModeStandardInputGroup")) {
+          group = "standard";
+        } else if (keypadActiveEl.closest("#reverseTimeBlock")) {
+          group = "reverseDisplay";
+        } else if (keypadActiveEl.closest("#correctionMode")) {
+          group = "error";
+        }
       }
 
       // 下に引っ込むアニメーションや画面ガタつきを完全防止：
       // bodyのresult-highlightedや余白を維持したまま、シートのみ即座に交代！
       const keypadSheet = document.getElementById('regulusCustomKeypad');
       if (keypadSheet) keypadSheet.classList.remove('show');
-      RegulusKeypad.isOpen = false;
-      if (RegulusKeypad.activeInput) {
-        try {
-          RegulusKeypad.activeInput.removeAttribute('inputmode');
-          RegulusKeypad.activeInput.blur();
-        } catch(e) {}
-        RegulusKeypad.activeInput = null;
+      if (typeof RegulusKeypad !== 'undefined') {
+        RegulusKeypad.isOpen = false;
+        if (RegulusKeypad.activeInput) {
+          try {
+            RegulusKeypad.activeInput.removeAttribute('inputmode');
+            RegulusKeypad.activeInput.blur();
+          } catch(e) {}
+          RegulusKeypad.activeInput = null;
+        }
       }
 
       // ドラムロールを即座に開く
       openTimePicker(group);
-    }
-  } else {
-    // 三連ドラムロールをオフにした場合 → テンキー入力へパッと即時切り替え！
-    const isModeSelectVisible = document.getElementById("modeSelect") && document.getElementById("modeSelect").style.display !== "none";
-    const isErrorModeVisible = document.getElementById("errorMode") && document.getElementById("errorMode").style.display !== "none";
-    const isCorrectionModeVisible = document.getElementById("correctionMode") && document.getElementById("correctionMode").style.display !== "none";
-
-    if (pickerWasOpen && !isModeSelectVisible && (isErrorModeVisible || isCorrectionModeVisible)) {
+    } else {
+      // トグルOFF：テンキー入力へパッと即時切り替え！
       const targetGroup = pickerGroup || lastActiveTimeGroup || "display";
       let targetId = lastActiveFieldByGroup[targetGroup];
       if (!targetId || !document.getElementById(targetId)) {
@@ -792,7 +802,7 @@ function getElementDocumentTop(el) {
 }
 
 // 補正時刻計算モードにおける絶対スクロール目標値
-// ★ヒロさん仕様：持ち上がり過ぎを防ぎ、「結果一覧に記録する」がせり出さないよう、モードタイトルが見える自然な位置（約10px）に抑える！
+// ★ヒロさん仕様：結果枠の下のラインの太さがしっかり現れるよう、ほんのり（約12px）持ち上げ位置を調整！
 function getCorrectionModeScrollTarget() {
   const card = document.getElementById("correctionMode");
   let cardTop = 0;
@@ -802,15 +812,15 @@ function getCorrectionModeScrollTarget() {
       cardTop = card.offsetTop || 0;
     }
   }
-  return Math.max(0, cardTop - 10);
+  return Math.max(0, cardTop + 2);
 }
 
 // 誤差計算モードにおける絶対スクロール目標値
-// ★ヒロさん仕様：持ち上がり過ぎを防ぎ、「誤差の計算」モードタイトルまで表示できる自然な位置にする！
+// ★ヒロさん仕様：「遅れています/進んでいます」の文字の下が削られず、外枠の水色ラインがしっかり見える高さまで持ち上げる！
 function getErrorModeScrollTarget() {
   const card = document.getElementById("errorMode");
   const cardTop = card ? (card.offsetTop || 0) : 0;
-  return Math.max(0, cardTop - 10);
+  return Math.max(0, cardTop + 35);
 }
 
 function scrollScreenToRevealResult(isReverse = false) {
@@ -983,6 +993,7 @@ function closeTimePicker(keepScroll = false) {
 
   // スクロール位置を維持しない場合のみ、余白解除とスクロールリセットを行う
   if (!keepScroll) {
+    _isInputActiveSession = false;
     if (hasPickerScrolled) {
       hasPickerScrolled = false;
       window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
@@ -1123,6 +1134,7 @@ const RegulusKeypad = {
 
     if (!this.isOpen) return;
     this.isOpen = false;
+    _isInputActiveSession = false;
 
     const overlay = document.getElementById('pickerOverlay');
     if (overlay) overlay.classList.remove('show');
@@ -1319,15 +1331,21 @@ const RegulusKeypad = {
   }
 };
 
-// テンキー展開中の外側（余白）タップ検知：テンキー本体および入力枠群以外がタップされたら閉じる
-// ※スワイプジェスチャー（左右・上下のドラッグ）時はテンキーを閉じず、画面遷移を優先する
+// ★ヒロさん仕様：テンキーおよび三連ドラム展開中の外側（外枠・画面上）タップ検知★
+// テンキー／ドラム本体、トグル、および入力枠群以外がタップされたら解除する
 (function() {
   let touchStartX = 0;
   let touchStartY = 0;
   let isTouchMoved = false;
 
+  const isAnyPickerOpen = () => {
+    const isKeypad = typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen;
+    const isPicker = typeof activeTimePickerGroup !== 'undefined' && activeTimePickerGroup !== null;
+    return isKeypad || isPicker;
+  };
+
   const onTouchStart = (e) => {
-    if (!RegulusKeypad.isOpen) return;
+    if (!isAnyPickerOpen()) return;
     if (e.touches && e.touches.length > 0) {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
@@ -1336,7 +1354,7 @@ const RegulusKeypad = {
   };
 
   const onTouchMove = (e) => {
-    if (!RegulusKeypad.isOpen) return;
+    if (!isAnyPickerOpen()) return;
     if (e.touches && e.touches.length > 0) {
       const dX = e.touches[0].clientX - touchStartX;
       const dY = e.touches[0].clientY - touchStartY;
@@ -1346,62 +1364,63 @@ const RegulusKeypad = {
     }
   };
 
-  const onTouchEnd = (e) => {
-    if (!RegulusKeypad.isOpen) return;
-    // スワイプ操作が行われた場合はテンキーを閉じない（スワイプによる画面遷移を優先）
-    if (isTouchMoved || document.body.classList.contains('is-swiping')) return;
+  const checkOutsideAndClose = (target) => {
+    const isKeypad = typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen;
+    const isPicker = typeof activeTimePickerGroup !== 'undefined' && activeTimePickerGroup !== null;
+    if (!isKeypad && !isPicker) return;
 
+    // テンキーシートやピッカーシート自体のタップは操作中なので閉じない
     const keypad = document.getElementById('regulusCustomKeypad');
-    if (keypad && keypad.contains(e.target)) return;
+    if (keypad && keypad.contains(target)) return;
+    const picker = document.getElementById('regulusTimePicker');
+    if (picker && picker.contains(target)) return;
 
-    // 入力枠やその親カプセル・グループ、入力補助トグル、スワップボタン等をタップした場合は閉じない（ダイレクト操作させるため）
-    if (e.target.closest && (
-      e.target.closest('.mode-card .input-group') ||
-      e.target.closest('.datetime-row') ||
-      e.target.closest('.datetime-direct-row') ||
-      e.target.closest('.direct-capsule-wrapper') ||
-      e.target.closest('.unit-capsule-wrapper') ||
-      e.target.closest('.direct-group') ||
-      e.target.closest('.direct-group-date') ||
-      e.target.closest('.helper-toggle-wrapper') ||
-      e.target.closest('#inputHelperToggleError, #inputHelperToggleCorrection') ||
-      e.target.closest('#swap-button-wrapper, #swapButton, .swap-btn') ||
-      e.target.closest('#reverseModeToggleBtn') ||
-      e.target.closest('#toReverseButton, .to-reverse-link') ||
-      (e.target.tagName === 'INPUT' && e.target.id && e.target.id.includes('direct'))
+    // トグルスイッチ自体のタップはトグル処理に任せるのでここでは閉じない
+    if (target.closest && (
+      target.closest('.helper-toggle-wrapper') ||
+      target.closest('#inputHelperToggleError, #inputHelperToggleCorrection') ||
+      target.closest('#swap-button-wrapper, #swapButton, .swap-btn') ||
+      target.closest('#reverseModeToggleBtn') ||
+      target.closest('#toReverseButton, .to-reverse-link')
     )) {
       return;
     }
 
-    // 指を動かさずにポンとタップされた場合のみテンキーを閉じる
-    RegulusKeypad.close();
+    // 入力枠（直接入力ボックスやカプセル枠）自体のタップはフォーカス・選択切り替えなのでここでは閉じない
+    if (target.closest && (
+      target.closest('.direct-capsule-wrapper') ||
+      target.closest('.unit-capsule-wrapper') ||
+      target.closest('.time-capsule-wrapper') ||
+      (target.tagName === 'INPUT' && target.id && (
+        target.id.includes('direct') || 
+        target.id === 'displayDate' || 
+        target.id === 'standardDate' || 
+        target.id === 'reverseDisplayDate'
+      ))
+    )) {
+      return;
+    }
+
+    // ★ヒロさん仕様：それ以外の外枠（下の画面上）をタップした場合はテンキー・三連ドラムを解除！★
+    _isInputActiveSession = false;
+    if (isKeypad) RegulusKeypad.close();
+    if (isPicker) closeTimePicker();
+  };
+
+  const onTouchEnd = (e) => {
+    if (!isAnyPickerOpen()) return;
+    // スワイプ操作が行われた場合は閉じない（スワイプによる画面遷移を優先）
+    if (isTouchMoved || document.body.classList.contains('is-swiping')) return;
+
+    checkOutsideAndClose(e.target);
   };
 
   window.addEventListener('touchstart', onTouchStart, { passive: true });
   window.addEventListener('touchmove', onTouchMove, { passive: true });
   window.addEventListener('touchend', onTouchEnd, { passive: true });
   window.addEventListener('mousedown', (e) => {
-    if (!RegulusKeypad.isOpen) return;
-    const keypad = document.getElementById('regulusCustomKeypad');
-    if (keypad && keypad.contains(e.target)) return;
-    if (e.target.closest && (
-      e.target.closest('.mode-card .input-group') ||
-      e.target.closest('.datetime-row') ||
-      e.target.closest('.datetime-direct-row') ||
-      e.target.closest('.direct-capsule-wrapper') ||
-      e.target.closest('.unit-capsule-wrapper') ||
-      e.target.closest('.direct-group') ||
-      e.target.closest('.direct-group-date') ||
-      e.target.closest('.helper-toggle-wrapper') ||
-      e.target.closest('#inputHelperToggleError, #inputHelperToggleCorrection') ||
-      e.target.closest('#swap-button-wrapper, #swapButton, .swap-btn') ||
-      e.target.closest('#reverseModeToggleBtn') ||
-      e.target.closest('#toReverseButton, .to-reverse-link') ||
-      (e.target.tagName === 'INPUT' && e.target.id && e.target.id.includes('direct'))
-    )) {
-      return;
-    }
-    RegulusKeypad.close();
+    if (!isAnyPickerOpen()) return;
+    checkOutsideAndClose(e.target);
   });
 })();
 
