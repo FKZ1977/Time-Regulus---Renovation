@@ -826,13 +826,26 @@ function getErrorModeScrollTarget() {
 function scrollScreenToRevealResult(isReverse = false) {
   document.body.classList.add("picker-open-padding");
   document.body.classList.remove("scroll-locked"); // スクロール可能にするためロックを一時解除
-  document.body.offsetHeight; // 強制リフロー
 
   // ★ヒロさん仕様：補正モードも誤差モードも、常にドキュメント絶対座標に基づく絶対値位置へスクロール★
   const targetScrollTop = isReverse ? getCorrectionModeScrollTarget() : getErrorModeScrollTarget();
 
+  // 初回起動時や未計算時などコンテンツが短い場合でも確実に目標位置までスクロールできるよう余白高さを動的保証
+  const minRequiredScrollHeight = window.innerHeight + targetScrollTop + 60;
+  if (document.documentElement.scrollHeight < minRequiredScrollHeight) {
+    const extraPad = minRequiredScrollHeight - document.documentElement.scrollHeight;
+    document.body.style.paddingBottom = `${Math.max(380, 260 + extraPad)}px`;
+  }
+  void document.body.offsetHeight; // 強制リフロー
+
   if (targetScrollTop > 0) {
     window.scrollTo({ top: targetScrollTop, left: 0, behavior: "smooth" });
+    // iOS Safariでのスムーズスクロール不発・遅延対策として、120ms後に位置を再検証して確実に目標位置へ合わせる
+    setTimeout(() => {
+      if (Math.abs(window.scrollY - targetScrollTop) > 5) {
+        window.scrollTo({ top: targetScrollTop, left: 0, behavior: "auto" });
+      }
+    }, 120);
     return;
   }
 
@@ -926,7 +939,8 @@ function openTimePicker(group) {
 
   // ★ヒロさん仕様：上の入力枠でも下の入力枠でも、結果（進んでいます/遅れています）が見える位置まで同じ高さに持ち上げる！★
   const isReverse = (group === "reverseDisplay" || group === "error");
-  if (!hasPickerScrolled) {
+  const targetTop = isReverse ? getCorrectionModeScrollTarget() : getErrorModeScrollTarget();
+  if (!hasPickerScrolled || Math.abs(window.scrollY - targetTop) > 10) {
     document.body.offsetHeight; 
     setTimeout(() => {
       scrollScreenToRevealResult(isReverse);
@@ -994,6 +1008,7 @@ function closeTimePicker(keepScroll = false) {
   // スクロール位置を維持しない場合のみ、余白解除とスクロールリセットを行う
   if (!keepScroll) {
     _isInputActiveSession = false;
+    document.body.style.paddingBottom = '';
     if (hasPickerScrolled) {
       hasPickerScrolled = false;
       window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
@@ -1099,7 +1114,8 @@ const RegulusKeypad = {
 
     if (isErrorInput || isReverseInput) {
       document.body.classList.add('picker-open-padding');
-      if (!this.hasScrolled) {
+      const targetTop = isReverseInput ? getCorrectionModeScrollTarget() : getErrorModeScrollTarget();
+      if (!this.hasScrolled || Math.abs(window.scrollY - targetTop) > 10) {
         document.body.offsetHeight; // 強制リフロー
         setTimeout(() => {
           scrollScreenToRevealResult(isReverseInput);
@@ -1148,6 +1164,8 @@ const RegulusKeypad = {
     // ★ヒロさん仕様：テンキー消失後、画面の高さを戻さずキープし、触らなければ5秒後に自動復帰★
     if (this.hasScrolled) {
       this._startAutoResetTimer();
+    } else {
+      document.body.style.paddingBottom = '';
     }
   },
 
@@ -1158,6 +1176,7 @@ const RegulusKeypad = {
       this._clearAutoResetTimer();
       if (this.hasScrolled) {
         this.hasScrolled = false;
+        document.body.style.paddingBottom = '';
         // 余白を維持したまま、まず滑らかにスーッと最上部へ戻す！
         window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
         // スムーズスクロール完了後（500ms後）に余白を解除！
@@ -3667,6 +3686,15 @@ function triggerModeTransition(modeKey, callback) {
 }
 
 function showErrorMode() {
+  // 誤差計算モード突入時のスクロール状態とフラグを完全リセット（初回起動時の持ち上がり不発を防止）
+  hasPickerScrolled = false;
+  if (typeof RegulusKeypad !== 'undefined') {
+    RegulusKeypad.hasScrolled = false;
+  }
+  document.body.classList.remove('picker-open-padding');
+  document.body.classList.remove('scroll-locked');
+  window.scrollTo({ top: 0, left: 0 });
+
   // モード選択から遷移するたびに RealTime を必ず OFF にリセット
   const realTimeCb = document.getElementById('realTimeCheckbox');
   if (realTimeCb && realTimeCb.checked) {
@@ -3692,21 +3720,6 @@ function showErrorMode() {
       window.updateLabelWidths();
     }
     calculateError();
-
-    if (!inputHelperEnabled) {
-      setTimeout(() => {
-        let target;
-        if (!includeDateEnabled) {
-          target = isStandardOnTop ? document.getElementById("standardHour_direct") : document.getElementById("displayHour_direct");
-        } else {
-          target = isStandardOnTop ? document.getElementById("standardYear_direct") : document.getElementById("displayYear_direct");
-        }
-        if (target) {
-          target.focus();
-          if (target.select) target.select();
-        }
-      }, 100);
-    }
   }
 }
 
@@ -5711,19 +5724,8 @@ document.addEventListener("focusin", function(e) {
         // ① テンキー・ドラムロールが非表示の時は、持ち上げる前の状態（一番上）にする！
         document.body.classList.remove("picker-open-padding");
         document.body.classList.remove("scroll-locked");
+        document.body.style.paddingBottom = '';
         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-
-        if (typeof inputHelperEnabled !== 'undefined' && !inputHelperEnabled) {
-          setTimeout(() => {
-            let target;
-            if (!includeDateEnabled) {
-              target = (typeof isStandardOnTop !== 'undefined' && isStandardOnTop) ? getEl("standardHour_direct") : getEl("displayHour_direct");
-            } else {
-              target = (typeof isStandardOnTop !== 'undefined' && isStandardOnTop) ? getEl("standardYear_direct") : getEl("displayYear_direct");
-            }
-            if (target && target.focus) { target.focus(); if (target.select) target.select(); }
-          }, 100);
-        }
       }
     }
     if (destId === 'modeSelect') {
