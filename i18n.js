@@ -1,4 +1,4 @@
-﻿const i18n_translations = {
+const i18n_translations = {
   ja: {
     "app_title": "Time Regulus",
     "app_subtitle": "タイム　レグルス　v3.3.2",
@@ -149,7 +149,8 @@
     "err_list_days": "{0}日",
     "err_list_hours": "{0}時間",
     "err_list_mins": "{0}分",
-    "err_list_secs": "{0}秒"
+    "err_list_secs": "{0}秒",
+    "hold_to_return": "長押しで戻る"
   },
   en: {
     "app_title": "Time Regulus",
@@ -301,7 +302,8 @@
     "err_list_days": "{0}d",
     "err_list_hours": "{0}h",
     "err_list_mins": "{0}m",
-    "err_list_secs": "{0}s"
+    "err_list_secs": "{0}s",
+    "hold_to_return": "Hold to return"
   },
   nl: {
     "app_title": "Time Regulus",
@@ -412,7 +414,8 @@
     "err_list_days": "{0}d",
     "err_list_hours": "{0}u",
     "err_list_mins": "{0}m",
-    "err_list_secs": "{0}s"
+    "err_list_secs": "{0}s",
+    "hold_to_return": "Ingedrukt houden om terug te gaan"
   },
 
   pt: {
@@ -523,7 +526,8 @@
     "err_list_days": "{0}d",
     "err_list_hours": "{0}h",
     "err_list_mins": "{0}m",
-    "err_list_secs": "{0}s"
+    "err_list_secs": "{0}s",
+    "hold_to_return": "Segure para voltar"
   },
   es: {
     "app_title": "Time Regulus",
@@ -633,7 +637,8 @@
     "err_list_days": "{0}d",
     "err_list_hours": "{0}h",
     "err_list_mins": "{0}m",
-    "err_list_secs": "{0}s"
+    "err_list_secs": "{0}s",
+    "hold_to_return": "Mantén presionado para volver"
   },
   fr: {
     "app_title": "Time Regulus",
@@ -744,7 +749,8 @@
     "err_list_days": "{0}j",
     "err_list_hours": "{0}h",
     "err_list_mins": "{0}m",
-    "err_list_secs": "{0}s"
+    "err_list_secs": "{0}s",
+    "hold_to_return": "Maintenez pour retourner"
   },
   it: {
     "app_title": "Time Regulus",
@@ -855,7 +861,8 @@
     "err_list_days": "{0}g",
     "err_list_hours": "{0}h",
     "err_list_mins": "{0}m",
-    "err_list_secs": "{0}s"
+    "err_list_secs": "{0}s",
+    "hold_to_return": "Tieni premuto per tornare"
   },
   de: {
     "app_title": "Time Regulus",
@@ -966,7 +973,8 @@
     "err_list_days": "{0}T",
     "err_list_hours": "{0}h",
     "err_list_mins": "{0}m",
-    "err_list_secs": "{0}s"
+    "err_list_secs": "{0}s",
+    "hold_to_return": "Gedrückt halten zum Zurückkehren"
   },
   uk: {
     "app_title": "Time Regulus",
@@ -1076,7 +1084,8 @@
     "err_list_days": "{0}д",
     "err_list_hours": "{0}г",
     "err_list_mins": "{0}х",
-    "err_list_secs": "{0}с"
+    "err_list_secs": "{0}с",
+    "hold_to_return": "Утримуйте, щоб повернутися"
   },
   hi: {
     "app_title": "Time Regulus",
@@ -1180,7 +1189,8 @@
     "err_list_days": "{0}द",
     "err_list_hours": "{0}घं",
     "err_list_mins": "{0}मि",
-    "err_list_secs": "{0}से"
+    "err_list_secs": "{0}से",
+    "hold_to_return": "वापस जाने के लिए दबाकर रखें"
   },
   ar: {
     "app_title": "Time Regulus",
@@ -1284,7 +1294,8 @@
     "err_list_days": "{0}ي",
     "err_list_hours": "{0}س",
     "err_list_mins": "{0}د",
-    "err_list_secs": "{0}ث"
+    "err_list_secs": "{0}ث",
+    "hold_to_return": "اضغط مطولاً للعودة"
   },
   ru: {
     "app_title": "Time Regulus",
@@ -1388,7 +1399,8 @@
     "err_list_days": "{0}д",
     "err_list_hours": "{0}ч",
     "err_list_mins": "{0}м",
-    "err_list_secs": "{0}с"
+    "err_list_secs": "{0}с",
+    "hold_to_return": "Удерживайте для возврата"
   },
   id: {
     "app_title": "Time Regulus",
@@ -1499,7 +1511,8 @@
     "err_list_days": "{0}h",
     "err_list_hours": "{0}j",
     "err_list_mins": "{0}m",
-    "err_list_secs": "{0}d"
+    "err_list_secs": "{0}d",
+    "hold_to_return": "Tahan untuk kembali"
   },
   zh: {
     "app_title": "Time Regulus",
@@ -1603,7 +1616,8 @@
     "err_list_days": "{0}天",
     "err_list_hours": "{0}时",
     "err_list_mins": "{0}分",
-    "err_list_secs": "{0}秒"
+    "err_list_secs": "{0}秒",
+    "hold_to_return": "长按返回"
   },
   ko: {
     "app_title": "Time Regulus",
@@ -1713,7 +1727,8 @@
     "err_list_days": "{0}일",
     "err_list_hours": "{0}시",
     "err_list_mins": "{0}분",
-    "err_list_secs": "{0}초"
+    "err_list_secs": "{0}초",
+    "hold_to_return": "길게 눌러 돌아가기"
   },
   tr: {
     "app_title": "Time Regulus",
@@ -1823,7 +1838,8 @@
     "err_list_days": "{0}g",
     "err_list_hours": "{0}s",
     "err_list_mins": "{0}d",
-    "err_list_secs": "{0}s"
+    "err_list_secs": "{0}s",
+    "hold_to_return": "Dönmek için basılı tutun"
   }
 };
 

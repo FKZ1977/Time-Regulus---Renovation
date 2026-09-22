@@ -8277,7 +8277,7 @@ function _decoyHoldStart(e) {
 
     // ヒント文字の位置計算：水色の円の「上」に配置
     if (hint) {
-      hint.textContent = "長押しで戻る...";
+      hint.textContent = (typeof t === 'function' ? t('hold_to_return') : null) || "長押しで戻る";
       const hintTop = ringTop - 26;
       hint.style.left = (ringLeft + ringSize / 2) + "px";
       hint.style.top = Math.max(8, hintTop) + "px";
