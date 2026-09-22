@@ -5034,6 +5034,47 @@ function getCurrentCorrectionError() {
   return { days, hours, minutes, seconds, direction };
 }
 
+// 補正時刻の計算に残っている結果と一覧のエントリーが一致するか判定する関数
+function isEntryMatchingLatestResult(entry, groupError) {
+  const r = window.latestResult;
+  if (!r || !r.error || !r.base || !r.result) return false;
+
+  // 1. 誤差の一致
+  if (groupError) {
+    const curErr = {
+      days: Number(r.error.days) || 0,
+      hours: Number(r.error.hours) || 0,
+      minutes: Number(r.error.minutes) || 0,
+      seconds: Number(r.error.seconds) || 0,
+      direction: String(r.error.direction || "late").trim().toLowerCase()
+    };
+    if (typeof isSameError === 'function' && !isSameError(groupError, curErr)) {
+      return false;
+    }
+  }
+
+  // 2. モードの一致（toStandard / toDisplay）
+  if (entry.mode !== r.mode) return false;
+
+  // 3. 年月日トグルの状態の一致
+  const entryIncDate = (entry.includeDateCorrection !== undefined) ? !!entry.includeDateCorrection : false;
+  const rIncDate = (r.includeDateCorrection !== undefined) ? !!r.includeDateCorrection : false;
+  if (entryIncDate !== rIncDate) return false;
+
+  // 4. 時刻の比較（秒単位で判定）
+  const rBase = (r.base instanceof Date) ? r.base : new Date(r.base);
+  const eBase = (entry.base instanceof Date) ? entry.base : new Date(entry.base);
+  const rResult = (r.result instanceof Date) ? r.result : new Date(r.result);
+  const eResult = (entry.result instanceof Date) ? entry.result : new Date(entry.result);
+
+  if (isNaN(rBase.getTime()) || isNaN(eBase.getTime()) || isNaN(rResult.getTime()) || isNaN(eResult.getTime())) {
+    return false;
+  }
+
+  return Math.floor(rBase.getTime() / 1000) === Math.floor(eBase.getTime() / 1000) &&
+         Math.floor(rResult.getTime() / 1000) === Math.floor(eResult.getTime() / 1000);
+}
+
 function scrollResultListToEndIfOverflow() {
   // 一番上を表示した直後、今扱い中の誤差の位置、または一番下までぎゅーんとスクロール
   setTimeout(() => {
@@ -5043,17 +5084,9 @@ function scrollResultListToEndIfOverflow() {
     // スクロール可能な高さがない場合は何もしない
     if (scrollHeight <= clientHeight + 30) return;
 
-    // ① 直前に復元された結果エントリーがあれば、最優先でその行を選択＆スクロール
-    let targetLine = null;
-    if (window.lastRestoredEntryId) {
-      targetLine = document.querySelector(`.result-entry-line[data-entry-id="${window.lastRestoredEntryId}"]`);
-    }
-
+    // ① 補正時刻の計算に残っている該当箇所（背景が明るくなっている行）があればその行へスクロール
+    const targetLine = document.querySelector(".result-entry-line.selected");
     if (targetLine) {
-      // 該当行を選択状態（シングルタップ時と同じ明るい背景）にする
-      document.querySelectorAll(".result-entry-line.selected").forEach(el => el.classList.remove("selected"));
-      targetLine.classList.add("selected");
-
       const rect = targetLine.getBoundingClientRect();
       const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
       // 画面中央付近（やや上）に該当行が来るようスムーズにスクロール
@@ -5327,7 +5360,8 @@ function renderResultList() {
         const line = document.createElement("div");
         line.className = "result-entry-line";
         line.dataset.entryId = entry.id;
-        if (window.lastRestoredEntryId && window.lastRestoredEntryId === entry.id) {
+        // 補正時刻の計算に残っている現在の計算結果と一致する行のみ明るくハイライト
+        if (typeof isEntryMatchingLatestResult === 'function' && isEntryMatchingLatestResult(entry, group.error)) {
           line.classList.add("selected");
         }
         line.style.marginBottom = "3px";
