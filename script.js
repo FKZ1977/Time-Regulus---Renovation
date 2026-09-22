@@ -5085,17 +5085,27 @@ function scrollResultListToEndIfOverflow() {
     if (scrollHeight <= clientHeight + 30) return;
 
     // ① 補正時刻の計算に残っている該当箇所（背景が明るくなっている行）があればその行へスクロール
+    const allLines = document.querySelectorAll(".result-entry-line");
     const targetLine = document.querySelector(".result-entry-line.selected");
     if (targetLine) {
-      const rect = targetLine.getBoundingClientRect();
-      const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      // 画面中央付近（やや上）に該当行が来るようスムーズにスクロール
-      const targetTop = Math.max(0, currentScrollTop + rect.top - (clientHeight * 0.35));
+      const isLastEntry = (allLines.length > 0 && allLines[allLines.length - 1] === targetLine);
+      if (isLastEntry) {
+        // ★ 新規追加など末尾の結果の場合：一番下までぎゅーんと下がりきる！
+        window.scrollTo({
+          top: scrollHeight,
+          behavior: 'smooth'
+        });
+      } else {
+        // ★ 途中の結果が復元された場合：その行が画面中央（やや上）で見やすく止まる
+        const rect = targetLine.getBoundingClientRect();
+        const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const targetTop = Math.max(0, currentScrollTop + rect.top - (clientHeight * 0.35));
 
-      window.scrollTo({
-        top: targetTop,
-        behavior: 'smooth'
-      });
+        window.scrollTo({
+          top: targetTop,
+          behavior: 'smooth'
+        });
+      }
       return;
     }
 
