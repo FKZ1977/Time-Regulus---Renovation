@@ -6810,12 +6810,12 @@ body.is-swiping .orbit-planet-btn:active {
   box-shadow: 0 2px 8px rgba(0, 255, 224, 0.4);
 }
 
-/* 著作権情報画面用は右下に配置 */
+/* 著作権情報画面用（結果一覧と同様に左下に配置） */
 #readmeScrollToTopBtn {
-  left: auto;
-  right: 24px;
-  bottom: 30px;
-  z-index: 9101;
+  left: 18px !important;
+  right: auto !important;
+  bottom: 24px !important;
+  z-index: 9101 !important;
 }
 
 
