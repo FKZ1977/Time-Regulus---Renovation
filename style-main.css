@@ -859,9 +859,10 @@ select:has(option[value=""]:checked) {
   text-align: left; /* 基本的な中身を左寄りに */
 }
 
-/* 結果一覧ページのメインタイトルは中央寄せを維持 */
-#resultListPage h1.fkz {
-  text-align: center;
+/* 結果一覧ページのメインタイトルおよび復元ガイドは中央寄せを維持 */
+#resultListPage h1.fkz,
+#resultListPage .result-list-guide {
+  text-align: center !important;
 }
 
 /* ==========================================
@@ -1355,7 +1356,14 @@ input:checked + .switch-slider:before {
 #resultListPage h1.fkz {
   margin-top: 8px !important;
   font-size: 28px !important;
+  margin-bottom: 4px !important;
+  text-align: center !important;
+}
+#resultListPage .result-list-guide {
+  text-align: center !important;
+  margin-top: 2px !important;
   margin-bottom: 12px !important;
+  font-size: 13px !important;
 }
 #resultListPage .back-btn {
   margin-bottom: 8px !important;
