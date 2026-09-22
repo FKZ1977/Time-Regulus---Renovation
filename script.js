@@ -433,23 +433,29 @@ function syncInputValues(toON) {
   } else {
     // ON -> OFF への同期（日付・日数のみ）
     const dispD = parseDateString(document.getElementById("displayDate").value);
-    document.getElementById("displayYear_direct").value = dispD.y;
-    document.getElementById("displayMonth_direct").value = dispD.m;
-    document.getElementById("displayDay_direct").value = dispD.d;
+    if (dispD.y || dispD.m || dispD.d) {
+      document.getElementById("displayYear_direct").value = dispD.y;
+      document.getElementById("displayMonth_direct").value = dispD.m;
+      document.getElementById("displayDay_direct").value = dispD.d;
+    }
 
     const stdD = parseDateString(document.getElementById("standardDate").value);
-    document.getElementById("standardYear_direct").value = stdD.y;
-    document.getElementById("standardMonth_direct").value = stdD.m;
-    document.getElementById("standardDay_direct").value = stdD.d;
+    if (stdD.y || stdD.m || stdD.d) {
+      document.getElementById("standardYear_direct").value = stdD.y;
+      document.getElementById("standardMonth_direct").value = stdD.m;
+      document.getElementById("standardDay_direct").value = stdD.d;
+    }
 
     // errorDays は常に errorDays_direct から値を引き継ぐか、同期不要。
     // 入力補助ONでもOFFでも「日」は errorDays_direct を使っているため、
     // errorDays から errorDays_direct への上書きは行わないようにする。
     // (staleな値で上書きされるのを防ぐため)
     const revD = parseDateString(document.getElementById("reverseDisplayDate").value);
-    document.getElementById("reverseDisplayYear_direct").value = revD.y;
-    document.getElementById("reverseDisplayMonth_direct").value = revD.m;
-    document.getElementById("reverseDisplayDay_direct").value = revD.d;
+    if (revD.y || revD.m || revD.d) {
+      document.getElementById("reverseDisplayYear_direct").value = revD.y;
+      document.getElementById("reverseDisplayMonth_direct").value = revD.m;
+      document.getElementById("reverseDisplayDay_direct").value = revD.d;
+    }
   }
   syncAllPlaceholderColors();
 }
@@ -1302,25 +1308,25 @@ const RegulusKeypad = {
   },
 
   nextField() {
-    // ★ヒロさん仕様：元々入力補助ONから「日」に入っていた場合、他の入力枠（時）へ進むときは自動で入力補助ONに戻す！
-    if (_wasInputHelperOnBeforeDaysFocus && this.activeInput && (this.activeInput.id === 'errorDays_direct' || this.activeInput.id === 'errorDays')) {
-      _wasInputHelperOnBeforeDaysFocus = false;
-      toggleInputHelper(true);
-      setTimeout(() => {
-        isPickerClosing = false;
-        openTimePicker('error');
-      }, 30);
-      return;
-    }
-
     const inputs = this._getCurrentGroupInputs();
     if (!this.activeInput) {
       if (inputs.length > 0) this.open(inputs[0]);
       return;
     }
     const idx = inputs.indexOf(this.activeInput);
-    if (idx !== -1 && idx < inputs.length - 1) {
-      this.open(inputs[idx + 1]);
+    const nextInput = (idx !== -1 && idx < inputs.length - 1) ? inputs[idx + 1] : null;
+
+    // ★ヒロさん仕様：元々入力補助ONから「日」に入っていた場合、▶で「時」へ進むときは1回のタップで自動で入力補助ONに戻りドラムロールが起動！
+    if (_wasInputHelperOnBeforeDaysFocus && this.activeInput && (this.activeInput.id === 'errorDays_direct' || this.activeInput.id === 'errorDays')) {
+      _wasInputHelperOnBeforeDaysFocus = false;
+      this.close();
+      toggleInputHelper(true);
+      openTimePicker('error');
+      return;
+    }
+
+    if (nextInput) {
+      this.open(nextInput);
     }
   },
 
