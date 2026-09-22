@@ -6818,6 +6818,45 @@ body.is-swiping .orbit-planet-btn:active {
   z-index: 9101 !important;
 }
 
+/* ============================================================
+   結果一覧：行（result-entry-line）のスタイル・選択ハイライト
+   ============================================================ */
+.result-entry-line {
+  padding: 4px 6px !important;
+  border-radius: 6px !important;
+  margin-bottom: 3px !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.result-entry-line:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* 選択時（シングルタップ時）：背景が明るくハイライト */
+.result-entry-line.selected {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.25) !important;
+}
+
+.result-list-group-inner[data-mode="toStandard"] .result-entry-line.selected {
+  background-color: rgba(0, 255, 224, 0.22) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 224, 0.4) !important;
+}
+
+.result-list-group-inner[data-mode="toDisplay"] .result-entry-line.selected {
+  background-color: rgba(255, 0, 170, 0.22) !important;
+  box-shadow: 0 0 12px rgba(255, 0, 170, 0.4) !important;
+}
+
+/* ダブルタップ復元時のフラッシュ */
+.result-entry-line.restoring-flash {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 224, 0.85) !important;
+  transition: none !important;
+}
+
 
 
 

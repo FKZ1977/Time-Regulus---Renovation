@@ -5283,6 +5283,7 @@ function renderResultList() {
 
       const innerBox = document.createElement("div");
       innerBox.className = "result-list-group-inner";
+      innerBox.setAttribute("data-mode", mode);
       innerBox.style.border = `1px solid ${borderColor}`;
       innerBox.style.backgroundColor = bgColor;
       innerBox.style.borderRadius = "6px";
@@ -5304,6 +5305,28 @@ function renderResultList() {
         line.style.justifyContent = "space-between";
         line.style.alignItems = "center";
 
+        // シングルタップ / 選択時に該当行の背景を明るくする
+        const toggleSelect = () => {
+          const isSelected = line.classList.contains("selected");
+          // 一旦リスト内のすべての選択を解除
+          container.querySelectorAll(".result-entry-line.selected").forEach(el => {
+            el.classList.remove("selected");
+          });
+          // 同じ行を再度タップした場合は解除、未選択行なら選択ハイライト
+          if (!isSelected) {
+            line.classList.add("selected");
+          }
+        };
+
+        // クリック時（PCマウス用）：削除ボタン以外なら選択切り替え
+        let lastTapTime = 0;
+        line.addEventListener("click", (e) => {
+          if (e.target.closest(".delete-btn")) return;
+          // 直前のタッチ操作から400ms以内のゴーストclickは無視
+          if (Date.now() - lastTapTime < 400) return;
+          toggleSelect();
+        });
+
         // ダブルクリック（PC）で補正時刻モードに復元
         line.addEventListener("dblclick", (e) => {
           if (e.target.closest(".delete-btn")) return;
@@ -5312,8 +5335,7 @@ function renderResultList() {
           restoreCorrectionFromEntry(entry, group, mode);
         });
 
-        // ダブルタップ（スマホ・タッチデバイス）で補正時刻モードに復元
-        let lastTapTime = 0;
+        // タッチ操作（スマホ・タッチデバイス）：シングルタップで選択、ダブルタップで復元
         line.addEventListener("touchend", (e) => {
           if (e.target.closest(".delete-btn")) return;
           const currentTime = Date.now();
@@ -5323,6 +5345,9 @@ function renderResultList() {
             line.classList.add("restoring-flash");
             setTimeout(() => line.classList.remove("restoring-flash"), 300);
             restoreCorrectionFromEntry(entry, group, mode);
+          } else {
+            // シングルタップ時：背景を明るくハイライト
+            toggleSelect();
           }
           lastTapTime = currentTime;
         }, { passive: false });
