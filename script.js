@@ -5043,6 +5043,29 @@ function scrollResultListToEndIfOverflow() {
     // スクロール可能な高さがない場合は何もしない
     if (scrollHeight <= clientHeight + 30) return;
 
+    // ① 直前に復元された結果エントリーがあれば、最優先でその行を選択＆スクロール
+    let targetLine = null;
+    if (window.lastRestoredEntryId) {
+      targetLine = document.querySelector(`.result-entry-line[data-entry-id="${window.lastRestoredEntryId}"]`);
+    }
+
+    if (targetLine) {
+      // 該当行を選択状態（シングルタップ時と同じ明るい背景）にする
+      document.querySelectorAll(".result-entry-line.selected").forEach(el => el.classList.remove("selected"));
+      targetLine.classList.add("selected");
+
+      const rect = targetLine.getBoundingClientRect();
+      const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      // 画面中央付近（やや上）に該当行が来るようスムーズにスクロール
+      const targetTop = Math.max(0, currentScrollTop + rect.top - (clientHeight * 0.35));
+
+      window.scrollTo({
+        top: targetTop,
+        behavior: 'smooth'
+      });
+      return;
+    }
+
     const currentErr = getCurrentCorrectionError();
     const groupBoxes = Array.from(document.querySelectorAll(".result-list-group-outer"));
 
@@ -5106,6 +5129,9 @@ function showResultList() {
 
 function restoreCorrectionFromEntry(entry, group, fallbackMode) {
   if (!entry || !group) return;
+
+  // ★ 復元対象のエントリーIDを保持（結果一覧へ戻った時のハイライト＆スクロール用）
+  window.lastRestoredEntryId = entry.id;
 
   // 1. 誤差入力の復元
   const err = group.error || {};
@@ -5300,6 +5326,10 @@ function renderResultList() {
       modeEntries.forEach(entry => {
         const line = document.createElement("div");
         line.className = "result-entry-line";
+        line.dataset.entryId = entry.id;
+        if (window.lastRestoredEntryId && window.lastRestoredEntryId === entry.id) {
+          line.classList.add("selected");
+        }
         line.style.marginBottom = "3px";
         line.style.display = "flex";
         line.style.justifyContent = "space-between";
