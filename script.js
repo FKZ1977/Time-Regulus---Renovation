@@ -10076,6 +10076,10 @@ const TimeCalc = {
   timeSlotS: null,          // 秒スロット（例: 30）
   timeDigitBuffer: '',      // 液晶画面の一番上に表示する入力中バッファ（例: '1', '25', '30'）
 
+  // 電卓（precision）用数式ステート（ヒロさん仕様: 括弧や数式がそのまま液晶上部に表示され、＝で計算）
+  precisionExpression: '',
+  precisionJustCalculated: false,
+
   // 割り勘計算用ステート (ヒロさん仕様: 多通貨対応)
   splitCurrency: 'JPY',
   splitTotal: 0,
@@ -10602,6 +10606,8 @@ const TimeCalc = {
         precision: {
           currentInput: "0",
           formula: "",
+          precisionExpression: "",
+          precisionJustCalculated: false,
           leftValue: null,
           pendingOp: null,
           isNewInput: true
@@ -10651,6 +10657,8 @@ const TimeCalc = {
       this.tabStates.precision = {
         currentInput: this.currentInput,
         formula: this.formula,
+        precisionExpression: this.precisionExpression,
+        precisionJustCalculated: this.precisionJustCalculated,
         leftValue: this.leftValue,
         pendingOp: this.pendingOp,
         isNewInput: this.isNewInput
@@ -10700,6 +10708,8 @@ const TimeCalc = {
     } else if (mode === 'precision') {
       this.currentInput = s.currentInput !== undefined ? s.currentInput : '0';
       this.formula = s.formula !== undefined ? s.formula : '';
+      this.precisionExpression = s.precisionExpression !== undefined ? s.precisionExpression : '';
+      this.precisionJustCalculated = s.precisionJustCalculated !== undefined ? s.precisionJustCalculated : false;
       this.leftValue = s.leftValue !== undefined ? s.leftValue : null;
       this.pendingOp = s.pendingOp !== undefined ? s.pendingOp : null;
       this.isNewInput = s.isNewInput !== undefined ? s.isNewInput : true;
@@ -11797,10 +11807,8 @@ const TimeCalc = {
     }
 
     if (this.engineMode === 'precision') {
-      if (key === 'UNIT_H') { this.inputParenthesis('('); this.updateDisplay(); return; }
-      if (key === 'UNIT_M') { this.inputParenthesis(')'); this.updateDisplay(); return; }
-      if (key === 'UNIT_S') { this.calculateSquare(); this.updateDisplay(); return; }
-      if (key === ':') { this.calculateSqrt(); this.updateDisplay(); return; }
+      this.handlePrecisionKey(key);
+      return;
     }
 
     switch (key) {
@@ -12163,35 +12171,300 @@ const TimeCalc = {
     this.updateDisplay();
   },
 
-  inputParenthesis(p) {
-    if (p === '(') {
-      if (this.isNewInput || this.currentInput === '0') {
-        this.formula += (this.formula ? ' ' : '') + '(';
-      } else {
-        this.formula += (this.formula ? ' ' : '') + this.currentInput + ' * (';
-        this.currentInput = '0';
-        this.isNewInput = true;
-      }
-    } else if (p === ')') {
-      this.formula += (this.formula ? ' ' : '') + this.currentInput + ' )';
+  // ===== 電卓モード（数式計算・括弧対応）エンジン (ヒロさん仕様) =====
+  handlePrecisionKey(key) {
+    if (key === 'AC') {
+      this.precisionExpression = '';
       this.currentInput = '0';
+      this.formula = '';
+      this.precisionJustCalculated = false;
       this.isNewInput = true;
+      this.saveCurrentTabState();
+      this.updateDisplay();
+      return;
+    }
+
+    if (key === 'C') {
+      this.currentInput = '0';
+      this.precisionExpression = this.precisionExpression.replace(/[0-9\.]+$/, '').trimEnd();
+      this.updateDisplay();
+      return;
+    }
+
+    if (key === 'BS') {
+      if (this.precisionJustCalculated) {
+        this.precisionExpression = '';
+        this.currentInput = '0';
+        this.formula = '';
+        this.precisionJustCalculated = false;
+        this.isNewInput = true;
+      } else {
+        if (this.precisionExpression.length > 0) {
+          this.precisionExpression = this.precisionExpression.trimEnd();
+          this.precisionExpression = this.precisionExpression.slice(0, -1).trimEnd();
+        }
+        if (this.currentInput.length > 1) {
+          this.currentInput = this.currentInput.slice(0, -1);
+        } else {
+          this.currentInput = '0';
+        }
+      }
+      this.updateDisplay();
+      return;
+    }
+
+    if (key === '=') {
+      this.calculatePrecisionExpression();
+      this.updateDisplay();
+      return;
+    }
+
+    if (key === 'UNIT_H') {
+      this.inputPrecisionParenthesis('(');
+      this.updateDisplay();
+      return;
+    }
+
+    if (key === 'UNIT_M') {
+      this.inputPrecisionParenthesis(')');
+      this.updateDisplay();
+      return;
+    }
+
+    if (key === 'UNIT_S') {
+      this.calculatePrecisionSquare();
+      this.updateDisplay();
+      return;
+    }
+
+    if (key === ':') {
+      this.calculatePrecisionSqrt();
+      this.updateDisplay();
+      return;
+    }
+
+    if (key === 'NEG') {
+      this.togglePrecisionSign();
+      this.updateDisplay();
+      return;
+    }
+
+    if (['+', '-', '*', '/', '%'].includes(key)) {
+      this.inputPrecisionOperator(key);
+      this.updateDisplay();
+      return;
+    }
+
+    if (/^[0-9]$/.test(key) || key === '00') {
+      this.inputPrecisionDigit(key);
+      this.updateDisplay();
+      return;
+    }
+
+    if (key === '.') {
+      this.inputPrecisionDot();
+      this.updateDisplay();
+      return;
+    }
+
+    if (key === 'MC') this.memoryClear();
+    else if (key === 'MR') this.memoryRecall();
+    else if (key === 'M+') this.memoryAdd();
+    else if (key === 'M-') this.memorySubtract();
+    this.updateDisplay();
+  },
+
+  inputPrecisionDigit(digit) {
+    const d = digit === '00' ? '0' : digit;
+    if (this.precisionJustCalculated) {
+      this.precisionExpression = d;
+      this.currentInput = d;
+      this.formula = '';
+      this.precisionJustCalculated = false;
+      this.isNewInput = false;
+      return;
+    }
+
+    const trimmed = this.precisionExpression.trimEnd();
+    if (trimmed.endsWith(')')) {
+      this.precisionExpression = trimmed + ' × ' + d;
+      this.currentInput = d;
+      return;
+    }
+
+    if (this.currentInput === '0' || this.isNewInput) {
+      this.currentInput = d;
+      if (trimmed.endsWith(' 0')) {
+        this.precisionExpression = trimmed.slice(0, -1) + d;
+      } else if (trimmed === '0') {
+        this.precisionExpression = d;
+      } else {
+        this.precisionExpression += d;
+      }
+      this.isNewInput = false;
+    } else {
+      this.currentInput += digit;
+      this.precisionExpression += digit;
     }
   },
 
-  calculateSquare() {
-    const num = parseFloat(this.currentInput) || 0;
-    const res = num * num;
-    const resStr = String(parseFloat(res.toPrecision(12)));
-    const formula = `sqr(${this.currentInput}) =`;
-    this.addHistory(formula, resStr, 'precision', { currentInput: resStr, formula });
-    this.formula = formula;
-    this.currentInput = resStr;
+  inputPrecisionDot() {
+    if (this.precisionJustCalculated) {
+      this.precisionExpression = '0.';
+      this.currentInput = '0.';
+      this.formula = '';
+      this.precisionJustCalculated = false;
+      this.isNewInput = false;
+      return;
+    }
+
+    if (!this.currentInput.includes('.')) {
+      if (this.isNewInput || this.currentInput === '0') {
+        this.currentInput = '0.';
+        const trimmed = this.precisionExpression.trimEnd();
+        if (trimmed.endsWith(' 0')) {
+          this.precisionExpression = trimmed + '.';
+        } else if (trimmed === '0') {
+          this.precisionExpression = '0.';
+        } else {
+          this.precisionExpression += (this.precisionExpression ? ' ' : '') + '0.';
+        }
+      } else {
+        this.currentInput += '.';
+        this.precisionExpression += '.';
+      }
+      this.isNewInput = false;
+    }
+  },
+
+  inputPrecisionOperator(op) {
+    const opSymbols = { '+': '+', '-': '−', '*': '×', '/': '÷', '%': '%' };
+    const sym = opSymbols[op] || op;
+
+    if (this.precisionJustCalculated) {
+      this.precisionExpression = `${this.currentInput} ${sym} `;
+      this.formula = `${this.currentInput} ${sym}`;
+      this.precisionJustCalculated = false;
+      this.isNewInput = true;
+      return;
+    }
+
+    let trimmed = this.precisionExpression.trimEnd();
+    if (!trimmed) {
+      if (op === '-') {
+        this.precisionExpression = '−';
+        this.currentInput = '-';
+        this.isNewInput = false;
+        return;
+      }
+      trimmed = this.currentInput && this.currentInput !== '0' ? this.currentInput : '0';
+    }
+
+    const lastChar = trimmed.slice(-1);
+    if (['+', '−', '×', '÷', '%', '-', '*', '/'].includes(lastChar)) {
+      this.precisionExpression = trimmed.slice(0, -1).trimEnd() + ` ${sym} `;
+    } else {
+      this.precisionExpression = trimmed + ` ${sym} `;
+    }
+
+    this.formula = this.precisionExpression.trim();
     this.isNewInput = true;
   },
 
-  calculateSqrt() {
-    const num = parseFloat(this.currentInput) || 0;
+  inputPrecisionParenthesis(p) {
+    if (p === '(') {
+      if (this.precisionJustCalculated) {
+        this.precisionExpression = '(';
+        this.formula = '(';
+        this.currentInput = '0';
+        this.precisionJustCalculated = false;
+        this.isNewInput = true;
+        return;
+      }
+
+      const trimmed = this.precisionExpression.trimEnd();
+      if (trimmed && /[0-9\)]$/.test(trimmed)) {
+        this.precisionExpression = trimmed + ' × (';
+      } else {
+        this.precisionExpression = trimmed + (trimmed && !trimmed.endsWith('(') ? ' ' : '') + '(';
+      }
+      this.currentInput = '0';
+      this.isNewInput = true;
+    } else if (p === ')') {
+      const trimmed = this.precisionExpression.trimEnd();
+      let openCount = 0;
+      let closeCount = 0;
+      for (const ch of trimmed) {
+        if (ch === '(') openCount++;
+        if (ch === ')') closeCount++;
+      }
+
+      if (openCount > closeCount) {
+        let expr = trimmed.replace(/[\+\−\×\÷\%\-\*\/]+$/, '').trimEnd();
+        this.precisionExpression = expr + ')';
+        this.isNewInput = true;
+      }
+    }
+  },
+
+  calculatePrecisionExpression() {
+    let expr = this.precisionExpression.trim();
+    if (!expr) {
+      expr = this.currentInput || '0';
+    }
+
+    // 末尾の演算子を取り除く
+    expr = expr.replace(/[\+\−\×\÷\%\-\*\/]+$/, '').trim();
+
+    // 未閉じの括弧を自動的に閉じる
+    let openCount = 0;
+    let closeCount = 0;
+    for (const ch of expr) {
+      if (ch === '(') openCount++;
+      if (ch === ')') closeCount++;
+    }
+    if (openCount > closeCount) {
+      expr += ')'.repeat(openCount - closeCount);
+    }
+
+    const fullFormula = `${expr} =`;
+    const res = this.evaluateExpression(expr);
+    const resultStr = String(res);
+
+    this.addHistory(fullFormula, resultStr, 'precision', {
+      precisionExpression: expr,
+      result: resultStr,
+      formula: fullFormula
+    });
+
+    if (typeof gtag === 'function') {
+      gtag('event', 'multi_calc_result', { mode: 'precision' });
+    }
+
+    this.formula = fullFormula;
+    this.currentInput = resultStr;
+    this.precisionExpression = expr;
+    this.precisionJustCalculated = true;
+    this.isNewInput = true;
+  },
+
+  calculatePrecisionSquare() {
+    let num = this.evaluateExpression(this.precisionExpression || this.currentInput);
+    if (typeof num !== 'number' || isNaN(num)) num = parseFloat(this.currentInput) || 0;
+    const res = num * num;
+    const resStr = String(parseFloat(res.toPrecision(12)));
+    const formula = `sqr(${num}) =`;
+    this.addHistory(formula, resStr, 'precision', { precisionExpression: `sqr(${num})`, result: resStr, formula });
+    this.formula = formula;
+    this.currentInput = resStr;
+    this.precisionExpression = resStr;
+    this.precisionJustCalculated = true;
+    this.isNewInput = true;
+  },
+
+  calculatePrecisionSqrt() {
+    let num = this.evaluateExpression(this.precisionExpression || this.currentInput);
+    if (typeof num !== 'number' || isNaN(num)) num = parseFloat(this.currentInput) || 0;
     if (num < 0) {
       this.currentInput = "Error";
       this.isNewInput = true;
@@ -12199,11 +12472,212 @@ const TimeCalc = {
     }
     const res = Math.sqrt(num);
     const resStr = String(parseFloat(res.toPrecision(12)));
-    const formula = `√(${this.currentInput}) =`;
-    this.addHistory(formula, resStr, 'precision', { currentInput: resStr, formula });
+    const formula = `√(${num}) =`;
+    this.addHistory(formula, resStr, 'precision', { precisionExpression: `√(${num})`, result: resStr, formula });
     this.formula = formula;
     this.currentInput = resStr;
+    this.precisionExpression = resStr;
+    this.precisionJustCalculated = true;
     this.isNewInput = true;
+  },
+
+  togglePrecisionSign() {
+    if (this.precisionJustCalculated) {
+      if (this.currentInput.startsWith('-')) {
+        this.currentInput = this.currentInput.slice(1);
+      } else if (this.currentInput !== '0' && this.currentInput !== 'Error') {
+        this.currentInput = '-' + this.currentInput;
+      }
+      this.precisionExpression = this.currentInput;
+      return;
+    }
+
+    const oldVal = this.currentInput;
+    let newVal = oldVal;
+    if (oldVal.startsWith('-')) {
+      newVal = oldVal.substring(1);
+    } else if (oldVal !== '0' && oldVal !== 'Error') {
+      newVal = '-' + oldVal;
+    }
+    this.currentInput = newVal;
+
+    if (this.precisionExpression) {
+      const escapedOld = oldVal.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const regex = new RegExp(`(?<=\\s|^|\\()${escapedOld}$`);
+      if (regex.test(this.precisionExpression)) {
+        this.precisionExpression = this.precisionExpression.replace(regex, newVal);
+      } else {
+        this.precisionExpression = newVal;
+      }
+    } else {
+      this.precisionExpression = newVal;
+    }
+  },
+
+  // 安全な数式評価（四則演算・括弧・小数を高精度に計算）
+  evaluateExpression(expr) {
+    if (!expr || typeof expr !== 'string') return 0;
+
+    let s = expr
+      .replace(/×/g, '*')
+      .replace(/÷/g, '/')
+      .replace(/−/g, '-')
+      .replace(/,/g, '')
+      .replace(/=/g, '')
+      .trim();
+
+    s = s.replace(/(\d+(\.\d+)?)%/g, '($1/100)');
+    s = s.replace(/(\d)\s*\(/g, '$1*(');
+    s = s.replace(/\)\s*\(/g, ')*(');
+    s = s.replace(/\)\s*(\d)/g, ')*$1');
+
+    let openCount = 0;
+    let closeCount = 0;
+    for (const ch of s) {
+      if (ch === '(') openCount++;
+      if (ch === ')') closeCount++;
+    }
+    if (openCount > closeCount) {
+      s += ')'.repeat(openCount - closeCount);
+    }
+
+    s = s.replace(/[\+\-\*\/]+$/, '').trim();
+    if (!s) return 0;
+
+    if (!/^[0-9\.\+\-\*\/\(\)\s]+$/.test(s)) {
+      return 'Error';
+    }
+
+    try {
+      const tokens = this.tokenizeExpression(s);
+      const rpn = this.shuntingYard(tokens);
+      const result = this.evalRPN(rpn);
+      if (result === 'Error' || isNaN(result) || !isFinite(result)) return 'Error';
+      return parseFloat(Number(result).toPrecision(12));
+    } catch (e) {
+      return 'Error';
+    }
+  },
+
+  tokenizeExpression(str) {
+    const tokens = [];
+    let i = 0;
+    const len = str.length;
+
+    while (i < len) {
+      const ch = str[i];
+      if (/\s/.test(ch)) {
+        i++;
+        continue;
+      }
+
+      if (/[0-9\.]/.test(ch)) {
+        let numStr = '';
+        while (i < len && /[0-9\.]/.test(str[i])) {
+          numStr += str[i];
+          i++;
+        }
+        tokens.push({ type: 'num', val: parseFloat(numStr) });
+        continue;
+      }
+
+      if (ch === '+' || ch === '*' || ch === '/') {
+        tokens.push({ type: 'op', val: ch, prec: (ch === '*' || ch === '/') ? 2 : 1 });
+        i++;
+        continue;
+      }
+
+      if (ch === '-') {
+        const prev = tokens[tokens.length - 1];
+        if (!prev || prev.type === 'op' || (prev.type === 'paren' && prev.val === '(')) {
+          let j = i + 1;
+          while (j < len && /\s/.test(str[j])) j++;
+          if (j < len && /[0-9\.]/.test(str[j])) {
+            let numStr = '-';
+            while (j < len && /[0-9\.]/.test(str[j])) {
+              numStr += str[j];
+              j++;
+            }
+            tokens.push({ type: 'num', val: parseFloat(numStr) });
+            i = j;
+            continue;
+          }
+        }
+        tokens.push({ type: 'op', val: '-', prec: 1 });
+        i++;
+        continue;
+      }
+
+      if (ch === '(' || ch === ')') {
+        tokens.push({ type: 'paren', val: ch });
+        i++;
+        continue;
+      }
+
+      i++;
+    }
+    return tokens;
+  },
+
+  shuntingYard(tokens) {
+    const outputQueue = [];
+    const opStack = [];
+
+    for (const token of tokens) {
+      if (token.type === 'num') {
+        outputQueue.push(token);
+      } else if (token.type === 'op') {
+        while (
+          opStack.length > 0 &&
+          opStack[opStack.length - 1].type === 'op' &&
+          opStack[opStack.length - 1].prec >= token.prec
+        ) {
+          outputQueue.push(opStack.pop());
+        }
+        opStack.push(token);
+      } else if (token.type === 'paren' && token.val === '(') {
+        opStack.push(token);
+      } else if (token.type === 'paren' && token.val === ')') {
+        while (opStack.length > 0 && !(opStack[opStack.length - 1].type === 'paren' && opStack[opStack.length - 1].val === '(')) {
+          outputQueue.push(opStack.pop());
+        }
+        if (opStack.length > 0 && opStack[opStack.length - 1].val === '(') {
+          opStack.pop();
+        }
+      }
+    }
+
+    while (opStack.length > 0) {
+      const top = opStack.pop();
+      if (top.type === 'op') {
+        outputQueue.push(top);
+      }
+    }
+
+    return outputQueue;
+  },
+
+  evalRPN(rpn) {
+    const stack = [];
+    for (const token of rpn) {
+      if (token.type === 'num') {
+        stack.push(token.val);
+      } else if (token.type === 'op') {
+        const b = stack.pop();
+        const a = stack.pop();
+        if (a === undefined || b === undefined) return 0;
+        let res = 0;
+        if (token.val === '+') res = a + b;
+        else if (token.val === '-') res = a - b;
+        else if (token.val === '*') res = a * b;
+        else if (token.val === '/') {
+          if (b === 0) return 'Error';
+          res = a / b;
+        }
+        stack.push(res);
+      }
+    }
+    return stack.length > 0 ? stack[0] : 0;
   },
 
   toggleSign() {
@@ -12610,7 +13084,7 @@ const TimeCalc = {
       return;
     }
 
-    // 3. 時間電卓 & 精密電卓モードの表示
+    // 3. 時間電卓 & 電卓モードの表示
     if (this.engineMode === 'time') {
       if (this.timeDigitBuffer !== '') {
         if (formulaEl) {
@@ -12623,6 +13097,17 @@ const TimeCalc = {
           formulaEl.textContent = this.formula;
         }
       }
+    } else if (this.engineMode === 'precision') {
+      if (formulaEl) {
+        formulaEl.classList.remove('typing');
+        if (this.precisionJustCalculated) {
+          formulaEl.textContent = this.formula;
+        } else {
+          formulaEl.textContent = this.precisionExpression || '';
+        }
+        // 数式が長い場合は常に最新入力位置（右端）へスクロール
+        formulaEl.scrollLeft = formulaEl.scrollWidth;
+      }
     } else {
       if (formulaEl) {
         formulaEl.classList.remove('typing');
@@ -12631,8 +13116,12 @@ const TimeCalc = {
     }
 
     if (opEl) {
-      const opSymbols = { '+': '+', '-': '−', '*': '×', '/': '÷', '%': '%' };
-      opEl.textContent = this.pendingOp ? (opSymbols[this.pendingOp] || this.pendingOp) : '';
+      if (this.engineMode === 'precision') {
+        opEl.textContent = '';
+      } else {
+        const opSymbols = { '+': '+', '-': '−', '*': '×', '/': '÷', '%': '%' };
+        opEl.textContent = this.pendingOp ? (opSymbols[this.pendingOp] || this.pendingOp) : '';
+      }
     }
 
     const parsed = this.parseValue(this.currentInput);
@@ -13000,7 +13489,10 @@ const TimeCalc = {
       this.currentInput = item.result;
       if (item.formula) this.formula = item.formula;
       this.isNewInput = true;
-      if (item.mode === 'time') {
+      if (item.mode === 'precision') {
+        this.precisionExpression = (item.state && item.state.precisionExpression) ? item.state.precisionExpression : item.result;
+        this.precisionJustCalculated = true;
+      } else if (item.mode === 'time') {
         const parsed = this.parseValue(item.result);
         if (parsed.type === 'time') {
           const absSec = Math.abs(Math.round(parsed.sec));
