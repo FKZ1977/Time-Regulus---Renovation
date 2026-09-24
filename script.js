@@ -11207,20 +11207,103 @@ const TimeCalc = {
       }
     });
 
+    // ドラッグオーバー対象（FROM / TO / モーダルスロット）の判定（スクロール中もリアルタイムに判定）
+    const updateDragOverTarget = (clientX, clientY) => {
+      const underEl = document.elementFromPoint(clientX, clientY);
+
+      // 1. メイン電卓の FROM / TO 判定
+      const isOverFrom = underEl && underEl.closest('#currencyFromField');
+      const isOverTo = underEl && underEl.closest('#currencyToField');
+
+      if (fromField) {
+        if (isOverFrom) fromField.classList.add('drag-over');
+        else fromField.classList.remove('drag-over');
+      }
+      if (toField) {
+        if (isOverTo) toField.classList.add('drag-over');
+        else toField.classList.remove('drag-over');
+      }
+
+      // 2. レート選択モーダルのスロットカード (A〜F) 判定
+      const hoveredCard = underEl ? underEl.closest('.rate-slot-card') : null;
+      document.querySelectorAll('.rate-slot-card').forEach(card => {
+        if (hoveredCard && card === hoveredCard) {
+          card.classList.add('drag-over');
+        } else {
+          card.classList.remove('drag-over');
+        }
+      });
+    };
+
+    // ★ヒロさん仕様: ドラッグ中のオートスクロール（Edge Auto-Scroll）
+    // つまんだまま上端（または下端）に指を持っていくと、隠れていたFROM/TOが現れるよう自動スクロール！
+    let autoScrollRaf = null;
+    let lastClientX = 0;
+    let lastClientY = 0;
+
+    const runAutoScroll = () => {
+      if (!isDragging) {
+        stopAutoScroll();
+        return;
+      }
+
+      const topZone = 130;    // 画面上端から130px以内に入ったら上スクロール
+      const bottomZone = 110; // 画面下端から110px以内に入ったら下スクロール
+      const winH = window.innerHeight;
+      let scrollSpeed = 0;
+
+      if (lastClientY < topZone) {
+        // 上へスクロール (上端に近いほど高速にスクロール: 5px〜25px)
+        const ratio = Math.max(0, (topZone - lastClientY) / topZone);
+        scrollSpeed = -Math.round(5 + ratio * 20);
+      } else if (lastClientY > winH - bottomZone) {
+        // 下へスクロール
+        const ratio = Math.max(0, (lastClientY - (winH - bottomZone)) / bottomZone);
+        scrollSpeed = Math.round(5 + ratio * 20);
+      }
+
+      if (scrollSpeed !== 0) {
+        window.scrollBy({ top: scrollSpeed, behavior: 'auto' });
+        // スクロールで指の下に新しく入ってきた要素（FROM/TO等）をリアルタイム判定
+        updateDragOverTarget(lastClientX, lastClientY);
+      }
+
+      autoScrollRaf = requestAnimationFrame(runAutoScroll);
+    };
+
+    const startAutoScroll = () => {
+      if (!autoScrollRaf) {
+        autoScrollRaf = requestAnimationFrame(runAutoScroll);
+      }
+    };
+
+    const stopAutoScroll = () => {
+      if (autoScrollRaf) {
+        cancelAnimationFrame(autoScrollRaf);
+        autoScrollRaf = null;
+      }
+    };
+
     const startDrag = (curr, clientX, clientY, e) => {
       draggedCurrency = curr;
       isDragging = true;
       hasMoved = false;
       startX = clientX;
       startY = clientY;
+      lastClientX = clientX;
+      lastClientY = clientY;
 
       if (ghost) {
         const flag = TimeCalc.currencyFlags[curr] || '';
         ghost.textContent = `${flag} ${curr}`;
         ghost.style.left = `${clientX}px`;
         ghost.style.top = `${clientY}px`;
-        ghost.style.display = 'none'; // 動き出すまでは表示しない
+        ghost.style.display = 'block';
       }
+
+      // オートスクロール監視ループを開始
+      startAutoScroll();
+
       if (e && e.cancelable && e.type === 'touchstart') {
         // タッチ時のブラウザスクロール等を抑制
       }
@@ -11228,6 +11311,9 @@ const TimeCalc = {
 
     const moveDrag = (clientX, clientY, e) => {
       if (!isDragging) return;
+      lastClientX = clientX;
+      lastClientY = clientY;
+
       const dist = Math.hypot(clientX - startX, clientY - startY);
       if (dist > 4) {
         hasMoved = true;
@@ -11237,31 +11323,7 @@ const TimeCalc = {
           ghost.style.top = `${clientY}px`;
         }
 
-        // カーソル直下にある要素を判定
-        const underEl = document.elementFromPoint(clientX, clientY);
-
-        // 1. メイン電卓の FROM / TO 判定
-        const isOverFrom = underEl && underEl.closest('#currencyFromField');
-        const isOverTo = underEl && underEl.closest('#currencyToField');
-
-        if (fromField) {
-          if (isOverFrom) fromField.classList.add('drag-over');
-          else fromField.classList.remove('drag-over');
-        }
-        if (toField) {
-          if (isOverTo) toField.classList.add('drag-over');
-          else toField.classList.remove('drag-over');
-        }
-
-        // 2. レート選択モーダルのスロットカード (A〜F) 判定
-        const hoveredCard = underEl ? underEl.closest('.rate-slot-card') : null;
-        document.querySelectorAll('.rate-slot-card').forEach(card => {
-          if (hoveredCard && card === hoveredCard) {
-            card.classList.add('drag-over');
-          } else {
-            card.classList.remove('drag-over');
-          }
-        });
+        updateDragOverTarget(clientX, clientY);
 
         if (e && e.cancelable) {
           e.preventDefault();
@@ -11272,6 +11334,7 @@ const TimeCalc = {
     const endDrag = (clientX, clientY) => {
       if (!isDragging) return;
       isDragging = false;
+      stopAutoScroll();
       if (ghost) ghost.style.display = 'none';
 
       if (hasMoved && draggedCurrency) {
@@ -11318,8 +11381,10 @@ const TimeCalc = {
 
     this.startCurrencyDrag = startDrag;
 
+    let lastSlotDragEndTime = 0;
+
     // メイン電卓キーパッドの6スロットボタンにドラッグリスナーを登録
-    // ★ヒロさん仕様: 画面スクロール最優先！普通になぞるとスクロール、長押し（320ms）でドラッグ開始
+    // ★ヒロさん仕様: 画面スクロール最優先！普通になぞるとスクロール、長押し（350ms）でドラッグ開始
     for (let i = 0; i < 6; i++) {
       const btn = document.getElementById(`currSlot_${i}`);
       if (!btn) continue;
@@ -11327,21 +11392,31 @@ const TimeCalc = {
       let touchPressTimer = null;
       let touchStartX = 0;
       let touchStartY = 0;
+      let isLongPressed = false;
 
       btn.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
           touchStartX = e.touches[0].clientX;
           touchStartY = e.touches[0].clientY;
+          isLongPressed = false;
 
-          // 320ms長押しでドラッグモード発動（画面スクロールと完全に両立）
+          // 350ms長押しでドラッグモード発動（指を動かせばスクロール優先）
           touchPressTimer = setTimeout(() => {
+            isLongPressed = true;
             if (navigator.vibrate) {
-              try { navigator.vibrate(25); } catch(err){}
+              try { navigator.vibrate([35, 30, 35]); } catch(err){}
             }
             btn.classList.add('dnd-touch-active');
             const curr = TimeCalc.currencySlots[i] || 'USD';
             startDrag(curr, touchStartX, touchStartY, e);
-          }, 320);
+            if (ghost) {
+              const flag = TimeCalc.currencyFlags[curr] || '';
+              ghost.textContent = `${flag} ${curr}`;
+              ghost.style.display = 'block';
+              ghost.style.left = `${touchStartX}px`;
+              ghost.style.top = `${touchStartY}px`;
+            }
+          }, 350);
         }
       }, { passive: true });
 
@@ -11349,13 +11424,17 @@ const TimeCalc = {
         if (touchPressTimer && e.touches.length > 0) {
           const dx = Math.abs(e.touches[0].clientX - touchStartX);
           const dy = Math.abs(e.touches[0].clientY - touchStartY);
-          // 6px以上の指移動があった場合はスクロール操作とみなし、長押しタイマーを即座にキャンセル！
-          if (dx > 6 || dy > 6) {
+          // 8px以上の指移動があった場合は「画面スクロール」と判定し、長押しタイマーを即座にキャンセル！
+          if (dx > 8 || dy > 8) {
             clearTimeout(touchPressTimer);
             touchPressTimer = null;
           }
         }
-      }, { passive: true });
+        // 長押し確定後は画面スクロールを抑止してドラッグ移動を優先
+        if (isLongPressed && e.cancelable) {
+          e.preventDefault();
+        }
+      }, { passive: false });
 
       btn.addEventListener('touchend', () => {
         if (touchPressTimer) {
@@ -11363,6 +11442,9 @@ const TimeCalc = {
           touchPressTimer = null;
         }
         btn.classList.remove('dnd-touch-active');
+        if (isLongPressed) {
+          lastSlotDragEndTime = Date.now();
+        }
       }, { passive: true });
 
       btn.addEventListener('touchcancel', () => {
@@ -11372,6 +11454,14 @@ const TimeCalc = {
         }
         btn.classList.remove('dnd-touch-active');
       }, { passive: true });
+
+      // 長押しドラッグ後の誤タップ（スロット選択）を抑止
+      btn.addEventListener('click', (e) => {
+        if (Date.now() - lastSlotDragEndTime < 450) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+      }, true);
 
       btn.addEventListener('mousedown', (e) => {
         // PCマウス操作: 左ボタン (0) または 右ボタン (2) でドラッグ可能！
@@ -11487,6 +11577,7 @@ const TimeCalc = {
 
     window.addEventListener('touchmove', (e) => {
       if (isDragging && e.touches.length === 1) {
+        if (e.cancelable) e.preventDefault();
         moveDrag(e.touches[0].clientX, e.touches[0].clientY, e);
       }
     }, { passive: false });

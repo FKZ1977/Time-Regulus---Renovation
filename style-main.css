@@ -5392,9 +5392,10 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
 
 .curr-draggable-btn.dnd-touch-active {
   transform: scale(1.08) !important;
-  box-shadow: 0 0 14px rgba(0, 255, 224, 0.8) !important;
+  box-shadow: 0 0 16px rgba(0, 255, 224, 0.9) !important;
   border-color: #00ffe0 !important;
-  z-index: 10;
+  z-index: 100 !important;
+  touch-action: none !important; /* 長押し確定時のみドラッグを有効化 */
 }
 
 .currency-field-label.active-field .currency-select {
@@ -6224,7 +6225,7 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
 .curr-draggable-btn {
   cursor: grab;
   user-select: none;
-  touch-action: none; /* スマホでのドラッグを円滑にする */
+  touch-action: pan-y; /* ★ヒロさん仕様: 通常時は縦スクロールを最優先！長押し時のみDnD発動 */
   font-size: 12.5px !important;
   white-space: nowrap;
   letter-spacing: -0.4px;
