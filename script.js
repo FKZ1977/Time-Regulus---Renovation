@@ -10070,6 +10070,12 @@ const TimeCalc = {
   history: [],              // 履歴配列
   selectedHistoryId: null,  // 選択ハイライト中の履歴ID
 
+  // 時間電卓用スロット＆入力バッファ（ヒロさん仕様: 液晶上部に数字プレビュー、時間/分/秒でスロット確定・置換）
+  timeSlotH: null,          // 時スロット（例: 1, 25）
+  timeSlotM: null,          // 分スロット（例: 25, 30）
+  timeSlotS: null,          // 秒スロット（例: 30）
+  timeDigitBuffer: '',      // 液晶画面の一番上に表示する入力中バッファ（例: '1', '25', '30'）
+
   // 割り勘計算用ステート (ヒロさん仕様: 多通貨対応)
   splitCurrency: 'JPY',
   splitTotal: 0,
@@ -10587,7 +10593,11 @@ const TimeCalc = {
           leftValue: null,
           pendingOp: null,
           isNewInput: true,
-          displayFormat: 'COLON'
+          displayFormat: 'COLON',
+          timeSlotH: null,
+          timeSlotM: null,
+          timeSlotS: null,
+          timeDigitBuffer: ''
         },
         precision: {
           currentInput: "0",
@@ -10631,7 +10641,11 @@ const TimeCalc = {
         leftValue: this.leftValue,
         pendingOp: this.pendingOp,
         isNewInput: this.isNewInput,
-        displayFormat: this.displayFormat
+        displayFormat: this.displayFormat,
+        timeSlotH: this.timeSlotH,
+        timeSlotM: this.timeSlotM,
+        timeSlotS: this.timeSlotS,
+        timeDigitBuffer: this.timeDigitBuffer
       };
     } else if (mode === 'precision') {
       this.tabStates.precision = {
@@ -10679,6 +10693,10 @@ const TimeCalc = {
       this.pendingOp = s.pendingOp !== undefined ? s.pendingOp : null;
       this.isNewInput = s.isNewInput !== undefined ? s.isNewInput : true;
       if (s.displayFormat) this.displayFormat = s.displayFormat;
+      this.timeSlotH = s.timeSlotH !== undefined ? s.timeSlotH : null;
+      this.timeSlotM = s.timeSlotM !== undefined ? s.timeSlotM : null;
+      this.timeSlotS = s.timeSlotS !== undefined ? s.timeSlotS : null;
+      this.timeDigitBuffer = s.timeDigitBuffer !== undefined ? s.timeDigitBuffer : '';
     } else if (mode === 'precision') {
       this.currentInput = s.currentInput !== undefined ? s.currentInput : '0';
       this.formula = s.formula !== undefined ? s.formula : '';
@@ -10716,6 +10734,10 @@ const TimeCalc = {
     this.leftValue = null;
     this.pendingOp = null;
     this.isNewInput = true;
+    this.timeSlotH = null;
+    this.timeSlotM = null;
+    this.timeSlotS = null;
+    this.timeDigitBuffer = '';
     this.splitInputStr = '0';
     this.splitTotal = 0;
     this.splitPeople = 2;
@@ -11773,7 +11795,46 @@ const TimeCalc = {
     this.updateDisplay();
   },
 
+  // 時間電卓用スロット＆入力バッファのリセット
+  resetTimeSlots() {
+    this.timeSlotH = null;
+    this.timeSlotM = null;
+    this.timeSlotS = null;
+    this.timeDigitBuffer = '';
+  },
+
+  // 時間電卓: スロットの値から currentInput を計算・同期
+  syncCurrentInputFromSlots() {
+    if (this.timeSlotH !== null || this.timeSlotM !== null || this.timeSlotS !== null) {
+      const h = this.timeSlotH || 0;
+      const m = this.timeSlotM || 0;
+      const s = this.timeSlotS || 0;
+      const totalSec = h * 3600 + m * 60 + s;
+      this.currentInput = this.formatTime(totalSec, 'COLON');
+    } else if (this.timeDigitBuffer !== '') {
+      this.currentInput = this.timeDigitBuffer;
+    } else {
+      this.currentInput = '0';
+    }
+  },
+
   inputDigit(d) {
+    if (this.engineMode === 'time') {
+      if (this.isNewInput) {
+        this.resetTimeSlots();
+        this.isNewInput = false;
+      }
+      if (this.timeDigitBuffer === '0' || !this.timeDigitBuffer) {
+        this.timeDigitBuffer = (d === '00' ? '0' : d);
+      } else {
+        if (this.timeDigitBuffer.length < 8) {
+          this.timeDigitBuffer += d;
+        }
+      }
+      this.updateDisplay();
+      return;
+    }
+
     if (this.isNewInput) {
       this.currentInput = d === '00' ? '0' : d;
       this.isNewInput = false;
@@ -11787,6 +11848,19 @@ const TimeCalc = {
   },
 
   inputDot() {
+    if (this.engineMode === 'time') {
+      if (this.isNewInput) {
+        this.resetTimeSlots();
+        this.isNewInput = false;
+      }
+      if (!this.timeDigitBuffer) {
+        this.timeDigitBuffer = "0.";
+      } else if (!this.timeDigitBuffer.includes('.')) {
+        this.timeDigitBuffer += '.';
+      }
+      this.updateDisplay();
+      return;
+    }
     if (this.isNewInput) {
       this.currentInput = "0.";
       this.isNewInput = false;
@@ -11801,27 +11875,54 @@ const TimeCalc = {
 
   inputColon() {
     if (this.engineMode !== 'time') return;
-    if (this.isNewInput) {
-      this.currentInput = "0:";
+    if (this.timeDigitBuffer !== '') {
+      const val = parseFloat(this.timeDigitBuffer);
+      if (!isNaN(val)) {
+        if (this.timeSlotH === null) {
+          this.timeSlotH = val;
+        } else if (this.timeSlotM === null) {
+          this.timeSlotM = val;
+        } else {
+          this.timeSlotS = val;
+        }
+      }
+      this.timeDigitBuffer = '';
       this.isNewInput = false;
+      this.syncCurrentInputFromSlots();
+      this.updateDisplay();
       return;
-    }
-    const colonCount = (this.currentInput.match(/:/g) || []).length;
-    if (colonCount < 2 && !this.currentInput.endsWith(':')) {
-      this.currentInput += ':';
     }
   },
 
   inputUnit(unit) {
     if (this.engineMode !== 'time') return;
-    if (this.isNewInput) {
-      this.currentInput = "0" + unit;
-      this.isNewInput = false;
-      return;
+    const hasBuffer = this.timeDigitBuffer !== '';
+    const val = hasBuffer ? parseFloat(this.timeDigitBuffer) : null;
+
+    if (unit === 'h') {
+      if (val !== null) {
+        this.timeSlotH = val;
+      } else if (this.timeSlotH === null) {
+        this.timeSlotH = 0;
+      }
+    } else if (unit === 'm') {
+      if (val !== null) {
+        this.timeSlotM = val;
+      } else if (this.timeSlotM === null) {
+        this.timeSlotM = 0;
+      }
+    } else if (unit === 's') {
+      if (val !== null) {
+        this.timeSlotS = val;
+      } else if (this.timeSlotS === null) {
+        this.timeSlotS = 0;
+      }
     }
-    if (!this.currentInput.includes(unit)) {
-      this.currentInput += unit;
-    }
+
+    this.timeDigitBuffer = '';
+    this.isNewInput = false;
+    this.syncCurrentInputFromSlots();
+    this.updateDisplay();
   },
 
   inputParenthesis(p) {
@@ -11868,6 +11969,17 @@ const TimeCalc = {
   },
 
   toggleSign() {
+    if (this.engineMode === 'time') {
+      if (this.timeDigitBuffer !== '') {
+        if (this.timeDigitBuffer.startsWith('-')) {
+          this.timeDigitBuffer = this.timeDigitBuffer.substring(1);
+        } else {
+          this.timeDigitBuffer = '-' + this.timeDigitBuffer;
+        }
+        this.updateDisplay();
+        return;
+      }
+    }
     if (this.currentInput.startsWith('-')) {
       this.currentInput = this.currentInput.substring(1);
     } else if (this.currentInput !== '0' && this.currentInput !== 'Error') {
@@ -11876,6 +11988,24 @@ const TimeCalc = {
   },
 
   backspace() {
+    if (this.engineMode === 'time') {
+      if (this.timeDigitBuffer.length > 0) {
+        this.timeDigitBuffer = this.timeDigitBuffer.slice(0, -1);
+        this.updateDisplay();
+        return;
+      }
+      if (this.timeSlotS !== null) {
+        this.timeSlotS = null;
+      } else if (this.timeSlotM !== null) {
+        this.timeSlotM = null;
+      } else if (this.timeSlotH !== null) {
+        this.timeSlotH = null;
+      }
+      this.syncCurrentInputFromSlots();
+      this.updateDisplay();
+      return;
+    }
+
     if (this.isNewInput) return;
     if (this.currentInput.length > 1) {
       this.currentInput = this.currentInput.slice(0, -1);
@@ -11890,6 +12020,16 @@ const TimeCalc = {
   },
 
   clearEntry() {
+    if (this.engineMode === 'time') {
+      if (this.timeDigitBuffer !== '') {
+        this.timeDigitBuffer = '';
+      } else {
+        this.resetTimeSlots();
+      }
+      this.syncCurrentInputFromSlots();
+      this.updateDisplay();
+      return;
+    }
     this.currentInput = '0';
     this.isNewInput = true;
   },
@@ -11901,6 +12041,9 @@ const TimeCalc = {
       this.leftValue = null;
       this.pendingOp = null;
       this.isNewInput = true;
+      if (this.engineMode === 'time') {
+        this.resetTimeSlots();
+      }
     } else if (this.engineMode === 'split') {
       this.splitInputStr = '0';
       this.splitTotal = 0;
@@ -11979,6 +12122,9 @@ const TimeCalc = {
   },
 
   handleOperator(op) {
+    if (this.engineMode === 'time') {
+      this.syncCurrentInputFromSlots();
+    }
     const currentVal = this.parseValue(this.currentInput);
 
     if (this.leftValue !== null && this.pendingOp && !this.isNewInput) {
@@ -11998,6 +12144,9 @@ const TimeCalc = {
       : String(this.leftValue.val);
     this.formula = `${leftDisplay} ${opSymbols[op] || op}`;
     this.isNewInput = true;
+    if (this.engineMode === 'time') {
+      this.resetTimeSlots();
+    }
   },
 
   executeCalc(left, right, op) {
@@ -12049,6 +12198,9 @@ const TimeCalc = {
     if (this.leftValue === null || !this.pendingOp) {
       return;
     }
+    if (this.engineMode === 'time') {
+      this.syncCurrentInputFromSlots();
+    }
     const rightVal = this.parseValue(this.currentInput);
     const opSymbols = { '+': '+', '-': '−', '*': '×', '/': '÷', '%': '%' };
     const isTime = this.engineMode === 'time';
@@ -12074,6 +12226,19 @@ const TimeCalc = {
     this.leftValue = null;
     this.pendingOp = null;
     this.isNewInput = true;
+
+    if (this.engineMode === 'time') {
+      const parsed = this.parseValue(resultStr);
+      if (parsed.type === 'time') {
+        const absSec = Math.abs(Math.round(parsed.sec));
+        this.timeSlotH = Math.floor(absSec / 3600);
+        this.timeSlotM = Math.floor((absSec % 3600) / 60);
+        this.timeSlotS = absSec % 60;
+      } else {
+        this.resetTimeSlots();
+      }
+      this.timeDigitBuffer = '';
+    }
   },
 
   toggleFormatMode() {
@@ -12208,7 +12373,25 @@ const TimeCalc = {
     }
 
     // 3. 時間電卓 & 精密電卓モードの表示
-    if (formulaEl) formulaEl.textContent = this.formula;
+    if (this.engineMode === 'time') {
+      if (this.timeDigitBuffer !== '') {
+        if (formulaEl) {
+          formulaEl.classList.add('typing');
+          formulaEl.textContent = this.formula ? `${this.formula} ${this.timeDigitBuffer}` : this.timeDigitBuffer;
+        }
+      } else {
+        if (formulaEl) {
+          formulaEl.classList.remove('typing');
+          formulaEl.textContent = this.formula;
+        }
+      }
+    } else {
+      if (formulaEl) {
+        formulaEl.classList.remove('typing');
+        formulaEl.textContent = this.formula;
+      }
+    }
+
     if (opEl) {
       const opSymbols = { '+': '+', '-': '−', '*': '×', '/': '÷', '%': '%' };
       opEl.textContent = this.pendingOp ? (opSymbols[this.pendingOp] || this.pendingOp) : '';
@@ -12221,13 +12404,31 @@ const TimeCalc = {
       if (isPrec) {
         mainEl.textContent = this.currentInput;
       } else {
-        if (this.currentInput === '0' && this.isNewInput) {
-          mainEl.textContent = this.displayFormat === 'COLON' ? "00:00:00" : (typeof t === 'function' ? `0${t('calc_unit_s') || '秒'}` : "0秒");
-        } else {
-          if (parsed.type === 'time') {
-            mainEl.textContent = this.formatTime(parsed.sec, this.displayFormat);
+        const hasSlots = (this.timeSlotH !== null || this.timeSlotM !== null || this.timeSlotS !== null);
+        if (hasSlots) {
+          if (this.displayFormat === 'COLON') {
+            const hStr = (this.timeSlotH !== null) ? String(this.timeSlotH).padStart(2, '0') : '--';
+            const mStr = (this.timeSlotM !== null) ? String(this.timeSlotM).padStart(2, '0') : '--';
+            const sStr = (this.timeSlotS !== null) ? String(this.timeSlotS).padStart(2, '0') : '--';
+            mainEl.textContent = `${hStr}:${mStr}:${sStr}`;
           } else {
-            mainEl.textContent = this.currentInput;
+            const hUnit = (typeof t === 'function' ? t('calc_unit_h') : '時間') || '時間';
+            const mUnit = (typeof t === 'function' ? t('calc_unit_m') : '分') || '分';
+            const sUnit = (typeof t === 'function' ? t('calc_unit_s') : '秒') || '秒';
+            const hStr = (this.timeSlotH !== null) ? `${this.timeSlotH}${hUnit}` : `--${hUnit}`;
+            const mStr = (this.timeSlotM !== null) ? `${String(this.timeSlotM).padStart(2, '0')}${mUnit}` : `--${mUnit}`;
+            const sStr = (this.timeSlotS !== null) ? `${String(this.timeSlotS).padStart(2, '0')}${sUnit}` : `--${sUnit}`;
+            mainEl.textContent = `${hStr} ${mStr} ${sStr}`;
+          }
+        } else {
+          if (this.currentInput === '0' && this.isNewInput) {
+            mainEl.textContent = this.displayFormat === 'COLON' ? "00:00:00" : (typeof t === 'function' ? `0${t('calc_unit_s') || '秒'}` : "0秒");
+          } else {
+            if (parsed.type === 'time') {
+              mainEl.textContent = this.formatTime(parsed.sec, this.displayFormat);
+            } else {
+              mainEl.textContent = this.currentInput;
+            }
           }
         }
       }
@@ -12242,16 +12443,19 @@ const TimeCalc = {
           subEl.textContent = `= 0`;
         }
       } else {
-        if (parsed.type === 'time') {
-          const sec = parsed.sec;
-          const hours = (sec / 3600).toFixed(4);
-          const mins = (sec / 60).toFixed(2);
-          subEl.textContent = `= ${hours} h (${mins} m / ${sec} s)`;
+        const hasSlots = (this.timeSlotH !== null || this.timeSlotM !== null || this.timeSlotS !== null);
+        let sec = 0;
+        if (hasSlots) {
+          sec = (this.timeSlotH || 0) * 3600 + (this.timeSlotM || 0) * 60 + (this.timeSlotS || 0);
+        } else if (parsed.type === 'time') {
+          sec = parsed.sec;
         } else {
-          const sec = parsed.val * 3600;
-          const hms = this.formatTime(sec, 'COLON');
-          subEl.textContent = `= ${hms}`;
+          sec = parsed.val * 3600;
         }
+
+        const hours = (sec / 3600).toFixed(4);
+        const mins = (sec / 60).toFixed(2);
+        subEl.textContent = `= ${hours} h (${mins} m / ${sec} s)`;
       }
     }
 
@@ -12521,6 +12725,18 @@ const TimeCalc = {
       this.currentInput = item.result;
       if (item.formula) this.formula = item.formula;
       this.isNewInput = true;
+      if (item.mode === 'time') {
+        const parsed = this.parseValue(item.result);
+        if (parsed.type === 'time') {
+          const absSec = Math.abs(Math.round(parsed.sec));
+          this.timeSlotH = Math.floor(absSec / 3600);
+          this.timeSlotM = Math.floor((absSec % 3600) / 60);
+          this.timeSlotS = absSec % 60;
+        } else {
+          this.resetTimeSlots();
+        }
+        this.timeDigitBuffer = '';
+      }
       this.updateDisplay();
     }
 

@@ -5471,6 +5471,12 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
 .time-calc-formula::-webkit-scrollbar {
   display: none;
 }
+.time-calc-formula.typing {
+  color: #00ffe0;
+  font-weight: bold;
+  text-shadow: 0 0 6px rgba(0, 255, 224, 0.6);
+  letter-spacing: 0.5px;
+}
 
 .time-calc-main-display {
   font-size: 32px;
