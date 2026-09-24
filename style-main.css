@@ -5379,6 +5379,22 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   text-align-last: center;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  pointer-events: none; /* ヒロさん仕様: 通常時は直接開かず、長押しでドロップダウンピッカーを起動 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.currency-field-label.longpress-activating {
+  border-color: #00ffe0 !important;
+  box-shadow: 0 0 16px rgba(0, 255, 224, 0.7) !important;
+  transform: scale(1.04);
+}
+
+.curr-draggable-btn.dnd-touch-active {
+  transform: scale(1.08) !important;
+  box-shadow: 0 0 14px rgba(0, 255, 224, 0.8) !important;
+  border-color: #00ffe0 !important;
+  z-index: 10;
 }
 
 .currency-field-label.active-field .currency-select {

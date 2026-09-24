@@ -11307,10 +11307,11 @@ const TimeCalc = {
         }
       }
 
-      // ハイライトを全て解除
+      // ハイライト・アクティブ状態を全て解除
       if (fromField) fromField.classList.remove('drag-over');
       if (toField) toField.classList.remove('drag-over');
       document.querySelectorAll('.rate-slot-card').forEach(c => c.classList.remove('drag-over'));
+      document.querySelectorAll('.curr-draggable-btn').forEach(b => b.classList.remove('dnd-touch-active'));
 
       draggedCurrency = null;
     };
@@ -11318,25 +11319,171 @@ const TimeCalc = {
     this.startCurrencyDrag = startDrag;
 
     // メイン電卓キーパッドの6スロットボタンにドラッグリスナーを登録
+    // ★ヒロさん仕様: 画面スクロール最優先！普通になぞるとスクロール、長押し（320ms）でドラッグ開始
     for (let i = 0; i < 6; i++) {
       const btn = document.getElementById(`currSlot_${i}`);
       if (!btn) continue;
 
+      let touchPressTimer = null;
+      let touchStartX = 0;
+      let touchStartY = 0;
+
       btn.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
-          const curr = TimeCalc.currencySlots[i] || 'USD';
-          startDrag(curr, e.touches[0].clientX, e.touches[0].clientY, e);
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+
+          // 320ms長押しでドラッグモード発動（画面スクロールと完全に両立）
+          touchPressTimer = setTimeout(() => {
+            if (navigator.vibrate) {
+              try { navigator.vibrate(25); } catch(err){}
+            }
+            btn.classList.add('dnd-touch-active');
+            const curr = TimeCalc.currencySlots[i] || 'USD';
+            startDrag(curr, touchStartX, touchStartY, e);
+          }, 320);
         }
       }, { passive: true });
 
+      btn.addEventListener('touchmove', (e) => {
+        if (touchPressTimer && e.touches.length > 0) {
+          const dx = Math.abs(e.touches[0].clientX - touchStartX);
+          const dy = Math.abs(e.touches[0].clientY - touchStartY);
+          // 6px以上の指移動があった場合はスクロール操作とみなし、長押しタイマーを即座にキャンセル！
+          if (dx > 6 || dy > 6) {
+            clearTimeout(touchPressTimer);
+            touchPressTimer = null;
+          }
+        }
+      }, { passive: true });
+
+      btn.addEventListener('touchend', () => {
+        if (touchPressTimer) {
+          clearTimeout(touchPressTimer);
+          touchPressTimer = null;
+        }
+        btn.classList.remove('dnd-touch-active');
+      }, { passive: true });
+
+      btn.addEventListener('touchcancel', () => {
+        if (touchPressTimer) {
+          clearTimeout(touchPressTimer);
+          touchPressTimer = null;
+        }
+        btn.classList.remove('dnd-touch-active');
+      }, { passive: true });
+
       btn.addEventListener('mousedown', (e) => {
-        // 左ボタン (0) または 右ボタン (2) でドラッグ可能！
+        // PCマウス操作: 左ボタン (0) または 右ボタン (2) でドラッグ可能！
         if (e.button === 0 || e.button === 2) {
           const curr = TimeCalc.currencySlots[i] || 'USD';
           startDrag(curr, e.clientX, e.clientY, e);
         }
       });
     }
+
+    // ===== FROM / TO フィールドの長押し検知 =====
+    // ★ヒロさん仕様: シングルタップでアクティブ枠切替、長押しでドロップダウンリスト出現
+    ['from', 'to'].forEach(fieldKey => {
+      const fieldId = fieldKey === 'from' ? 'currencyFromField' : 'currencyToField';
+      const selectId = fieldKey === 'from' ? 'currencyFromSelect' : 'currencyToSelect';
+      const fieldEl = document.getElementById(fieldId);
+      const selectEl = document.getElementById(selectId);
+      if (!fieldEl || !selectEl) return;
+
+      let longPressTimer = null;
+      let startX = 0;
+      let startY = 0;
+
+      const triggerDropdown = () => {
+        if (navigator.vibrate) {
+          try { navigator.vibrate(25); } catch(err){}
+        }
+        fieldEl.classList.add('longpress-activating');
+        setTimeout(() => fieldEl.classList.remove('longpress-activating'), 350);
+
+        selectEl.style.pointerEvents = 'auto';
+        if (typeof selectEl.showPicker === 'function') {
+          try {
+            selectEl.showPicker();
+          } catch(err) {
+            selectEl.focus();
+            selectEl.click();
+          }
+        } else {
+          selectEl.focus();
+          selectEl.click();
+        }
+
+        const resetPointerEvents = () => {
+          selectEl.style.pointerEvents = '';
+          selectEl.removeEventListener('change', resetPointerEvents);
+          selectEl.removeEventListener('blur', resetPointerEvents);
+        };
+        selectEl.addEventListener('change', resetPointerEvents);
+        selectEl.addEventListener('blur', resetPointerEvents);
+        setTimeout(resetPointerEvents, 2500);
+      };
+
+      // タッチ操作（スマホ）
+      fieldEl.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+
+          longPressTimer = setTimeout(() => {
+            triggerDropdown();
+          }, 380); // 380ms長押しでドロップダウンピッカー出現
+        }
+      }, { passive: true });
+
+      fieldEl.addEventListener('touchmove', (e) => {
+        if (longPressTimer && e.touches.length > 0) {
+          const dx = Math.abs(e.touches[0].clientX - startX);
+          const dy = Math.abs(e.touches[0].clientY - startY);
+          // 6px以上動いたら画面スクロールと判定して長押しをキャンセル
+          if (dx > 6 || dy > 6) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+          }
+        }
+      }, { passive: true });
+
+      fieldEl.addEventListener('touchend', () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      }, { passive: true });
+
+      fieldEl.addEventListener('touchcancel', () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      });
+
+      // PCマウス操作: 左クリック長押し または 右クリックでドロップダウン可能
+      fieldEl.addEventListener('mousedown', (e) => {
+        if (e.button === 0) {
+          longPressTimer = setTimeout(() => {
+            triggerDropdown();
+          }, 420);
+        }
+      });
+
+      fieldEl.addEventListener('mouseup', () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      });
+
+      fieldEl.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        triggerDropdown();
+      });
+    });
 
     window.addEventListener('touchmove', (e) => {
       if (isDragging && e.touches.length === 1) {
