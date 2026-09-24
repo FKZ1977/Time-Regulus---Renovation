@@ -5935,11 +5935,15 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   font-family: 'Consolas', 'Courier New', monospace;
   cursor: pointer;
   transition: all 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
 }
-.time-calc-history-item:hover {
-  background: rgba(0, 255, 224, 0.1);
-  border-color: var(--accent);
+@media (hover: hover) and (pointer: fine) {
+  .time-calc-history-item:hover {
+    background: rgba(0, 255, 224, 0.1);
+    border-color: var(--accent);
+  }
 }
 /* 選択時（シングルタップ時）：背景が明るくハイライト（結果一覧と同様の仕様） */
 .time-calc-history-item.selected {

@@ -12628,12 +12628,14 @@ const TimeCalc = {
         const isSelected = div.classList.contains('selected');
         listEl.querySelectorAll('.time-calc-history-item.selected').forEach(el => {
           el.classList.remove('selected');
+          if (typeof el.blur === 'function') el.blur();
         });
         if (!isSelected) {
           div.classList.add('selected');
           this.selectedHistoryId = item.id;
         } else {
           this.selectedHistoryId = null;
+          if (typeof div.blur === 'function') div.blur();
         }
       };
 
@@ -12649,23 +12651,41 @@ const TimeCalc = {
         TimeCalc.loadHistoryItem(idx);
       };
 
-      // クリック時（PCマウス用）：シングルクリックで選択、直前タッチ時のゴーストclickは除外
+      // タッチ＆スクロール制御
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let isTouchScrolling = false;
+      let lastTouchEndTime = 0;
       let lastTapTime = 0;
-      div.addEventListener('click', (e) => {
-        if (e.target.closest('.hist-del-btn')) return;
-        if (Date.now() - lastTapTime < 400) return;
-        toggleSelect();
-      });
 
-      // ダブルクリック時（PCマウス用）：復元
-      div.addEventListener('dblclick', (e) => {
+      div.addEventListener('touchstart', (e) => {
         if (e.target.closest('.hist-del-btn')) return;
-        triggerRestore();
-      });
+        if (e.touches && e.touches.length > 0) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }
+        isTouchScrolling = false;
+      }, { passive: true });
 
-      // タッチ操作（スマホ・タッチデバイス）：シングルタップで選択色変更、ダブルタップで復元
+      div.addEventListener('touchmove', (e) => {
+        if (!isTouchScrolling && e.touches && e.touches.length > 0) {
+          const dx = Math.abs(e.touches[0].clientX - touchStartX);
+          const dy = Math.abs(e.touches[0].clientY - touchStartY);
+          // 6px以上の移動があればスクロール操作とみなし、選択・復元を完全に抑止
+          if (dx > 6 || dy > 6) {
+            isTouchScrolling = true;
+          }
+        }
+      }, { passive: true });
+
+      // タッチ操作（スマホ・タッチデバイス）：スクロール時は何もしない
       div.addEventListener('touchend', (e) => {
         if (e.target.closest('.hist-del-btn')) return;
+        lastTouchEndTime = Date.now();
+        if (isTouchScrolling) {
+          return; // スクロール中は再選択・復元処理を行わない
+        }
+
         const currentTime = Date.now();
         const tapLength = currentTime - lastTapTime;
         if (tapLength < 350 && tapLength > 0) {
@@ -12676,6 +12696,23 @@ const TimeCalc = {
         }
         lastTapTime = currentTime;
       }, { passive: false });
+
+      div.addEventListener('touchcancel', () => {
+        isTouchScrolling = true;
+      });
+
+      // クリック時（PCマウス用）：タッチ操作直後の擬似クリック（ゴーストclick）は除外
+      div.addEventListener('click', (e) => {
+        if (e.target.closest('.hist-del-btn')) return;
+        if (Date.now() - lastTouchEndTime < 450) return;
+        toggleSelect();
+      });
+
+      // ダブルクリック時（PCマウス用）：復元
+      div.addEventListener('dblclick', (e) => {
+        if (e.target.closest('.hist-del-btn')) return;
+        triggerRestore();
+      });
 
       listEl.appendChild(div);
     });
