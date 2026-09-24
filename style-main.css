@@ -5883,6 +5883,20 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   margin-bottom: 8px;
 }
 
+.time-calc-history-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.time-calc-history-guide {
+  font-size: 11px;
+  font-weight: normal;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.02em;
+}
+
 .time-calc-history-clear-btn {
   background: transparent;
   border: 1px solid rgba(255, 77, 77, 0.6);
@@ -5915,10 +5929,23 @@ body:not(.lang-ja):not(.lang-zh):not(.lang-ko) .warning-msg {
   font-family: 'Consolas', 'Courier New', monospace;
   cursor: pointer;
   transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 .time-calc-history-item:hover {
   background: rgba(0, 255, 224, 0.1);
   border-color: var(--accent);
+}
+/* 選択時（シングルタップ時）：背景が明るくハイライト（結果一覧と同様の仕様） */
+.time-calc-history-item.selected {
+  background-color: rgba(0, 255, 224, 0.22) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 224, 0.4) !important;
+}
+/* ダブルタップ復元時のフラッシュ */
+.time-calc-history-item.restoring-flash {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 224, 0.85) !important;
+  transition: none !important;
 }
 .time-calc-history-item .hist-icon {
   margin-right: 8px;

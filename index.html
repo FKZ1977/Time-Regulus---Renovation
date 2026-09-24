@@ -906,7 +906,10 @@
     <!-- 計算履歴エリア（ヒロさん仕様: 初期非表示、＝を押すと出現、0件で自動非表示） -->
     <div id="timeCalcHistoryDrawer" class="time-calc-history-drawer" style="display:none; margin-top: 14px;">
       <div class="time-calc-history-header">
-        <span data-i18n="time_calc_history">計算履歴</span>
+        <div class="time-calc-history-title-group">
+          <span data-i18n="time_calc_history">計算履歴</span>
+          <span class="time-calc-history-guide" data-i18n="double_tap_to_restore">💡 ダブルタップで復元</span>
+        </div>
         <button class="time-calc-history-clear-btn" onclick="TimeCalc.clearHistory()" data-i18n="clear_history">履歴クリア</button>
       </div>
       <div id="timeCalcHistoryList" class="time-calc-history-list">

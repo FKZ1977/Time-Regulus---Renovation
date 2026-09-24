@@ -10068,6 +10068,7 @@ const TimeCalc = {
   isNewInput: true,         // 次のキー入力で currentInput を上書きするか
   tabStates: null,          // タブごとの入力保持用ステート辞書
   history: [],              // 履歴配列
+  selectedHistoryId: null,  // 選択ハイライト中の履歴ID
 
   // 割り勘計算用ステート (ヒロさん仕様: 多通貨対応)
   splitCurrency: 'JPY',
@@ -12351,6 +12352,9 @@ const TimeCalc = {
 
   deleteHistoryItem(idx) {
     if (this.history[idx]) {
+      if (this.selectedHistoryId === this.history[idx].id) {
+        this.selectedHistoryId = null;
+      }
       this.history.splice(idx, 1);
       this.saveHistory();
       this.renderHistory();
@@ -12359,6 +12363,7 @@ const TimeCalc = {
 
   clearHistory() {
     this.history = [];
+    this.selectedHistoryId = null;
     this.saveHistory();
     this.renderHistory();
   },
@@ -12386,22 +12391,93 @@ const TimeCalc = {
       split: '💸'
     };
 
-    listEl.innerHTML = this.history.map((item, idx) => {
+    listEl.innerHTML = '';
+    this.history.forEach((item, idx) => {
       const icon = modeIcons[item.mode] || '⏰';
-      return `
-        <div class="time-calc-history-item" onclick="TimeCalc.loadHistoryItem(${idx})">
-          <span class="hist-icon">${icon}</span>
-          <div class="hist-content">
-            <span class="hist-formula">${item.formula}</span>
-            <span class="hist-result">${item.result}</span>
-          </div>
-          <button type="button" class="hist-del-btn" title="削除" onclick="event.stopPropagation(); TimeCalc.deleteHistoryItem(${idx})">☒</button>
+      const div = document.createElement('div');
+      div.className = 'time-calc-history-item';
+      div.dataset.histId = String(item.id);
+      if (this.selectedHistoryId && String(item.id) === String(this.selectedHistoryId)) {
+        div.classList.add('selected');
+      }
+
+      div.innerHTML = `
+        <span class="hist-icon">${icon}</span>
+        <div class="hist-content">
+          <span class="hist-formula">${item.formula}</span>
+          <span class="hist-result">${item.result}</span>
         </div>
+        <button type="button" class="hist-del-btn" title="削除">☒</button>
       `;
-    }).join('');
+
+      // 削除ボタンの個別クリック処理
+      const delBtn = div.querySelector('.hist-del-btn');
+      if (delBtn) {
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          TimeCalc.deleteHistoryItem(idx);
+        });
+      }
+
+      // シングルタップ / 選択時に該当行の背景色を変更（結果一覧の toggleSelect と同様の仕様）
+      const toggleSelect = () => {
+        const isSelected = div.classList.contains('selected');
+        listEl.querySelectorAll('.time-calc-history-item.selected').forEach(el => {
+          el.classList.remove('selected');
+        });
+        if (!isSelected) {
+          div.classList.add('selected');
+          this.selectedHistoryId = item.id;
+        } else {
+          this.selectedHistoryId = null;
+        }
+      };
+
+      // ダブルタップ / 復元実行
+      const triggerRestore = () => {
+        div.classList.add('restoring-flash');
+        setTimeout(() => div.classList.remove('restoring-flash'), 300);
+        listEl.querySelectorAll('.time-calc-history-item.selected').forEach(el => {
+          el.classList.remove('selected');
+        });
+        div.classList.add('selected');
+        this.selectedHistoryId = item.id;
+        TimeCalc.loadHistoryItem(idx);
+      };
+
+      // クリック時（PCマウス用）：シングルクリックで選択、直前タッチ時のゴーストclickは除外
+      let lastTapTime = 0;
+      div.addEventListener('click', (e) => {
+        if (e.target.closest('.hist-del-btn')) return;
+        if (Date.now() - lastTapTime < 400) return;
+        toggleSelect();
+      });
+
+      // ダブルクリック時（PCマウス用）：復元
+      div.addEventListener('dblclick', (e) => {
+        if (e.target.closest('.hist-del-btn')) return;
+        triggerRestore();
+      });
+
+      // タッチ操作（スマホ・タッチデバイス）：シングルタップで選択色変更、ダブルタップで復元
+      div.addEventListener('touchend', (e) => {
+        if (e.target.closest('.hist-del-btn')) return;
+        const currentTime = Date.now();
+        const tapLength = currentTime - lastTapTime;
+        if (tapLength < 350 && tapLength > 0) {
+          e.preventDefault();
+          triggerRestore();
+        } else {
+          toggleSelect();
+        }
+        lastTapTime = currentTime;
+      }, { passive: false });
+
+      listEl.appendChild(div);
+    });
 
     // 最新の計算結果が常に一番上に見えるよう、ボックス内スクロールを最上部にリセット
-    if (drawer) {
+    if (drawer && !this.selectedHistoryId) {
       drawer.scrollTop = 0;
     }
   },
@@ -12409,6 +12485,8 @@ const TimeCalc = {
   loadHistoryItem(idx) {
     const item = this.history[idx];
     if (!item) return;
+
+    this.selectedHistoryId = item.id;
 
     // GA: 履歴から呼び出し
     if (typeof gtag === 'function') {
