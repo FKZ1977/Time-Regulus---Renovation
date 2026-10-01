@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Time Regulus v3.3.2</title>
+  <title>Time Regulus v3.3.3</title>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-R7PW7DY4GF"></script>
   <script>
@@ -94,7 +94,7 @@
       </select>
     </div>
     <h1 class="fkz anim-title-rise" id="lockTitle" data-i18n="app_title">Time Regulus</h1>
-    <p class="subtitle anim-slow-fade" id="lockSubtitle" data-i18n="app_subtitle">タイム　レグルス　v3.3.2</p>
+    <p class="subtitle anim-slow-fade" id="lockSubtitle" data-i18n="app_subtitle">タイム　レグルス　v3.3.3</p>
     <div class="passcode-row anim-slow-fade">
       <label for="passcode" class="passcode-label" data-i18n="passcode">暗証番号：</label>
       <input type="password" id="passcode" placeholder="例：12345" data-i18n-placeholder="passcode_placeholder" tabindex="1" readonly class="passcode-input">
@@ -940,7 +940,7 @@
     <div id="informationContent"
       style="margin-top: 30px; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;">
       <p style="margin-bottom: 8px; font-size: clamp(12px, 3.8vw, 14.5px); letter-spacing: -0.2px; white-space: nowrap;" id="infoCreatedBy">このアプリは、<strong>H.Fukazu</strong>によって制作されました。</p>
-      <p style="margin-bottom: 8px;"><span data-i18n="info_version">バージョン：</span><strong>v3.3.2</strong></p>
+      <p style="margin-bottom: 8px;"><span data-i18n="info_version">バージョン：</span><strong>v3.3.3</strong></p>
       <p style="margin-bottom: 24px;"><span data-i18n="info_created_date">作成日：</span><strong>2026/09/23</strong></p>
 
       <!-- 著作権情報ボタン -->
@@ -952,15 +952,14 @@
     </div><br><br>
     <h2 data-i18n="info_latest_news">↓↓↓最新バージョン情報はこちらから↓↓↓</h2>
     <p data-i18n="info_qr_desc">URL又はQRコードから<br>最新情報を確認してください。</p>
-    <button class="action-btn" onclick="showQRCodePage()" style="margin-top: 30px;" data-i18n="show_qr">QRコードを表示</button>
+    <button class="action-btn" onclick="showQRCodePage()" style="margin-top: 30px;" data-i18n="show_qr">URL／QRコードを表示</button>
   </div>
   <div id="qrCodePage" style="display:none; text-align:center; padding: 40px 16px; min-height: 100vh; width: 100%; box-sizing: border-box;">
     <div style="margin-top: 100px;">
       <img id="qrCodeImage" src="QRCorde.PNG" alt="Time Regulus QR Code"
         style="border: 4px solid var(--text-main); border-radius: 8px;">
     </div>
-    <a href="https://fkz1977.github.io/Time-Regulus-news/" target="_blank" class="url-link" style="font-size: 12px; display:block; color: skyblue
-;">https://fkz1977.github.io/Time-Regulus-news/</a>
+    <a href="https://fkz1977.github.io/Time-Regulus-news/" target="_blank" rel="noopener noreferrer" onclick="openLatestNews(event, this)" class="url-link" style="font-size: 12px; display:block; color: skyblue;">https://fkz1977.github.io/Time-Regulus-news/</a>
     <button class="action-btn" onclick="closeQRCodePage()" style="margin-top: 40px; background-color: #ff4d4d;" data-i18n="close">☒ 閉じる</button>
   </div>
   <!-- 時分秒専用の三連極上カスタム無限ドラムロールピッカー (ボトムシート) -->
@@ -1119,7 +1118,7 @@
   <div id="currDragGhost" class="curr-drag-ghost" style="display:none;">USD</div>
 
   <script src="i18n.js?v=17" defer></script>
-  <script src="script.js?c=90" defer></script>
+  <script src="script.js?c=91" defer></script>
   <script>
     if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.getRegistrations().then(r => r.forEach(reg => reg.unregister())); }); }
   </script>
