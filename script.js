@@ -1067,6 +1067,14 @@ const RegulusKeypad = {
     if (pickerSheet) pickerSheet.classList.remove('show');
 
     this.isOpen = true;
+    if (this.activeInput && this.activeInput !== inputEl) {
+      const prevVal = this.activeInput.value.replace(/[^0-9]/g, '');
+      if (prevVal !== '' && this.activeInput.maxLength === 2 && prevVal.length === 1) {
+        this.activeInput.value = prevVal.padStart(2, '0');
+        calculateError();
+        handleReverseCalculation();
+      }
+    }
     this.activeInput = inputEl;
 
     // どのグループに属しているかを判定して最後にアクティブだった枠として記憶
@@ -1174,6 +1182,12 @@ const RegulusKeypad = {
     document.body.classList.remove('keypad-open'); // オーバーレイ手前化を解除
 
     if (this.activeInput) {
+      const lastVal = this.activeInput.value.replace(/[^0-9]/g, '');
+      if (lastVal !== '' && this.activeInput.maxLength === 2 && lastVal.length === 1) {
+        this.activeInput.value = lastVal.padStart(2, '0');
+        calculateError();
+        handleReverseCalculation();
+      }
       try {
         this.activeInput.removeAttribute('inputmode');
         this.activeInput.blur();
@@ -1289,7 +1303,7 @@ const RegulusKeypad = {
     if (this.activeInput === el) {
       try {
         const nextLen = el.value.length;
-        if (document.activeElement !== el) el.focus({ preventScroll: true });
+
         el.setSelectionRange(nextLen, nextLen);
       } catch (e) {}
     }
@@ -1306,7 +1320,7 @@ const RegulusKeypad = {
     if (this.activeInput === el) {
       try {
         const nextLen = el.value.length;
-        if (document.activeElement !== el) el.focus({ preventScroll: true });
+
         el.setSelectionRange(nextLen, nextLen);
       } catch (e) {}
     }
@@ -1321,7 +1335,7 @@ const RegulusKeypad = {
 
     if (this.activeInput === el) {
       try {
-        if (document.activeElement !== el) el.focus({ preventScroll: true });
+
         el.setSelectionRange(0, 0);
       } catch (e) {}
     }
@@ -3434,6 +3448,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // フォーカスアウト時、1桁の数字（月・日・時・分・秒）であれば自動で頭に「0」を埋めて2桁化
       el.addEventListener("blur", function() {
+        if (typeof RegulusKeypad !== 'undefined' && RegulusKeypad.isOpen && RegulusKeypad.activeInput === el) return;
         let val = el.value.replace(/[^0-9]/g, "");
         if (val !== "" && el.maxLength === 2 && val.length === 1) {
           el.value = val.padStart(2, '0');
